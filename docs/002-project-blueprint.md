@@ -302,6 +302,10 @@ openkeri/
       README.md
       demo.py
       interactive.py
+      problems.py
+      solutions/
+        correct.py
+        incorrect.py
   tests/
     test_algorithm_tutor_demo.py
     test_algorithm_tutor_interactive.py

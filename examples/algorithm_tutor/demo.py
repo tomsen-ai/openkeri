@@ -1,38 +1,10 @@
+from problems import build_leetcode_3_problem, build_leetcode_3_test_suite
+
 from openkeri.agent import RuleBasedTeacher
-from openkeri.evidence import (
-    ProblemTestCase,
-    ProblemTestSuite,
-    PythonCodeRunnerEvidenceCollector,
-)
+from openkeri.evidence import PythonCodeRunnerEvidenceCollector
 from openkeri.memory import InMemoryMemoryStore
 from openkeri.runtime import TeachingSession
-from openkeri.schemas import CodeSubmission, CurrentInput, Problem, TeacherOutput
-
-
-def build_problem() -> Problem:
-    return Problem(
-        id="leetcode_3",
-        title="Longest Substring Without Repeating Characters",
-        description=(
-            "Given a string s, return the length of the longest substring without "
-            "repeating characters."
-        ),
-        target_concepts=["sliding_window", "hash_map"],
-        difficulty="medium",
-    )
-
-
-def build_test_suite() -> ProblemTestSuite:
-    return ProblemTestSuite(
-        problem_id="leetcode_3",
-        entrypoint="lengthOfLongestSubstring",
-        test_cases=[
-            ProblemTestCase(input="abcabcbb", expected=3),
-            ProblemTestCase(input="bbbbb", expected=1),
-            ProblemTestCase(input="pwwkew", expected=3),
-            ProblemTestCase(input="abba", expected=2),
-        ],
-    )
+from openkeri.schemas import CodeSubmission, CurrentInput, TeacherOutput
 
 
 def incorrect_code() -> str:
@@ -71,7 +43,7 @@ def build_session(memory_store: InMemoryMemoryStore) -> TeachingSession:
         session_id="sess_001",
         memory_store=memory_store,
         evidence_collector=PythonCodeRunnerEvidenceCollector(
-            test_suites={"leetcode_3": build_test_suite()}
+            test_suites={"leetcode_3": build_leetcode_3_test_suite()}
         ),
         teacher_agent=RuleBasedTeacher(),
     )
@@ -79,7 +51,7 @@ def build_session(memory_store: InMemoryMemoryStore) -> TeachingSession:
 
 def build_current_input(code: str) -> CurrentInput:
     return CurrentInput(
-        problem=build_problem(),
+        problem=build_leetcode_3_problem(),
         student_question="Why does this fail on abba?",
         code_submission=CodeSubmission(language="python", code=code),
     )
