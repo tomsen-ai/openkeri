@@ -383,7 +383,36 @@ The first version does not need to support:
 - a real database
 - real LLM calls
 
-## 6. Testing Strategy
+## 6. Learning Loop Roadmap
+
+openkeri should evolve toward a full learning loop, not only better
+explanations.
+
+The target learning loop is:
+
+```text
+diagnose -> teach -> practice -> assess -> remediate -> review -> update memory
+```
+
+The current implementation is only the first slice:
+
+```text
+v0: diagnose + hint/explanation + memory update
+```
+
+Future phases should expand the loop:
+
+```text
+v1: practice generation + assessment
+v2: mistake book + review scheduling
+v3: adaptive learning path
+```
+
+These phases should be added without turning openkeri into a generic chatbot or
+a course generator. The runtime should keep producing structured domain objects
+instead of only learner-facing text.
+
+## 7. Testing Strategy
 
 Every implementation step should include a minimal verification.
 
@@ -433,7 +462,7 @@ current_input + memory
 The goal is not to cover every algorithm problem. The goal is to make the core
 loop repeatable and testable.
 
-## 7. CI Policy
+## 8. CI Policy
 
 CI should be added as soon as the first testable implementation exists.
 
@@ -468,7 +497,7 @@ pytest
 
 Type checking may be added after the data model stabilizes.
 
-## 8. Open Questions
+## 9. Open Questions
 
 These questions remain open:
 

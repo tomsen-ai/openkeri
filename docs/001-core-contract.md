@@ -16,6 +16,28 @@ A learner works on an algorithm problem, asks questions, and submits code.
 openkeri helps the teacher agent diagnose the learner's current issue and
 respond with either a hint or an explanation.
 
+## Learning Loop Scope
+
+openkeri should not become a single-step explanation engine.
+
+Teaching is a learning loop:
+
+```text
+diagnose -> teach -> practice -> assess -> remediate -> review -> update memory
+```
+
+The first implementation only covers the smallest deterministic slice of that
+loop:
+
+```text
+diagnose -> hint/explanation -> update memory
+```
+
+This is intentional. The v0 runtime proves the core loop with structured
+diagnosis, teaching action, evidence, and memory. Later versions should extend
+the runtime toward practice generation, assessment, mistake tracking, review,
+and adaptive learning paths.
+
 ## Core Input
 
 The teacher agent receives two input streams.
