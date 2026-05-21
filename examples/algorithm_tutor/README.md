@@ -37,4 +37,6 @@ Try the included sample files:
 ```text
 examples/algorithm_tutor/solutions/incorrect.py
 examples/algorithm_tutor/solutions/correct.py
+examples/algorithm_tutor/solutions/palindrome_incorrect.py
+examples/algorithm_tutor/solutions/palindrome_correct.py
 ```

@@ -306,9 +306,12 @@ openkeri/
       solutions/
         correct.py
         incorrect.py
+        palindrome_correct.py
+        palindrome_incorrect.py
   tests/
     test_algorithm_tutor_demo.py
     test_algorithm_tutor_interactive.py
+    test_algorithm_tutor_problems.py
     test_schemas.py
     test_memory.py
     test_evidence.py

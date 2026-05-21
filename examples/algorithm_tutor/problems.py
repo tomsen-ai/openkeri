@@ -26,3 +26,30 @@ def build_leetcode_3_test_suite() -> ProblemTestSuite:
             ProblemTestCase(input="abba", expected=2),
         ],
     )
+
+
+def build_valid_palindrome_problem() -> Problem:
+    return Problem(
+        id="valid_palindrome",
+        title="Valid Palindrome",
+        description=(
+            "Given a string s, return true if it is a palindrome after converting "
+            "uppercase letters into lowercase letters and removing non-alphanumeric "
+            "characters."
+        ),
+        target_concepts=["two_pointers", "string"],
+        difficulty="easy",
+    )
+
+
+def build_valid_palindrome_test_suite() -> ProblemTestSuite:
+    return ProblemTestSuite(
+        problem_id="valid_palindrome",
+        entrypoint="isPalindrome",
+        test_cases=[
+            ProblemTestCase(input="A man, a plan, a canal: Panama", expected=True),
+            ProblemTestCase(input="race a car", expected=False),
+            ProblemTestCase(input=" ", expected=True),
+            ProblemTestCase(input="0P", expected=False),
+        ],
+    )
