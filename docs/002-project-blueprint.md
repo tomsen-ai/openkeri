@@ -1,0 +1,485 @@
+# Project Blueprint
+
+This document defines the first engineering shape of openkeri: the runtime
+flow, module boundaries, proposed directory structure, MVP behavior, testing
+strategy, and initial CI policy.
+
+It is not a marketing document. It is an engineering reference for future
+implementation work. New modules should fit back into this blueprint or cause
+the blueprint to be updated deliberately.
+
+## 1. Project Shape
+
+The first version of openkeri is a small Teacher Agent Runtime.
+
+Its goal is to support a teacher agent through a structured teaching process:
+
+```text
+observe current input
+-> load memory context
+-> collect evidence
+-> produce diagnosis
+-> choose teaching action
+-> update learning memory
+```
+
+The first reference implementation is an algorithm tutor for adult technical
+learners.
+
+The first version of openkeri does not aim to become:
+
+- a general agent framework
+- a chatbot framework
+- a full LMS
+- a course generation platform
+- a multi-agent classroom
+- a visual courseware tool
+
+It should first prove one thing:
+
+```text
+A teacher agent can use learner input, learning memory, and evidence to produce
+a structured diagnosis and choose an appropriate teaching action.
+```
+
+## 2. Runtime Flow
+
+The first version of openkeri follows this runtime flow:
+
+```text
+current_input
++ memory_context
+-> evidence_collector
+-> teacher_agent
+-> diagnosis
+-> teaching_action
+-> memory_update
+```
+
+In more detail:
+
+1. Receive current input
+   - The current problem.
+   - The learner's question, if present.
+   - The learner's code submission, if present.
+
+2. Load memory context
+   - The Memory Module generates `memory_context` from session state,
+     long-term learner memory, preferences, and related history.
+
+3. Collect evidence
+   - The Evidence Collector extracts facts from the current input.
+   - For the first algorithm tutor, this mainly means running code and
+     collecting test results.
+
+4. Produce diagnosis
+   - The Teacher Agent uses current input, memory context, and evidence to
+     identify the learner's main issue.
+
+5. Choose teaching action
+   - The first version supports only `hint` and `explanation`.
+
+6. Return teaching action
+   - The teaching action is returned to a frontend, CLI, or caller.
+
+7. Update memory
+   - The Memory Module records the learning event and updates session state and
+     long-term learner memory.
+
+## 3. Module Responsibilities
+
+### schemas
+
+`schemas` defines the core data structures and contracts.
+
+It includes:
+
+- current input
+- memory context
+- evidence
+- diagnosis
+- teaching action
+- learning event
+
+`schemas` does not contain business logic.
+
+### memory
+
+`memory` manages learning memory.
+
+It includes:
+
+- session state as short-term memory
+- long-term learner memory
+- learning event records
+- learner preferences
+- related history retrieval
+- memory context generation
+- memory updates after each teaching turn
+
+`memory` does not produce teaching diagnoses or learner-facing feedback.
+
+The first memory implementation should expose a small `MemoryStore` interface:
+
+```text
+get_context(learner_id, session_id, problem_id) -> MemoryContext
+record_event(event) -> MemoryContext
+```
+
+The first concrete store is `InMemoryMemoryStore`. It keeps:
+
+- learning events
+- session states
+- learner memories
+
+The v0 implementation does not perform retrieval, compression, embedding
+search, or database persistence.
+
+### evidence
+
+`evidence` turns the learner's current action into facts that can support
+diagnosis.
+
+For the first algorithm tutor, it mainly handles:
+
+- running code
+- executing test cases
+- returning pass/fail results
+- returning failed cases and runtime errors
+
+`evidence` does not explain why the learner is wrong, and it does not teach.
+
+The first evidence implementation should expose a small `EvidenceCollector`
+interface:
+
+```text
+collect(current_input) -> Evidence
+```
+
+The first concrete collector is `PythonCodeRunnerEvidenceCollector`. Test suites
+are passed to the collector, not stored on `Problem`.
+
+The v0 Python runner is not a secure sandbox. It is only for trusted local demos
+and tests. A production runner must use proper process isolation, timeouts, and
+resource limits.
+
+### agent
+
+`agent` contains the teacher agent's core judgment.
+
+It handles:
+
+- producing `diagnosis` from evidence
+- choosing a teaching action from diagnosis and memory context
+- deciding whether to use `hint` or `explanation`
+
+The first implementation can use a `rule_based_teacher` so the core loop is
+stable and testable without an LLM dependency.
+
+A future implementation may add `llm_teacher`.
+
+The first agent implementation should expose a small `TeacherAgent` interface:
+
+```text
+respond(teaching_context) -> TeacherOutput
+```
+
+The first concrete agent is `RuleBasedTeacher`. It reads execution evidence,
+session hint count, and problem concepts to produce a structured diagnosis and
+either a `hint` or an `explanation`. It is intentionally narrow so the first
+runtime loop is deterministic and testable.
+
+### runtime
+
+`runtime` orchestrates the full flow.
+
+It calls:
+
+```text
+memory -> evidence -> agent -> memory
+```
+
+`runtime` should not contain concrete teaching strategy or storage details.
+
+The first runtime implementation is `TeachingSession`:
+
+```text
+handle_turn(current_input) -> TeacherOutput
+```
+
+It is a fixed workflow for v0:
+
+```text
+get memory context
+-> collect evidence
+-> build teaching context
+-> call teacher agent
+-> create learning event
+-> record memory
+-> return teacher output
+```
+
+Future versions may replace the internals with a controlled Teacher Turn Loop,
+while keeping the external turn-level interface stable.
+
+### examples
+
+`examples` provides runnable references.
+
+The first example is:
+
+```text
+algorithm_tutor
+```
+
+It demonstrates:
+
+```text
+learner submits code
+-> system runs tests
+-> teacher agent diagnoses the issue
+-> teacher agent returns a hint or explanation
+-> memory is updated
+```
+
+### tests
+
+`tests` validates core behavior.
+
+The first tests should verify:
+
+- schemas can be created
+- evidence can return test results
+- agent can produce diagnosis and teaching action from failed evidence
+- runtime can execute one complete teaching turn
+- memory can record learning events
+
+## 4. Proposed Directory Structure
+
+The first version uses a Python project structure:
+
+```text
+openkeri/
+  .github/
+    workflows/
+      ci.yml
+  README.md
+  pyproject.toml
+  docs/
+    001-core-contract.md
+    002-project-blueprint.md
+    003-schema-contract.md
+  src/
+    openkeri/
+      __init__.py
+      schemas/
+        __init__.py
+        current_input.py
+        memory.py
+        evidence.py
+        diagnosis.py
+        teaching_action.py
+        teacher_output.py
+        context.py
+        learning_event.py
+      memory/
+        __init__.py
+        base.py
+        in_memory.py
+      evidence/
+        __init__.py
+        base.py
+        code_runner.py
+      agent/
+        __init__.py
+        base.py
+        rule_based_teacher.py
+      runtime/
+        __init__.py
+        session.py
+  examples/
+    algorithm_tutor/
+      README.md
+      demo.py
+  tests/
+    test_algorithm_tutor_demo.py
+    test_schemas.py
+    test_memory.py
+    test_evidence.py
+    test_rule_based_teacher.py
+    test_runtime_session.py
+```
+
+Directory principles:
+
+- `schemas` defines data and contracts, not process.
+- `memory` manages memory, not teaching judgment.
+- `evidence` collects facts, not interpretation.
+- `agent` diagnoses and chooses teaching action.
+- `runtime` orchestrates modules, not concrete strategy.
+- `examples` shows how to use the framework.
+- `tests` keep the loop stable.
+
+## 5. First MVP Behavior
+
+The first MVP only needs to support one minimal algorithm tutoring loop.
+
+Input:
+
+```text
+algorithm problem
+optional learner question
+learner code submission
+memory context
+test cases
+```
+
+Flow:
+
+```text
+1. Run learner code
+2. Collect test result
+3. If the code fails, produce diagnosis
+4. Choose hint or explanation
+5. Return teaching_action
+6. Record learning_event
+```
+
+Output:
+
+```text
+diagnosis
+teaching_action
+```
+
+Example:
+
+```json
+{
+  "diagnosis": {
+    "status": "incorrect",
+    "issue": "left_boundary_update_error",
+    "concept": "sliding_window",
+    "evidence": "The submitted code fails on input 'abba'."
+  },
+  "teaching_action": {
+    "type": "hint",
+    "message": "Try tracing your code with input 'abba'. When the second 'b' appears, where should the left pointer move?",
+    "next_expected_action": {
+      "type": "revise_code",
+      "instruction": "Update the left pointer logic and submit again."
+    }
+  }
+}
+```
+
+The first version does not need to support:
+
+- multi-problem recommendation
+- visualizations
+- code annotation
+- slides
+- complex multi-turn dialogue
+- a real database
+- real LLM calls
+
+## 6. Testing Strategy
+
+Every implementation step should include a minimal verification.
+
+The first testing strategy is:
+
+### schemas tests
+
+Verify that core objects can be created and contain required fields.
+
+### memory tests
+
+Verify that memory can:
+
+- write a learning event
+- read session memory
+- generate memory context
+
+### evidence tests
+
+Verify that:
+
+- correct code returns passed
+- incorrect code returns failed
+- failed results include failed cases
+- runtime errors are captured
+
+### agent tests
+
+Verify that:
+
+- failed evidence can produce a diagnosis
+- the default teaching action is a hint
+- high hint count can lead to an explanation
+
+### runtime tests
+
+Verify the complete flow:
+
+```text
+current_input + memory
+-> evidence
+-> diagnosis
+-> teaching_action
+-> memory_update
+```
+
+The goal is not to cover every algorithm problem. The goal is to make the core
+loop repeatable and testable.
+
+## 7. CI Policy
+
+CI should be added as soon as the first testable implementation exists.
+
+The first CI pipeline should be minimal:
+
+```text
+install dependencies
+run ruff check
+run pytest
+```
+
+The first version should not include CD.
+
+It should not automatically publish to PyPI, build Docker images, deploy docs,
+or create releases. Those can be added after the project has a working alpha and
+a stable package boundary.
+
+Recommended first CI triggers:
+
+```text
+push
+pull_request
+```
+
+Recommended first CI checks:
+
+```text
+ruff check
+ruff format --check
+pytest
+```
+
+Type checking may be added after the data model stabilizes.
+
+## 8. Open Questions
+
+These questions remain open:
+
+- How should the code runner be isolated safely?
+- How should `hint` vs `explanation` selection be defined?
+
+These decisions have already been made for v0:
+
+- Schemas use Pydantic v2.
+- The first version does not depend on an LLM API.
+- The first memory implementation is in-memory.
+- The first runnable demo is a deterministic script.
+- The first reference problem is `leetcode_3`.
+- The first code runner supports only Python.
