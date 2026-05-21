@@ -14,8 +14,27 @@ four fixed turns:
 Run it from the repository root:
 
 ```bash
-python examples/algorithm_tutor/demo.py
+.venv/bin/python examples/algorithm_tutor/demo.py
 ```
 
 The demo does not call an LLM. It is intentionally deterministic so the core
 runtime can be tested reliably.
+
+## Interactive Demo
+
+The interactive demo lets you provide a Python solution file path for the same
+problem:
+
+```bash
+.venv/bin/python examples/algorithm_tutor/interactive.py
+```
+
+The process keeps memory in memory while it runs. Submit the same incorrect
+solution several times to see the teacher move from `hint` to `explanation`.
+
+Try the included sample files:
+
+```text
+examples/algorithm_tutor/solutions/incorrect.py
+examples/algorithm_tutor/solutions/correct.py
+```

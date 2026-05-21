@@ -301,8 +301,10 @@ openkeri/
     algorithm_tutor/
       README.md
       demo.py
+      interactive.py
   tests/
     test_algorithm_tutor_demo.py
+    test_algorithm_tutor_interactive.py
     test_schemas.py
     test_memory.py
     test_evidence.py

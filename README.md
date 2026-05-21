@@ -39,6 +39,12 @@ The demo is deterministic and does not call an LLM. It shows a learner failing
 the same algorithm problem several times, receiving hints first, and then
 getting an explanation after memory records repeated struggle.
 
+For a file-based interactive version:
+
+```bash
+.venv/bin/python examples/algorithm_tutor/interactive.py
+```
+
 ## Local Verification
 
 ```bash
