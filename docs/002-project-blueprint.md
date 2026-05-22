@@ -189,6 +189,11 @@ session hint count, and problem concepts to produce a structured diagnosis and
 either a `hint` or an `explanation`. It is intentionally narrow so the first
 runtime loop is deterministic and testable.
 
+`LLMTeacher` is an optional agent implementation. It depends on an `LLMClient`
+interface instead of a specific provider. Tests and the default LLM demo use a
+mock client so CI does not depend on network access, API keys, or model
+stability.
+
 ### runtime
 
 `runtime` orchestrates the full flow.
@@ -302,6 +307,7 @@ openkeri/
       README.md
       demo.py
       interactive.py
+      llm_mock_demo.py
       problems.py
       solutions/
         correct.py
@@ -311,6 +317,7 @@ openkeri/
   tests/
     test_algorithm_tutor_demo.py
     test_algorithm_tutor_interactive.py
+    test_algorithm_tutor_llm_mock_demo.py
     test_algorithm_tutor_problems.py
     test_schemas.py
     test_memory.py
@@ -516,7 +523,8 @@ These questions remain open:
 These decisions have already been made for v0:
 
 - Schemas use Pydantic v2.
-- The first version does not depend on an LLM API.
+- The first version includes LLMTeacher integration but does not depend on a
+  real LLM API by default.
 - The first memory implementation is in-memory.
 - The first runnable demo is a deterministic script.
 - The first reference problem is `leetcode_3`.

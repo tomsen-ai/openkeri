@@ -45,6 +45,12 @@ For a file-based interactive version:
 .venv/bin/python examples/algorithm_tutor/interactive.py
 ```
 
+For an LLMTeacher integration demo with a mock LLM client:
+
+```bash
+.venv/bin/python examples/algorithm_tutor/llm_mock_demo.py
+```
+
 ## Local Verification
 
 ```bash

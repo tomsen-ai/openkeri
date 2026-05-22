@@ -40,3 +40,12 @@ examples/algorithm_tutor/solutions/correct.py
 examples/algorithm_tutor/solutions/palindrome_incorrect.py
 examples/algorithm_tutor/solutions/palindrome_correct.py
 ```
+
+## Mock LLMTeacher Demo
+
+This demo uses `LLMTeacher` with a mock LLM client, so it does not require an API
+key:
+
+```bash
+.venv/bin/python examples/algorithm_tutor/llm_mock_demo.py
+```
