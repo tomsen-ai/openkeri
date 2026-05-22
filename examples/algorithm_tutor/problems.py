@@ -53,3 +53,15 @@ def build_valid_palindrome_test_suite() -> ProblemTestSuite:
             ProblemTestCase(input="0P", expected=False),
         ],
     )
+
+
+REFERENCE_PROBLEMS = {
+    "leetcode_3": (
+        build_leetcode_3_problem,
+        build_leetcode_3_test_suite,
+    ),
+    "valid_palindrome": (
+        build_valid_palindrome_problem,
+        build_valid_palindrome_test_suite,
+    ),
+}

@@ -23,7 +23,7 @@ runtime can be tested reliably.
 ## Interactive Demo
 
 The interactive demo lets you provide a Python solution file path for the same
-problem:
+problems:
 
 ```bash
 .venv/bin/python examples/algorithm_tutor/interactive.py
