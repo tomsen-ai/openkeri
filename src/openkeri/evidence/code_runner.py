@@ -1,14 +1,13 @@
-from collections.abc import Callable
 from typing import Any
 
 from pydantic import BaseModel, Field
 
+from openkeri.evidence.python_subprocess_runner import PythonSubprocessRunner
 from openkeri.schemas import (
     CurrentInput,
     Evidence,
     EvidenceItem,
     ExecutionResult,
-    FailedCase,
 )
 
 
@@ -30,6 +29,7 @@ class PythonCodeRunnerEvidenceCollector(BaseModel):
     """
 
     test_suites: dict[str, ProblemTestSuite] = Field(default_factory=dict)
+    runner: PythonSubprocessRunner = Field(default_factory=PythonSubprocessRunner)
 
     def collect(self, current_input: CurrentInput) -> Evidence:
         if current_input.code_submission is None:
@@ -62,7 +62,7 @@ class PythonCodeRunnerEvidenceCollector(BaseModel):
                 },
             )
 
-        execution_result = self._run_python_code(
+        execution_result = self.runner.run(
             code=current_input.code_submission.code,
             test_suite=test_suite,
         )
@@ -71,69 +71,6 @@ class PythonCodeRunnerEvidenceCollector(BaseModel):
             item_type="execution_result",
             summary=self._execution_summary(execution_result),
             content=execution_result.model_dump(),
-        )
-
-    def _run_python_code(
-        self,
-        code: str,
-        test_suite: ProblemTestSuite,
-    ) -> ExecutionResult:
-        namespace: dict[str, Any] = {}
-        try:
-            exec(code, {}, namespace)
-        except Exception as error:
-            return ExecutionResult(
-                status="error",
-                error=f"{type(error).__name__}: {error}",
-            )
-
-        entrypoint = namespace.get(test_suite.entrypoint)
-        if not callable(entrypoint):
-            return ExecutionResult(
-                status="error",
-                error=f"Entrypoint function not found: {test_suite.entrypoint}",
-            )
-
-        return self._run_test_cases(entrypoint, test_suite)
-
-    def _run_test_cases(
-        self,
-        entrypoint: Callable[..., Any],
-        test_suite: ProblemTestSuite,
-    ) -> ExecutionResult:
-        passed_count = 0
-        failed_cases: list[FailedCase] = []
-
-        for test_case in test_suite.test_cases:
-            try:
-                actual = entrypoint(test_case.input)
-            except Exception as error:
-                return ExecutionResult(
-                    status="error",
-                    passed_count=passed_count,
-                    failed_count=len(test_suite.test_cases) - passed_count,
-                    failed_cases=failed_cases,
-                    error=f"{type(error).__name__}: {error}",
-                )
-
-            if actual == test_case.expected:
-                passed_count += 1
-            else:
-                failed_cases.append(
-                    FailedCase(
-                        input=test_case.input,
-                        expected=test_case.expected,
-                        actual=actual,
-                    )
-                )
-
-        failed_count = len(failed_cases)
-        status = "passed" if failed_count == 0 else "failed"
-        return ExecutionResult(
-            status=status,
-            passed_count=passed_count,
-            failed_count=failed_count,
-            failed_cases=failed_cases,
         )
 
     def _single_item(

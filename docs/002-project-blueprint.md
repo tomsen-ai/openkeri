@@ -183,11 +183,15 @@ collect(current_input) -> Evidence
 ```
 
 The first concrete collector is `PythonCodeRunnerEvidenceCollector`. Test suites
-are passed to the collector, not stored on `Problem`.
+are passed to the collector, not stored on `Problem`. The collector delegates
+Python execution to `PythonSubprocessRunner`, which runs submissions in a
+separate Python process and applies a timeout before returning an
+`ExecutionResult`.
 
 The v0 Python runner is not a secure sandbox. It is only for trusted local demos
-and tests. A production runner must use proper process isolation, timeouts, and
-resource limits.
+and tests. The subprocess boundary prevents a stuck submission from blocking the
+main process indefinitely, but a production runner still needs stronger process
+isolation, filesystem restrictions, and resource limits.
 
 ### agent
 
@@ -332,6 +336,7 @@ openkeri/
         __init__.py
         base.py
         code_runner.py
+        python_subprocess_runner.py
       agent/
         __init__.py
         base.py
@@ -366,6 +371,7 @@ openkeri/
     test_schemas.py
     test_memory.py
     test_evidence.py
+    test_python_subprocess_runner.py
     test_rule_based_teacher.py
     test_runtime_session.py
     test_tasks_registry.py
