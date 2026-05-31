@@ -52,6 +52,16 @@ For an LLMTeacher integration demo with a mock LLM client:
 .venv/bin/python examples/algorithm_tutor/llm_mock_demo.py
 ```
 
+For an optional DeepSeek-backed LLMTeacher demo:
+
+```bash
+export OPENKERI_DEEPSEEK_API_KEY=your_api_key
+.venv/bin/python examples/algorithm_tutor/llm_deepseek_demo.py
+```
+
+The DeepSeek demo is not part of the default test path. It is intended for local
+manual checks when an API key is available.
+
 ## Local Verification
 
 ```bash
