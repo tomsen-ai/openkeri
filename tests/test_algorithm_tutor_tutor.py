@@ -86,3 +86,36 @@ def test_algorithm_tutor_tutor_can_ask_question() -> None:
     assert "Diagnosis: no_submission" in result.stdout
     assert "Action: hint" in result.stdout
     assert "Recent actions: asked_question" in result.stdout
+
+
+def test_algorithm_tutor_tutor_ask_uses_latest_submission(tmp_path) -> None:
+    solution_path = tmp_path / "solution.py"
+    solution_path.write_text(
+        """
+def lengthOfLongestSubstring(s):
+    left = 0
+    seen = {}
+    best = 0
+    for right, ch in enumerate(s):
+        if ch in seen:
+            left = seen[ch] + 1
+        seen[ch] = right
+        best = max(best, right - left + 1)
+    return best
+""",
+        encoding="utf-8",
+    )
+
+    stdin = f"2\n1\nsubmit {solution_path}\nask why does abba fail?\nstatus\nq\n"
+    result = subprocess.run(
+        [sys.executable, "examples/algorithm_tutor/tutor.py"],
+        input=stdin,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Turn 2" in result.stdout
+    assert "Diagnosis: incorrect" in result.stdout
+    assert "Issue: left_boundary_update_error" in result.stdout
+    assert "Recent actions: submitted_code, asked_question" in result.stdout

@@ -26,6 +26,7 @@ class AlgorithmTutorApp:
         self.problem_id = ""
         self.problem: Problem | None = None
         self.sessions: dict[tuple[str, str], TeachingSession] = {}
+        self.last_code_by_problem: dict[str, str] = {}
         self.turn_number = 1
 
     def run(self) -> None:
@@ -138,6 +139,7 @@ class AlgorithmTutorApp:
             print()
             return
 
+        self.last_code_by_problem[self.problem_id] = code
         session = self.current_session()
         current_input = CurrentInput(
             problem=self.problem,
@@ -161,10 +163,15 @@ class AlgorithmTutorApp:
             print()
             return
 
+        last_code = self.last_code_by_problem.get(self.problem_id)
         current_input = CurrentInput(
             problem=self.problem,
             student_question=question,
-            code_submission=None,
+            code_submission=(
+                CodeSubmission(language="python", code=last_code)
+                if last_code is not None
+                else None
+            ),
         )
 
         try:

@@ -59,6 +59,9 @@ It lets you choose a teacher, choose a problem, submit solution files across
 multiple turns, ask follow-up questions, inspect session status, list problems,
 and switch problems.
 
+When a follow-up question comes after a submission, the CLI sends the latest
+submission for the current problem as context.
+
 Supported commands:
 
 ```text
