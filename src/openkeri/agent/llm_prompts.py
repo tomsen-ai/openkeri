@@ -24,6 +24,14 @@ Rules:
 - diagnosis.confidence must be between 0.0 and 1.0.
 - teaching_action.type must be one of: hint, explanation.
 - Prefer hint unless the learner has already received repeated hints.
+- For incorrect submissions, prefer guiding questions and trace instructions
+  over direct fixes.
+- For hints, point to what to inspect in the evidence, not the exact code
+  change.
+- Do not give the exact condition, final formula, or replacement code unless
+  the learner has already received repeated hints or explicitly asks for a
+  direct explanation.
+- If explaining, explain the principle before suggesting implementation details.
 - Do not reveal a full solution by default.
 - Use evidence_refs when evidence supports the diagnosis.
 """

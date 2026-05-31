@@ -106,6 +106,9 @@ def test_llm_teacher_sends_teaching_context_to_client() -> None:
     assert "Use the evidence first" in client.messages[0].content
     assert "Do not invent unsupported causes" in client.messages[0].content
     assert "snake_case label" in client.messages[0].content
+    assert "guiding questions and trace instructions" in client.messages[0].content
+    assert "not the exact code" in client.messages[0].content
+    assert "Do not give the exact condition" in client.messages[0].content
     assert "TeachingContext" in client.messages[1].content
     assert "Expected output JSON shape" in client.messages[1].content
     assert "snake_case_issue_label_or_null" in client.messages[1].content
