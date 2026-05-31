@@ -56,12 +56,14 @@ The tutor CLI is the product-style entry point for trying the algorithm tutor:
 ```
 
 It lets you choose a teacher, choose a problem, submit solution files across
-multiple turns, inspect session status, list problems, and switch problems.
+multiple turns, ask follow-up questions, inspect session status, list problems,
+and switch problems.
 
 Supported commands:
 
 ```text
 submit <path>
+ask <question>
 status
 problems
 switch <problem_id>

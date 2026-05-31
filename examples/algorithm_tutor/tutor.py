@@ -103,6 +103,14 @@ class AlgorithmTutorApp:
             self.submit_solution(argument)
             return
 
+        if command == "ask":
+            if not argument:
+                print("Usage: ask <question>")
+                print()
+                return
+            self.ask_question(argument)
+            return
+
         if command == "status":
             self.print_status()
             return
@@ -139,6 +147,28 @@ class AlgorithmTutorApp:
 
         try:
             output = session.handle_turn(current_input)
+        except (DeepSeekClientError, LLMTeacherError) as error:
+            print(f"Teacher request failed: {error}")
+            print()
+            return
+
+        self.print_turn(output)
+        self.turn_number += 1
+
+    def ask_question(self, question: str) -> None:
+        if self.problem is None:
+            print("Choose a problem before asking.")
+            print()
+            return
+
+        current_input = CurrentInput(
+            problem=self.problem,
+            student_question=question,
+            code_submission=None,
+        )
+
+        try:
+            output = self.current_session().handle_turn(current_input)
         except (DeepSeekClientError, LLMTeacherError) as error:
             print(f"Teacher request failed: {error}")
             print()
@@ -207,6 +237,7 @@ class AlgorithmTutorApp:
     def print_help(self) -> None:
         print("Enter a solution file path, or command:")
         print("  submit <path>")
+        print("  ask <question>")
         print("  status")
         print("  problems")
         print("  switch <problem_id>")

@@ -417,6 +417,8 @@ Directory principles:
 ## 5. First MVP Behavior
 
 The first MVP only needs to support one minimal algorithm tutoring loop.
+The tutor CLI supports two learner actions in that loop: submitting a Python
+solution file and asking a follow-up question for the current problem.
 
 Input:
 

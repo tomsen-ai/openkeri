@@ -70,3 +70,19 @@ def test_algorithm_tutor_tutor_can_switch_problem() -> None:
     assert "valid_palindrome - Valid Palindrome" in result.stdout
     assert "Switched to Valid Palindrome." in result.stdout
     assert "Problem: Valid Palindrome" in result.stdout
+
+
+def test_algorithm_tutor_tutor_can_ask_question() -> None:
+    result = subprocess.run(
+        [sys.executable, "examples/algorithm_tutor/tutor.py"],
+        input="2\n1\nask why does abba fail?\nstatus\nq\n",
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "ask <question>" in result.stdout
+    assert "Turn 1" in result.stdout
+    assert "Diagnosis: no_submission" in result.stdout
+    assert "Action: hint" in result.stdout
+    assert "Recent actions: asked_question" in result.stdout
