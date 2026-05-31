@@ -65,8 +65,13 @@ For the learning project manager demo:
 .venv/bin/python examples/learning_manager/main.py
 ```
 
-The demo starts from a one-sentence goal, drafts a learning plan, and then lets
-you adjust it before the project is created.
+The demo starts from a one-sentence goal, drafts a stage-route learning map, and
+then lets you work through `today`, `map`, and `complete` commands. Completing a
+node unlocks the next node in the route.
+
+Current status: the route draft is still rule-based fallback logic. The intended
+shape is LLM-first route generation with a rule-based fallback, so the CLI
+always has a usable project map even when no model is configured.
 
 `DeepSeekClient` prefers `OPENKERI_DEEPSEEK_API_KEY` and also accepts the common
 `DEEPSEEK_API_KEY` environment variable.

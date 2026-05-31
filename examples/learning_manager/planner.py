@@ -1,6 +1,9 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from openkeri.schemas import (
+    KnowledgeArea,
+    LearningGoal,
     LearningHistoryEntry,
     LearningManagerState,
     LearningPlan,
@@ -8,6 +11,14 @@ from openkeri.schemas import (
     LearningProject,
     LearningWorkItem,
 )
+
+
+@dataclass(frozen=True)
+class StageTemplate:
+    id: str
+    title: str
+    description: str
+    topics: list[str]
 
 
 def build_learning_state(
@@ -20,141 +31,105 @@ def build_learning_state(
     now = datetime.now(UTC)
     start_date = now.date()
     project_id = "project_001"
+    goal_id = "goal_001"
     plan_id = "plan_001"
-    normalized_focus_areas = focus_areas or ["general foundations"]
+    normalized_focus_areas = focus_areas or ["基础概念", "练习", "复盘"]
+    stages = build_stage_templates(normalized_focus_areas)
+
+    knowledge_areas = [
+        KnowledgeArea(
+            id=f"area_{index:03d}",
+            project_id=project_id,
+            title=focus_area,
+            tags=[focus_area],
+        )
+        for index, focus_area in enumerate(normalized_focus_areas, start=1)
+    ]
+    area_id_by_focus = {area.title: area.id for area in knowledge_areas}
+
+    learning_goal = LearningGoal(
+        id=goal_id,
+        title=title,
+        description=goal,
+        target_outcomes=[
+            "Follow the stage route",
+            "Finish one recommended node at a time",
+            "Keep a short note after each completed node",
+        ],
+        constraints=[f"{daily_capacity_minutes} minutes per day"],
+        created_at=now,
+        updated_at=now,
+    )
 
     project = LearningProject(
         id=project_id,
+        goal_id=goal_id,
         title=title,
         goal=goal,
         start_date=start_date,
         target_end_date=start_date + timedelta(days=max(duration_days - 1, 0)),
         focus_areas=normalized_focus_areas,
+        knowledge_area_ids=[area.id for area in knowledge_areas],
         success_criteria=[
-            "Complete the daily tasks",
-            "Review the missed points",
-            "Write one short takeaway per task",
+            "Complete the stage route",
+            "Review difficult nodes",
+            "Finish the final project node",
         ],
         created_at=now,
         updated_at=now,
     )
 
-    tasks: list[LearningWorkItem] = []
-    days: list[LearningPlanDay] = []
-    next_task_index = 1
-    previous_practice_task_id: str | None = None
-    previous_focus_area = normalized_focus_areas[0]
+    nodes: list[LearningWorkItem] = []
+    node_index = 1
+    previous_node_id: str | None = None
 
-    for day_index in range(max(duration_days, 1)):
-        day_date = start_date + timedelta(days=day_index)
-        focus_area = normalized_focus_areas[day_index % len(normalized_focus_areas)]
-        day_task_ids: list[str] = []
-        day_review_focus: list[str] = [focus_area]
+    for stage in stages:
+        for topic in stage.topics:
+            node_id = f"node_{node_index:03d}"
+            node_type = "project" if topic == "综合项目" else "practice"
+            if topic in {"阶段复盘", "综合复盘"}:
+                node_type = "summary"
 
-        practice_task = LearningWorkItem(
-            id=f"task_{next_task_index:03d}",
-            project_id=project_id,
-            type="practice",
-            title=f"Practice {focus_area}",
-            description=(
-                f"Do one focused exercise on {focus_area}, then note the main "
-                "mistake or insight."
-            ),
-            due_date=day_date,
-            estimated_minutes=min(daily_capacity_minutes, 35),
-            tags=[focus_area, "practice"],
-            prerequisites=[],
-            related_resources=[focus_area],
-            created_at=now,
-            review_after_days=2,
+            nodes.append(
+                LearningWorkItem(
+                    id=node_id,
+                    project_id=project_id,
+                    type=node_type,
+                    title=topic,
+                    description=build_node_description(topic, stage.title),
+                    status="ready" if node_index == 1 else "locked",
+                    stage_id=stage.id,
+                    stage_title=stage.title,
+                    node_order=node_index,
+                    due_date=start_date + timedelta(days=node_index - 1),
+                    estimated_minutes=min(daily_capacity_minutes, 30),
+                    tags=[stage.title, topic],
+                    prerequisites=([previous_node_id] if previous_node_id else []),
+                    related_resources=[topic],
+                    knowledge_area_ids=(
+                        [area_id_by_focus[topic]] if topic in area_id_by_focus else []
+                    ),
+                    created_at=now,
+                    review_after_days=2,
+                )
+            )
+            previous_node_id = node_id
+            node_index += 1
+
+    days = [
+        LearningPlanDay(
+            date=start_date + timedelta(days=index),
+            task_ids=[node.id],
+            review_focus=node.tags[-1:],
+            notes="Follow the next unlocked node on the route.",
         )
-        tasks.append(practice_task)
-        day_task_ids.append(practice_task.id)
-        next_task_index += 1
-
-        if previous_practice_task_id is not None:
-            review_task = LearningWorkItem(
-                id=f"task_{next_task_index:03d}",
-                project_id=project_id,
-                type="review",
-                title=f"Review {previous_focus_area}",
-                description=(
-                    f"Review yesterday's work on {previous_focus_area} and "
-                    "restate the invariant or rule in one sentence."
-                ),
-                due_date=day_date,
-                estimated_minutes=20,
-                tags=[previous_focus_area, "review"],
-                prerequisites=[previous_practice_task_id],
-                related_resources=[previous_focus_area],
-                created_at=now,
-                source_task_id=previous_practice_task_id,
-            )
-            tasks.append(review_task)
-            day_task_ids.append(review_task.id)
-            day_review_focus.append(previous_focus_area)
-            next_task_index += 1
-
-        if (day_index + 1) % 3 == 0:
-            summary_task = LearningWorkItem(
-                id=f"task_{next_task_index:03d}",
-                project_id=project_id,
-                type="summary",
-                title=f"Summarize {focus_area}",
-                description=(
-                    "Write a 3-sentence summary of what you learned and one "
-                    "thing you still want to improve."
-                ),
-                due_date=day_date,
-                estimated_minutes=15,
-                tags=[focus_area, "summary"],
-                prerequisites=[practice_task.id],
-                related_resources=[focus_area],
-                created_at=now,
-                review_after_days=7,
-            )
-            tasks.append(summary_task)
-            day_task_ids.append(summary_task.id)
-            next_task_index += 1
-
-        if day_index == max(duration_days, 1) - 1:
-            project_task = LearningWorkItem(
-                id=f"task_{next_task_index:03d}",
-                project_id=project_id,
-                type="project",
-                title=f"Build a mini project with {focus_area}",
-                description=(
-                    "Combine the studied ideas into a tiny project or outline "
-                    "that shows how the concepts work together."
-                ),
-                due_date=day_date,
-                estimated_minutes=min(daily_capacity_minutes, 45),
-                tags=[focus_area, "project"],
-                prerequisites=[practice_task.id],
-                related_resources=normalized_focus_areas,
-                created_at=now,
-                review_after_days=7,
-            )
-            tasks.append(project_task)
-            day_task_ids.append(project_task.id)
-            next_task_index += 1
-
-        days.append(
-            LearningPlanDay(
-                date=day_date,
-                task_ids=day_task_ids,
-                review_focus=day_review_focus,
-                notes=("Keep the daily scope small enough to finish in one sitting."),
-            )
-        )
-
-        previous_practice_task_id = practice_task.id
-        previous_focus_area = focus_area
+        for index, node in enumerate(nodes)
+    ]
 
     plan = LearningPlan(
         id=plan_id,
         project_id=project_id,
-        time_horizon_days=max(duration_days, 1),
+        time_horizon_days=max(duration_days, len(nodes), 1),
         daily_capacity_minutes=daily_capacity_minutes,
         days=days,
         generated_at=now,
@@ -173,16 +148,53 @@ def build_learning_state(
             id="event_002",
             project_id=project_id,
             event_type="plan_generated",
-            summary=f"Generated a {len(days)}-day learning plan.",
-            detail=", ".join(normalized_focus_areas),
+            summary=f"Generated a {len(stages)}-stage route.",
+            detail=", ".join(stage.title for stage in stages),
             created_at=now,
         ),
     ]
 
     return LearningManagerState(
+        goals=[learning_goal],
         project=project,
         plan=plan,
-        tasks=tasks,
+        tasks=nodes,
+        knowledge_areas=knowledge_areas,
         history=history,
-        active_task_id=tasks[0].id if tasks else None,
+        active_task_id=nodes[0].id if nodes else None,
     )
+
+
+def build_stage_templates(focus_areas: list[str]) -> list[StageTemplate]:
+    first = focus_areas[:3] or ["基础概念"]
+    second = focus_areas[3:6] or focus_areas[:2] or ["核心练习"]
+    third = focus_areas[6:] or focus_areas[-2:] or ["综合训练"]
+
+    return [
+        StageTemplate(
+            id="stage_001",
+            title="基础热身",
+            description="Build the starting vocabulary and basic moves.",
+            topics=[*first, "阶段复盘"],
+        ),
+        StageTemplate(
+            id="stage_002",
+            title="核心套路",
+            description="Practice the main patterns and connect them.",
+            topics=[*second, "阶段复盘"],
+        ),
+        StageTemplate(
+            id="stage_003",
+            title="综合训练",
+            description="Combine the route into review and output.",
+            topics=[*third, "综合复盘", "综合项目"],
+        ),
+    ]
+
+
+def build_node_description(topic: str, stage_title: str) -> str:
+    if topic in {"阶段复盘", "综合复盘"}:
+        return f"Review the completed nodes in {stage_title} and write one takeaway."
+    if topic == "综合项目":
+        return "Build a small final artifact that uses the main ideas from this route."
+    return f"Study and practice {topic}, then leave a short note before moving on."

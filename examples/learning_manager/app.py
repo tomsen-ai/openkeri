@@ -15,6 +15,7 @@ from openkeri.schemas import (
 )
 
 STATE_PATH_ENV = "OPENKERI_LEARNING_MANAGER_STATE"
+DIFFICULTY_VALUES = {"easy", "normal", "hard"}
 
 
 class LearningManagerApp:
@@ -58,8 +59,12 @@ class LearningManagerApp:
             self.print_today()
             return
 
+        if command == "map":
+            self.print_map()
+            return
+
         if command == "complete":
-            self.complete_task(argument)
+            self.complete_node(argument)
             return
 
         if command == "history":
@@ -75,7 +80,7 @@ class LearningManagerApp:
             return
 
         print(
-            "Unknown command. Run 'create-project', 'today', 'complete', "
+            "Unknown command. Run 'create-project', 'today', 'map', 'complete', "
             "'history', 'review', or 'status'."
         )
         print()
@@ -109,85 +114,135 @@ class LearningManagerApp:
 
         print()
         project_title = self.state.project.title if self.state.project else draft.title
-        project_goal = self.state.project.goal if self.state.project else draft.goal
-        print(f"Project: {project_title}")
-        print(f"Goal: {project_goal}")
-        if self.state.plan is None:
-            plan_days = draft.duration_days
-        else:
-            plan_days = self.state.plan.time_horizon_days
-        print(f"Plan days: {plan_days}")
+        print(f"Created project: {project_title}")
         print()
         self.print_today()
 
-    def complete_task(self, argument: str) -> None:
+    def complete_node(self, argument: str) -> None:
         if self.state.project is None:
             print("Create a project first.")
             print()
             return
 
-        if not argument:
-            print("Usage: complete <task_id> [note]")
+        node_id, difficulty, minutes_text, note = self.parse_completion(argument)
+        if not node_id or difficulty not in DIFFICULTY_VALUES or minutes_text is None:
+            print("Usage: complete <node_id> <easy|normal|hard> <minutes> [note]")
             print()
             return
 
-        task_id, _, note = argument.partition(" ")
-        task = self.find_task(task_id)
-        if task is None:
-            print(f"Unknown task: {task_id}")
+        node = self.find_node(node_id)
+        if node is None:
+            print(f"Unknown node: {node_id}")
             print()
             return
 
-        if task.status == "done":
-            print(f"Task {task.id} is already done.")
+        if node.status == "locked":
+            print(f"Node {node.id} is still locked.")
             print()
             return
 
-        if not note:
-            note = input("Result note (optional): ").strip()
+        try:
+            minutes_spent = int(minutes_text)
+        except ValueError:
+            print("Minutes must be a number.")
+            print()
+            return
 
-        task.status = "done"
-        task.result = note or "Completed."
-        task.completed_at = datetime.now(UTC)
-        self.state.active_task_id = task.id
+        node.status = "done"
+        node.result = note or "Completed."
+        node.difficulty = difficulty
+        node.minutes_spent = minutes_spent
+        node.completed_at = datetime.now(UTC)
+        self.state.active_task_id = node.id
+
+        unlocked = self.unlock_next_node(node)
         self.append_history(
             event_type="task_completed",
-            summary=f"Completed {task.id}: {task.title}.",
-            task_id=task.id,
-            detail=task.result,
-            tags=task.tags,
+            summary=f"Completed {node.id}: {node.title}.",
+            task_id=node.id,
+            detail=node.result,
+            tags=[difficulty, *node.tags],
         )
         self.store.save(self.state)
 
-        print(f"Completed {task.id}: {task.title}")
+        print(f"Completed {node.id}: {node.title}")
+        print(f"Difficulty: {difficulty}, minutes: {minutes_spent}")
         if note:
             print(note)
+        if unlocked is not None:
+            print(f"Unlocked {unlocked.id}: {unlocked.title}")
+        else:
+            print("Route complete.")
         print()
-        self.print_status()
 
     def print_today(self) -> None:
-        if self.state.project is None or self.state.plan is None:
+        if self.state.project is None:
+            print("No project yet. Run create-project first.")
+            print()
+            return
+
+        main_node = self.next_main_node()
+        review_node = self.next_review_node()
+
+        print(f"Today: {date.today().isoformat()}")
+        print()
+        print("Main lesson:")
+        if main_node is None:
+            print("  None. The current route is complete.")
+        else:
+            print(
+                f"  {main_node.id} {main_node.title} "
+                f"({main_node.stage_title}, {main_node.estimated_minutes}m, "
+                f"{main_node.status})"
+            )
+            next_node = self.node_after(main_node)
+            if next_node is not None:
+                print(f"  Next unlock: {next_node.id} {next_node.title}")
+
+        print()
+        print("Review:")
+        if review_node is None:
+            print("  None")
+        else:
+            print(f"  {review_node.id} {review_node.title}")
+        print()
+
+    def print_map(self) -> None:
+        if self.state.project is None:
+            print("No project yet. Run create-project first.")
+            print()
+            return
+
+        print(f"Map: {self.state.project.title}")
+        for stage_id, stage_title in self.stage_order():
+            print()
+            print(f"{stage_id} {stage_title}")
+            for node in self.nodes_for_stage(stage_id):
+                print(
+                    f"  {self.status_icon(node.status)} {node.id} "
+                    f"[{node.type}] {node.title} - {node.status}"
+                )
+        print()
+
+    def print_review(self) -> None:
+        if self.state.project is None:
             print("No project yet. Run create-project first.")
             print()
             return
 
         today = date.today()
-        open_tasks = [
-            task
-            for task in self.state.tasks
-            if task.status != "done" and task.due_date <= today
-        ]
-        upcoming = [
-            task
-            for task in self.state.tasks
-            if task.status != "done" and task.due_date > today
+        review_due = [
+            node
+            for node in self.state.tasks
+            if node.status == "done"
+            and node.review_after_days > 0
+            and node.completed_at is not None
+            and node.completed_at.date() + timedelta(days=node.review_after_days)
+            <= today
         ]
 
-        print(f"Today: {today.isoformat()}")
-        print("Due now:")
-        self.print_task_list(open_tasks)
-        print("Upcoming:")
-        self.print_task_list(upcoming[:5])
+        print("Review reminders")
+        self.print_node_list(review_due)
         print()
 
     def print_history(self) -> None:
@@ -204,46 +259,6 @@ class LearningManagerApp:
             print(f"{timestamp} {entry.event_type}{task_ref}: {entry.summary}{detail}")
         print()
 
-    def print_review(self) -> None:
-        if self.state.project is None:
-            print("No project yet. Run create-project first.")
-            print()
-            return
-
-        today = date.today()
-        due_review_tasks = [
-            task
-            for task in self.state.tasks
-            if task.type == "review"
-            and task.status != "done"
-            and task.due_date <= today
-        ]
-
-        spaced_repetition_reminders = [
-            task
-            for task in self.state.tasks
-            if task.status == "done"
-            and task.review_after_days > 0
-            and task.completed_at is not None
-            and task.completed_at.date() + timedelta(days=task.review_after_days)
-            <= today
-        ]
-
-        upcoming_due_reviews = [
-            task
-            for task in self.state.tasks
-            if task.type == "review" and task.status != "done" and task.due_date > today
-        ][:5]
-
-        print("Review reminders")
-        print("Due now:")
-        self.print_task_list(due_review_tasks)
-        print("Spaced repetition:")
-        self.print_task_list(spaced_repetition_reminders)
-        print("Upcoming:")
-        self.print_task_list(upcoming_due_reviews)
-        print()
-
     def print_status(self) -> None:
         if self.state.project is None:
             print("Project: none")
@@ -251,31 +266,26 @@ class LearningManagerApp:
             return
 
         project = self.state.project
-        total_tasks = len(self.state.tasks)
-        done_tasks = len([task for task in self.state.tasks if task.status == "done"])
-        open_tasks = total_tasks - done_tasks
-        next_due = self.next_due_task()
+        done_nodes = [node for node in self.state.tasks if node.status == "done"]
+        total_minutes = sum(node.minutes_spent or 0 for node in done_nodes)
+        hard_nodes = len([node for node in done_nodes if node.difficulty == "hard"])
 
         print(f"Project: {project.title}")
         print(f"Goal: {project.goal}")
-        window = (
-            f"{project.start_date.isoformat()} -> {project.target_end_date.isoformat()}"
-        )
-        print(f"Window: {window}")
-        print(f"Focus areas: {', '.join(project.focus_areas)}")
-        print(f"Tasks: {done_tasks} done, {open_tasks} open")
-        if next_due is not None:
-            print(
-                f"Next due: {next_due.id} - {next_due.title} "
-                f"({next_due.due_date.isoformat()})"
-            )
+        print(f"Progress: {len(done_nodes)}/{len(self.state.tasks)} nodes")
+        print(f"Study minutes: {total_minutes}")
+        print(f"Hard nodes: {hard_nodes}")
+        next_node = self.next_main_node()
+        if next_node is not None:
+            print(f"Next: {next_node.id} - {next_node.title}")
         print()
 
     def print_help(self) -> None:
         print("Commands:")
         print("  create-project [one-sentence goal]")
         print("  today")
-        print("  complete <task_id> [note]")
+        print("  map")
+        print("  complete <node_id> <easy|normal|hard> <minutes> [note]")
         print("  history")
         print("  review")
         print("  status")
@@ -284,7 +294,7 @@ class LearningManagerApp:
 
     def print_draft(self, draft: LearningProjectDraft) -> None:
         print()
-        print("Suggested plan:")
+        print("Suggested route:")
         print(f"Title: {draft.title}")
         print(f"Goal: {draft.goal}")
         print(f"Duration: {draft.duration_days} days")
@@ -292,42 +302,109 @@ class LearningManagerApp:
         print("Milestones:")
         for index, milestone in enumerate(draft.milestones, start=1):
             print(f"  {index}. {milestone}")
-        print("Notes:")
-        for note in draft.notes:
-            print(f"  - {note}")
         print()
 
-    def find_task(self, task_id: str) -> LearningWorkItem | None:
-        for task in self.state.tasks:
-            if task.id == task_id:
-                return task
+    def next_main_node(self) -> LearningWorkItem | None:
+        for status in ("active", "ready"):
+            matching = [
+                node
+                for node in self.state.tasks
+                if node.status == status and node.type != "review"
+            ]
+            if matching:
+                return sorted(matching, key=lambda node: node.node_order)[0]
         return None
 
-    def next_due_task(self) -> LearningWorkItem | None:
-        pending = [task for task in self.state.tasks if task.status != "done"]
-        if not pending:
+    def next_review_node(self) -> LearningWorkItem | None:
+        due = [
+            node
+            for node in self.state.tasks
+            if node.status == "review_due"
+            or (
+                node.status == "done"
+                and node.review_after_days > 0
+                and node.completed_at is not None
+                and node.completed_at.date() + timedelta(days=node.review_after_days)
+                <= date.today()
+            )
+        ]
+        if not due:
             return None
-        return sorted(
-            pending,
-            key=lambda task: (task.due_date, task.priority, task.id),
-        )[0]
+        return sorted(due, key=lambda node: node.node_order)[0]
 
-    def print_task_list(self, tasks: list[LearningWorkItem]) -> None:
-        if not tasks:
+    def unlock_next_node(
+        self, completed_node: LearningWorkItem
+    ) -> LearningWorkItem | None:
+        next_node = self.node_after(completed_node)
+        if next_node is None:
+            if self.state.project is not None:
+                self.state.project.status = "completed"
+            return None
+        if next_node.status == "locked":
+            next_node.status = "ready"
+        return next_node
+
+    def node_after(self, node: LearningWorkItem) -> LearningWorkItem | None:
+        later_nodes = [
+            candidate
+            for candidate in self.state.tasks
+            if candidate.node_order > node.node_order
+        ]
+        if not later_nodes:
+            return None
+        return sorted(later_nodes, key=lambda candidate: candidate.node_order)[0]
+
+    def find_node(self, node_id: str) -> LearningWorkItem | None:
+        for node in self.state.tasks:
+            if node.id == node_id:
+                return node
+        return None
+
+    def stage_order(self) -> list[tuple[str, str]]:
+        stages: list[tuple[str, str]] = []
+        for node in sorted(self.state.tasks, key=lambda item: item.node_order):
+            if node.stage_id is None or node.stage_title is None:
+                continue
+            stage = (node.stage_id, node.stage_title)
+            if stage not in stages:
+                stages.append(stage)
+        return stages
+
+    def nodes_for_stage(self, stage_id: str) -> list[LearningWorkItem]:
+        return sorted(
+            [node for node in self.state.tasks if node.stage_id == stage_id],
+            key=lambda node: node.node_order,
+        )
+
+    def print_node_list(self, nodes: list[LearningWorkItem]) -> None:
+        if not nodes:
             print("  None")
             return
+        for node in sorted(nodes, key=lambda item: item.node_order):
+            print(f"  {node.id} {node.title} ({node.status})")
 
-        for task in sorted(
-            tasks,
-            key=lambda item: (item.due_date, item.priority, item.id),
-        ):
-            status = task.status
-            source = f" <- {task.source_task_id}" if task.source_task_id else ""
-            due = task.due_date.isoformat()
-            print(
-                f"  {task.id} [{task.type}] {task.title} "
-                f"({due}, {task.estimated_minutes}m, {status}){source}"
-            )
+    def parse_completion(
+        self,
+        argument: str,
+    ) -> tuple[str, str, str | None, str]:
+        node_id, _, rest = argument.partition(" ")
+        difficulty, _, rest = rest.partition(" ")
+        minutes, _, note = rest.partition(" ")
+        return (
+            node_id.strip(),
+            difficulty.strip(),
+            minutes.strip() or None,
+            note.strip(),
+        )
+
+    def status_icon(self, status: str) -> str:
+        if status == "done":
+            return "✓"
+        if status in {"ready", "active"}:
+            return "●"
+        if status == "review_due":
+            return "↻"
+        return "○"
 
     def append_history(
         self,

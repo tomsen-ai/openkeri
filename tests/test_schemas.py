@@ -9,11 +9,17 @@ from openkeri.schemas import (
     Diagnosis,
     Evidence,
     EvidenceItem,
+    KnowledgeArea,
+    KnowledgeResourceRef,
     LearnerMemory,
     LearnerProfile,
+    LearningArtifact,
     LearningEvent,
+    LearningGoal,
+    LearningManagerState,
     MemoryContext,
     NextExpectedAction,
+    PlanRevision,
     Problem,
     RelatedHistoryItem,
     SessionState,
@@ -181,6 +187,73 @@ def test_learning_event_can_be_created() -> None:
 
     assert event.timestamp == timestamp
     assert event.teacher_output.diagnosis.issue == "left_boundary_update_error"
+
+
+def test_learning_manager_state_can_hold_outer_framework_objects() -> None:
+    timestamp = datetime(2026, 5, 20, 10, 30, tzinfo=UTC)
+
+    state = LearningManagerState(
+        goals=[
+            LearningGoal(
+                id="goal_001",
+                title="Build an algorithm study system",
+                description="Prepare a stable learning routine for algorithms.",
+                target_outcomes=["finish daily work", "keep review notes"],
+                constraints=["45 minutes per day"],
+                created_at=timestamp,
+                updated_at=timestamp,
+            )
+        ],
+        knowledge_areas=[
+            KnowledgeArea(
+                id="area_001",
+                project_id="project_001",
+                title="Sliding window",
+                tags=["algorithm"],
+            )
+        ],
+        resources=[
+            KnowledgeResourceRef(
+                id="resource_001",
+                project_id="project_001",
+                title="Sliding window notes",
+                type="note",
+                area_ids=["area_001"],
+                created_at=timestamp,
+                updated_at=timestamp,
+            )
+        ],
+        artifacts=[
+            LearningArtifact(
+                id="artifact_001",
+                project_id="project_001",
+                title="Window invariant summary",
+                type="summary",
+                resource_ids=["resource_001"],
+                knowledge_area_ids=["area_001"],
+                created_at=timestamp,
+            )
+        ],
+        revisions=[
+            PlanRevision(
+                id="revision_001",
+                project_id="project_001",
+                plan_id="plan_001",
+                from_version=1,
+                to_version=2,
+                reason="progress_update",
+                summary="Move review earlier after a blocked task.",
+                affected_task_ids=["task_001"],
+                created_at=timestamp,
+            )
+        ],
+    )
+
+    assert state.goals[0].constraints == ["45 minutes per day"]
+    assert state.knowledge_areas[0].title == "Sliding window"
+    assert state.resources[0].status == "candidate"
+    assert state.artifacts[0].type == "summary"
+    assert state.revisions[0].to_version == 2
 
 
 def test_invalid_teaching_action_type_raises_validation_error() -> None:

@@ -17,7 +17,7 @@ def run_learning_manager(
     )
 
 
-def test_learning_manager_creates_completion_history_and_review(tmp_path) -> None:
+def test_learning_manager_stage_route_unlocks_next_node(tmp_path) -> None:
     state_path = tmp_path / "learning_manager_state.json"
     env = os.environ.copy()
     env["OPENKERI_LEARNING_MANAGER_STATE"] = str(state_path)
@@ -26,24 +26,33 @@ def test_learning_manager_creates_completion_history_and_review(tmp_path) -> Non
         (
             "create-project 我想用4天系统学算法\n"
             "\n"
-            "complete task_001 记录左边界不回退\n"
+            "map\n"
+            "complete node_001 normal 25 记录数组遍历\n"
+            "today\n"
             "q\n"
         ),
         env,
     )
 
     assert "openkeri Learning Manager" in first.stdout
-    assert "Suggested plan:" in first.stdout
-    assert "Focus areas: 数组, 哈希, 双指针, 滑动窗口, 栈, 二分, 树" in first.stdout
-    assert "Practice all" not in first.stdout
-    assert "task_001 [practice]" in first.stdout
-    assert "Completed task_001: Practice 数组" in first.stdout
-    assert "记录左边界不回退" in first.stdout
+    assert "Suggested route:" in first.stdout
+    assert "Created project: 算法学习计划" in first.stdout
+    assert "Main lesson:" in first.stdout
+    assert "node_001 数组" in first.stdout
+    assert "stage_001 基础热身" in first.stdout
+    assert "● node_001 [practice] 数组 - ready" in first.stdout
+    assert "○ node_002 [practice] 哈希 - locked" in first.stdout
+    assert "Completed node_001: 数组" in first.stdout
+    assert "Difficulty: normal, minutes: 25" in first.stdout
+    assert "Unlocked node_002: 哈希" in first.stdout
+    assert "node_002 哈希" in first.stdout
 
-    second = run_learning_manager("history\nreview\nstatus\nq\n", env)
+    second = run_learning_manager("map\nhistory\nstatus\nq\n", env)
 
+    assert "✓ node_001 [practice] 数组 - done" in second.stdout
+    assert "● node_002 [practice] 哈希 - ready" in second.stdout
     assert "History for 算法学习计划" in second.stdout
-    assert "task_completed [task_001]" in second.stdout
-    assert "Review reminders" in second.stdout
-    assert "task_003 [review]" in second.stdout
-    assert "Tasks: 1 done, 8 open" in second.stdout
+    assert "task_completed [node_001]" in second.stdout
+    assert "Progress: 1/" in second.stdout
+    assert "Study minutes: 25" in second.stdout
+    assert "Next: node_002 - 哈希" in second.stdout
