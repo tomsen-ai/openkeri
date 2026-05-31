@@ -344,10 +344,14 @@ openkeri/
       agent/
         __init__.py
         base.py
-        deepseek_client.py
-        llm_client.py
+        errors.py
+        llm_prompts.py
         llm_teacher.py
         rule_based_teacher.py
+      llm/
+        __init__.py
+        base.py
+        deepseek.py
       runtime/
         __init__.py
         session.py
@@ -372,6 +376,7 @@ openkeri/
     test_algorithm_tutor_llm_mock_demo.py
     test_algorithm_tutor_problems.py
     test_deepseek_client.py
+    test_llm_package.py
     test_schemas.py
     test_memory.py
     test_evidence.py
@@ -388,6 +393,7 @@ Directory principles:
 - `memory` manages memory, not teaching judgment.
 - `evidence` collects facts, not interpretation.
 - `agent` diagnoses and chooses teaching action.
+- `llm` defines provider-neutral LLM client interfaces and provider adapters.
 - `runtime` orchestrates modules, not concrete strategy.
 - `examples` shows how to use the framework.
 - `tests` keep the loop stable.

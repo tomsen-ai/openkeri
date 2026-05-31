@@ -2,7 +2,8 @@ from typing import Any
 
 import pytest
 
-from openkeri.agent import LLMMessage, LLMTeacher, LLMTeacherError
+from openkeri.agent import LLMTeacher, LLMTeacherError
+from openkeri.llm import LLMMessage
 from openkeri.schemas import (
     CurrentInput,
     Evidence,

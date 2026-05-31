@@ -4,8 +4,8 @@ from urllib.request import Request
 
 import pytest
 
-import openkeri.agent.deepseek_client as deepseek_client_module
-from openkeri.agent import DeepSeekClient, DeepSeekClientError, LLMMessage
+import openkeri.llm.deepseek as deepseek_client_module
+from openkeri.llm import DeepSeekClient, DeepSeekClientError, LLMMessage
 
 
 class FakeHTTPResponse:

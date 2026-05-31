@@ -3,11 +3,11 @@ from dataclasses import dataclass
 from pydantic import ValidationError
 
 from openkeri.agent.errors import LLMTeacherError
-from openkeri.agent.llm_client import LLMClient, LLMMessage
 from openkeri.agent.llm_prompts import (
     DEFAULT_LLM_TEACHER_SYSTEM_PROMPT,
     build_llm_teacher_user_prompt,
 )
+from openkeri.llm import LLMClient, LLMMessage
 from openkeri.schemas import TeacherOutput, TeachingContext
 
 

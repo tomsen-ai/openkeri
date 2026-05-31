@@ -3,8 +3,9 @@ from typing import Any
 from demo import build_current_input, incorrect_code, print_turn
 from registry import build_algorithm_tutor_registry, get_test_suite
 
-from openkeri.agent import LLMMessage, LLMTeacher
+from openkeri.agent import LLMTeacher
 from openkeri.evidence import PythonCodeRunnerEvidenceCollector
+from openkeri.llm import LLMMessage
 from openkeri.memory import InMemoryMemoryStore
 from openkeri.runtime import TeachingSession
 
