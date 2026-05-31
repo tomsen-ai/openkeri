@@ -22,6 +22,7 @@ The repository is not ready for production use. The first implementation will
 focus on:
 
 - Pydantic schemas
+- learning task registry primitives
 - in-memory learning memory
 - execution evidence for simple algorithm problems
 - a rule-based teacher agent

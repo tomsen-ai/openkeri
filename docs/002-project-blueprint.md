@@ -94,6 +94,7 @@ In more detail:
 
 It includes:
 
+- learning task
 - current input
 - memory context
 - evidence
@@ -102,6 +103,31 @@ It includes:
 - learning event
 
 `schemas` does not contain business logic.
+
+### tasks
+
+`tasks` manages reusable learning task registration.
+
+It includes:
+
+- `LearningTaskBundle`
+- `LearningTaskRegistry`
+- registry errors for duplicate tasks, missing tasks, and missing resources
+
+The registry stores a generic `LearningTask` plus named resources. It should not
+know about one domain, such as algorithm problems. Domain-specific resources are
+attached by callers or examples.
+
+For the first algorithm tutor, a task bundle contains:
+
+```text
+LearningTask(task_type="algorithm_problem")
++ resource["problem"] = Problem
++ resource["test_suite"] = ProblemTestSuite
+```
+
+Future task types may attach different resources, such as rubrics, passages,
+retrieval settings, or task-specific diagnosis rules.
 
 ### memory
 
@@ -193,6 +219,11 @@ runtime loop is deterministic and testable.
 interface instead of a specific provider. Tests and the default LLM demo use a
 mock client so CI does not depend on network access, API keys, or model
 stability.
+
+`DeepSeekClient` is the first real `LLMClient` implementation. It is optional,
+configured through environment variables, and kept outside the default demo path.
+It calls the DeepSeek chat completions API with JSON output enabled and returns
+the parsed JSON object to `LLMTeacher` for `TeacherOutput` validation.
 
 ### runtime
 
@@ -287,6 +318,12 @@ openkeri/
         teacher_output.py
         context.py
         learning_event.py
+        task.py
+      tasks/
+        __init__.py
+        bundle.py
+        errors.py
+        registry.py
       memory/
         __init__.py
         base.py
@@ -298,6 +335,9 @@ openkeri/
       agent/
         __init__.py
         base.py
+        deepseek_client.py
+        llm_client.py
+        llm_teacher.py
         rule_based_teacher.py
       runtime/
         __init__.py
@@ -307,8 +347,10 @@ openkeri/
       README.md
       demo.py
       interactive.py
+      llm_deepseek_demo.py
       llm_mock_demo.py
       problems.py
+      registry.py
       solutions/
         correct.py
         incorrect.py
@@ -317,18 +359,22 @@ openkeri/
   tests/
     test_algorithm_tutor_demo.py
     test_algorithm_tutor_interactive.py
+    test_algorithm_tutor_llm_deepseek_demo.py
     test_algorithm_tutor_llm_mock_demo.py
     test_algorithm_tutor_problems.py
+    test_deepseek_client.py
     test_schemas.py
     test_memory.py
     test_evidence.py
     test_rule_based_teacher.py
     test_runtime_session.py
+    test_tasks_registry.py
 ```
 
 Directory principles:
 
 - `schemas` defines data and contracts, not process.
+- `tasks` registers learning tasks and their named resources.
 - `memory` manages memory, not teaching judgment.
 - `evidence` collects facts, not interpretation.
 - `agent` diagnoses and chooses teaching action.
@@ -525,6 +571,8 @@ These decisions have already been made for v0:
 - Schemas use Pydantic v2.
 - The first version includes LLMTeacher integration but does not depend on a
   real LLM API by default.
+- DeepSeek is available as an optional `LLMClient`, but it is not required for
+  CI or the default demos.
 - The first memory implementation is in-memory.
 - The first runnable demo is a deterministic script.
 - The first reference problem is `leetcode_3`.

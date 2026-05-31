@@ -1,7 +1,7 @@
 from typing import Any
 
 from demo import build_current_input, incorrect_code, print_turn
-from problems import build_leetcode_3_test_suite
+from registry import build_algorithm_tutor_registry, get_test_suite
 
 from openkeri.agent import LLMMessage, LLMTeacher
 from openkeri.evidence import PythonCodeRunnerEvidenceCollector
@@ -35,13 +35,14 @@ class MockLLMClient:
 
 
 def main() -> None:
+    task_registry = build_algorithm_tutor_registry()
     memory_store = InMemoryMemoryStore()
     session = TeachingSession(
         learner_id="learner_001",
         session_id="sess_llm_mock",
         memory_store=memory_store,
         evidence_collector=PythonCodeRunnerEvidenceCollector(
-            test_suites={"leetcode_3": build_leetcode_3_test_suite()}
+            test_suites={"leetcode_3": get_test_suite(task_registry, "leetcode_3")}
         ),
         teacher_agent=LLMTeacher(client=MockLLMClient()),
     )

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from problems import REFERENCE_PROBLEMS
+from registry import build_algorithm_tutor_registry, get_problem, get_test_suite
 
 from openkeri.agent import RuleBasedTeacher
 from openkeri.evidence import PythonCodeRunnerEvidenceCollector
@@ -13,13 +13,13 @@ def build_session(
     memory_store: InMemoryMemoryStore,
     problem_id: str,
 ) -> TeachingSession:
-    _, build_test_suite = REFERENCE_PROBLEMS[problem_id]
+    task_registry = build_algorithm_tutor_registry()
     return TeachingSession(
         learner_id="learner_001",
         session_id=f"sess_{problem_id}",
         memory_store=memory_store,
         evidence_collector=PythonCodeRunnerEvidenceCollector(
-            test_suites={problem_id: build_test_suite()}
+            test_suites={problem_id: get_test_suite(task_registry, problem_id)}
         ),
         teacher_agent=RuleBasedTeacher(),
     )
@@ -43,24 +43,22 @@ def run_solution_file(
 
 
 def choose_problem() -> tuple[str, Problem]:
-    problem_ids = list(REFERENCE_PROBLEMS)
+    task_registry = build_algorithm_tutor_registry()
+    tasks = task_registry.list_tasks()
     print("Choose a problem:")
-    for index, problem_id in enumerate(problem_ids, start=1):
-        build_problem, _ = REFERENCE_PROBLEMS[problem_id]
-        print(f"{index}. {build_problem().title}")
+    for index, bundle in enumerate(tasks, start=1):
+        print(f"{index}. {bundle.task.title}")
     print()
 
     while True:
         choice = input("> ").strip()
         if choice.isdigit():
             index = int(choice)
-            if 1 <= index <= len(problem_ids):
-                problem_id = problem_ids[index - 1]
-                build_problem, _ = REFERENCE_PROBLEMS[problem_id]
-                return problem_id, build_problem()
-        if choice in REFERENCE_PROBLEMS:
-            build_problem, _ = REFERENCE_PROBLEMS[choice]
-            return choice, build_problem()
+            if 1 <= index <= len(tasks):
+                task_id = tasks[index - 1].task.id
+                return task_id, get_problem(task_registry, task_id)
+        if choice in task_registry.bundles:
+            return choice, get_problem(task_registry, choice)
         print("Unknown problem. Enter a number or problem id.")
 
 

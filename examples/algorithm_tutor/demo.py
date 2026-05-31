@@ -1,4 +1,4 @@
-from problems import build_leetcode_3_problem, build_leetcode_3_test_suite
+from registry import build_algorithm_tutor_registry, get_problem, get_test_suite
 
 from openkeri.agent import RuleBasedTeacher
 from openkeri.evidence import PythonCodeRunnerEvidenceCollector
@@ -38,20 +38,22 @@ def lengthOfLongestSubstring(s):
 
 
 def build_session(memory_store: InMemoryMemoryStore) -> TeachingSession:
+    task_registry = build_algorithm_tutor_registry()
     return TeachingSession(
         learner_id="learner_001",
         session_id="sess_001",
         memory_store=memory_store,
         evidence_collector=PythonCodeRunnerEvidenceCollector(
-            test_suites={"leetcode_3": build_leetcode_3_test_suite()}
+            test_suites={"leetcode_3": get_test_suite(task_registry, "leetcode_3")}
         ),
         teacher_agent=RuleBasedTeacher(),
     )
 
 
 def build_current_input(code: str) -> CurrentInput:
+    task_registry = build_algorithm_tutor_registry()
     return CurrentInput(
-        problem=build_leetcode_3_problem(),
+        problem=get_problem(task_registry, "leetcode_3"),
         student_question="Why does this fail on abba?",
         code_submission=CodeSubmission(language="python", code=code),
     )

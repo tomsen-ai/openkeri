@@ -17,6 +17,7 @@ from openkeri.schemas.memory import (
     RelatedHistoryItem,
     SessionState,
 )
+from openkeri.schemas.task import LearningTask
 from openkeri.schemas.teacher_output import TeacherOutput
 from openkeri.schemas.teaching_action import NextExpectedAction, TeachingAction
 
@@ -30,6 +31,7 @@ __all__ = [
     "FailedCase",
     "LearnerMemory",
     "LearnerProfile",
+    "LearningTask",
     "LearningEvent",
     "MemoryContext",
     "NextExpectedAction",

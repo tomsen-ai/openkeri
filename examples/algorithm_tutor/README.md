@@ -3,6 +3,11 @@
 This demo shows the first openkeri reference loop with a deterministic
 rule-based teacher.
 
+The reference problems are exposed through a `LearningTaskRegistry` in
+`examples/algorithm_tutor/registry.py`. The task type is `algorithm_problem`,
+and each task bundle attaches the legacy `Problem` plus its `ProblemTestSuite`
+as named resources.
+
 It uses the problem "Longest Substring Without Repeating Characters" and runs
 four fixed turns:
 
@@ -48,4 +53,20 @@ key:
 
 ```bash
 .venv/bin/python examples/algorithm_tutor/llm_mock_demo.py
+```
+
+## DeepSeek LLMTeacher Demo
+
+This optional demo uses a real DeepSeek API call through `DeepSeekClient`:
+
+```bash
+export OPENKERI_DEEPSEEK_API_KEY=your_api_key
+.venv/bin/python examples/algorithm_tutor/llm_deepseek_demo.py
+```
+
+Optional configuration:
+
+```bash
+export OPENKERI_DEEPSEEK_MODEL=deepseek-v4-flash
+export OPENKERI_DEEPSEEK_BASE_URL=https://api.deepseek.com
 ```
