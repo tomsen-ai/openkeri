@@ -222,7 +222,11 @@ runtime loop is deterministic and testable.
 `LLMTeacher` is an optional agent implementation. It depends on an `LLMClient`
 interface instead of a specific provider. Tests and the default LLM demo use a
 mock client so CI does not depend on network access, API keys, or model
-stability.
+stability. Its prompt lives in `llm_prompts.py` and must instruct the model to
+use evidence first, avoid unsupported causes, and return a valid `TeacherOutput`
+JSON object. If the provider returns JSON that does not validate as
+`TeacherOutput`, `LLMTeacher` raises `LLMTeacherError`. Provider/API failures are
+left to the concrete `LLMClient`.
 
 `DeepSeekClient` is the first real `LLMClient` implementation. It is optional,
 configured through environment variables, and kept outside the default demo path.

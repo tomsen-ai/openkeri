@@ -1,9 +1,8 @@
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
 
-from openkeri.agent import LLMMessage, LLMTeacher
+from openkeri.agent import LLMMessage, LLMTeacher, LLMTeacherError
 from openkeri.schemas import (
     CurrentInput,
     Evidence,
@@ -25,6 +24,11 @@ class MockLLMClient:
     def complete_json(self, messages: list[LLMMessage]) -> dict[str, Any]:
         self.messages = messages
         return self.response
+
+
+class FailingLLMClient:
+    def complete_json(self, messages: list[LLMMessage]) -> dict[str, Any]:
+        raise RuntimeError("provider unavailable")
 
 
 def make_context() -> TeachingContext:
@@ -98,15 +102,27 @@ def test_llm_teacher_sends_teaching_context_to_client() -> None:
     assert len(client.messages) == 2
     assert client.messages[0].role == "system"
     assert client.messages[1].role == "user"
+    assert "Use the evidence first" in client.messages[0].content
+    assert "Do not invent unsupported causes" in client.messages[0].content
     assert "TeachingContext" in client.messages[1].content
+    assert "Expected output JSON shape" in client.messages[1].content
+    assert "next_expected_action" in client.messages[1].content
     assert "current_input" in client.messages[1].content
     assert "memory_context" in client.messages[1].content
     assert "evidence" in client.messages[1].content
+    assert "ev_001" in client.messages[1].content
 
 
 def test_llm_teacher_rejects_invalid_client_json_response() -> None:
     client = MockLLMClient({"message": "not a TeacherOutput"})
     teacher = LLMTeacher(client=client)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(LLMTeacherError, match="invalid TeacherOutput"):
+        teacher.respond(make_context())
+
+
+def test_llm_teacher_does_not_swallow_client_errors() -> None:
+    teacher = LLMTeacher(client=FailingLLMClient())
+
+    with pytest.raises(RuntimeError, match="provider unavailable"):
         teacher.respond(make_context())
