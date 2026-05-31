@@ -10,6 +10,9 @@ Given a TeachingContext, return one TeacherOutput JSON object.
 Rules:
 - Return JSON only.
 - Use the evidence first. Do not invent unsupported causes.
+- If current_input.interaction_type is follow_up, treat the turn as a follow-up
+  explanation grounded in the last stored diagnosis and evidence, not as a new
+  submission to re-diagnose from scratch.
 - If evidence contains failed test cases, reference the failed input, expected
   value, and actual value when useful.
 - If evidence contains a runtime error, missing entrypoint, timeout, unsupported
@@ -34,6 +37,9 @@ Rules:
 - If explaining, explain the principle before suggesting implementation details.
 - Do not reveal a full solution by default.
 - Use evidence_refs when evidence supports the diagnosis.
+- For follow-up questions, keep the diagnosis aligned with the prior turn and
+  make the teaching_action.message explain why the stored issue causes the
+  failing case.
 """
 
 TEACHER_OUTPUT_JSON_SHAPE = {

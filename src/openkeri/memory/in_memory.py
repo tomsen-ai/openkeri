@@ -80,9 +80,26 @@ class InMemoryMemoryStore(BaseModel):
     ) -> None:
         diagnosis = event.teacher_output.diagnosis
         teaching_action = event.teacher_output.teaching_action
+        failed_case = self._first_failed_case(event)
 
         session_state.current_problem_id = event.current_input.problem.id
         session_state.last_teaching_action = teaching_action.type
+        session_state.last_diagnosis_status = diagnosis.status
+        session_state.last_diagnosis_issue = diagnosis.issue
+        session_state.last_diagnosis_concept = diagnosis.concept
+        session_state.last_diagnosis_summary = diagnosis.evidence_summary
+        session_state.last_failed_case_input = self._failed_case_value(
+            failed_case,
+            "input",
+        )
+        session_state.last_failed_case_expected = self._failed_case_value(
+            failed_case,
+            "expected",
+        )
+        session_state.last_failed_case_actual = self._failed_case_value(
+            failed_case,
+            "actual",
+        )
 
         if teaching_action.type == "hint":
             session_state.hint_count += 1
@@ -148,3 +165,33 @@ class InMemoryMemoryStore(BaseModel):
         if event.current_input.student_question is not None:
             actions.append("asked_question")
         return actions
+
+    def _first_failed_case(self, event: LearningEvent) -> dict[str, object] | None:
+        if not event.evidence.items:
+            return None
+
+        evidence_item = event.evidence.items[0]
+        if evidence_item.content.get("status") != "failed":
+            return None
+
+        failed_cases = evidence_item.content.get("failed_cases", [])
+        if not isinstance(failed_cases, list) or not failed_cases:
+            return None
+
+        first_failed_case = failed_cases[0]
+        if isinstance(first_failed_case, dict):
+            return first_failed_case
+        return None
+
+    def _failed_case_value(
+        self,
+        failed_case: dict[str, object] | None,
+        key: str,
+    ) -> str | None:
+        if failed_case is None:
+            return None
+
+        value = failed_case.get(key)
+        if value is None:
+            return None
+        return str(value)

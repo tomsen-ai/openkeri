@@ -54,7 +54,11 @@ class RuleBasedTeacher(BaseModel):
         if status == "passed":
             return self._passed_output(context, evidence_item)
         if status == "failed":
-            return self._failed_output(context, evidence_item)
+            return self._failed_output(
+                context,
+                evidence_item,
+                force_explanation=self._is_follow_up(context),
+            )
         if status == "error":
             return self._runtime_error_output(context, evidence_item)
 
@@ -164,6 +168,7 @@ class RuleBasedTeacher(BaseModel):
         self,
         context: TeachingContext,
         evidence_item: EvidenceItem,
+        force_explanation: bool = False,
     ) -> TeacherOutput:
         issue = self._diagnose_failed_issue(context, evidence_item)
         concept = (
@@ -171,7 +176,9 @@ class RuleBasedTeacher(BaseModel):
             if issue == "left_boundary_update_error"
             else (self._primary_concept(context))
         )
-        action_type = self._hint_or_explanation(context)
+        action_type = (
+            "explanation" if force_explanation else self._hint_or_explanation(context)
+        )
         failed_case = self._first_failed_case(evidence_item)
 
         if action_type == "hint":
@@ -260,6 +267,9 @@ class RuleBasedTeacher(BaseModel):
             return "explanation"
         return "hint"
 
+    def _is_follow_up(self, context: TeachingContext) -> bool:
+        return context.current_input.interaction_type == "follow_up"
+
     def _primary_concept(self, context: TeachingContext) -> str | None:
         concepts = context.current_input.problem.target_concepts
         return concepts[0] if concepts else None
@@ -319,10 +329,12 @@ class RuleBasedTeacher(BaseModel):
         failed_case: dict[str, Any] | None,
     ) -> str:
         if issue == "left_boundary_update_error":
+            case_input = failed_case.get("input") if failed_case is not None else None
             return (
-                "In this sliding window problem, left should only move forward. "
-                "When a repeated character appears inside the current window, move "
-                "left to the position after that character's previous occurrence."
+                "This fails because the left boundary moves backward when a "
+                f"repeated character is seen in {case_input!r}. In a sliding "
+                "window, left should only move forward; otherwise the window "
+                "starts including characters that were already excluded."
             )
 
         if failed_case is not None:

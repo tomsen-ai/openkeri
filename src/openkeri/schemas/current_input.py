@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -15,6 +17,7 @@ class CodeSubmission(BaseModel):
 
 
 class CurrentInput(BaseModel):
+    interaction_type: Literal["submission", "follow_up"] = "submission"
     problem: Problem
     student_question: str | None = None
     code_submission: CodeSubmission | None = None

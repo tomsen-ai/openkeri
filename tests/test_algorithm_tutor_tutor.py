@@ -118,4 +118,6 @@ def lengthOfLongestSubstring(s):
     assert "Turn 2" in result.stdout
     assert "Diagnosis: incorrect" in result.stdout
     assert "Issue: left_boundary_update_error" in result.stdout
+    assert "Action: explanation" in result.stdout
+    assert "left boundary moves backward" in result.stdout
     assert "Recent actions: submitted_code, asked_question" in result.stdout

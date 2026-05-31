@@ -9,6 +9,13 @@ class SessionState(BaseModel):
     last_teaching_action: str | None = None
     hint_count: int = 0
     problem_status: str = "in_progress"
+    last_diagnosis_status: str | None = None
+    last_diagnosis_issue: str | None = None
+    last_diagnosis_concept: str | None = None
+    last_diagnosis_summary: str | None = None
+    last_failed_case_input: str | None = None
+    last_failed_case_expected: str | None = None
+    last_failed_case_actual: str | None = None
 
 
 class LearnerProfile(BaseModel):

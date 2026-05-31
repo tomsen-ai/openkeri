@@ -142,6 +142,7 @@ class AlgorithmTutorApp:
         self.last_code_by_problem[self.problem_id] = code
         session = self.current_session()
         current_input = CurrentInput(
+            interaction_type="submission",
             problem=self.problem,
             student_question="Why does this fail?",
             code_submission=CodeSubmission(language="python", code=code),
@@ -165,6 +166,7 @@ class AlgorithmTutorApp:
 
         last_code = self.last_code_by_problem.get(self.problem_id)
         current_input = CurrentInput(
+            interaction_type="follow_up",
             problem=self.problem,
             student_question=question,
             code_submission=(
