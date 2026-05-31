@@ -203,11 +203,6 @@ It handles:
 - choosing a teaching action from diagnosis and memory context
 - deciding whether to use `hint` or `explanation`
 
-The first implementation can use a `rule_based_teacher` so the core loop is
-stable and testable without an LLM dependency.
-
-A future implementation may add `llm_teacher`.
-
 The first agent implementation should expose a small `TeacherAgent` interface:
 
 ```text
@@ -217,7 +212,9 @@ respond(teaching_context) -> TeacherOutput
 The first concrete agent is `RuleBasedTeacher`. It reads execution evidence,
 session hint count, and problem concepts to produce a structured diagnosis and
 either a `hint` or an `explanation`. It is intentionally narrow so the first
-runtime loop is deterministic and testable.
+runtime loop is deterministic and testable. It remains useful as a baseline and
+for deterministic demos, but it is not intended to become a complete rule system
+for every task.
 
 `LLMTeacher` is an optional agent implementation. It depends on an `LLMClient`
 interface instead of a specific provider. Tests and the default LLM demo use a
@@ -228,10 +225,26 @@ JSON object. If the provider returns JSON that does not validate as
 `TeacherOutput`, `LLMTeacher` raises `LLMTeacherError`. Provider/API failures are
 left to the concrete `LLMClient`.
 
-`DeepSeekClient` is the first real `LLMClient` implementation. It is optional,
+### llm
+
+`llm` contains provider-neutral LLM client interfaces and provider adapters.
+
+It includes:
+
+- `LLMMessage`
+- `LLMClient`
+- `DeepSeekClient`
+
+`LLMTeacher` depends on the `LLMClient` protocol rather than a concrete provider.
+`DeepSeekClient` is the first real provider implementation. It is optional,
 configured through environment variables, and kept outside the default demo path.
 It calls the DeepSeek chat completions API with JSON output enabled and returns
 the parsed JSON object to `LLMTeacher` for `TeacherOutput` validation.
+
+The project does not currently include a hybrid fallback teacher. If an
+`LLMClient` or `LLMTeacher` fails, that error is allowed to propagate to the
+caller. Product-specific error handling should live at the calling layer until a
+clearer fallback requirement emerges.
 
 ### runtime
 
@@ -460,7 +473,8 @@ The first version does not need to support:
 - slides
 - complex multi-turn dialogue
 - a real database
-- real LLM calls
+- a general-purpose fallback teacher
+- a per-task diagnosis rule layer
 
 ## 6. Learning Loop Roadmap
 
@@ -590,6 +604,11 @@ These decisions have already been made for v0:
   real LLM API by default.
 - DeepSeek is available as an optional `LLMClient`, but it is not required for
   CI or the default demos.
+- Provider and `LLMTeacher` failures currently propagate to the caller; no
+  generic fallback teacher is part of v0.
+- A per-task diagnosis rule layer is deferred. Rule-based task diagnosis may be
+  added later for high-value, high-confidence cases, but it is not required for
+  every task.
 - The first memory implementation is in-memory.
 - The first runnable demo is a deterministic script.
 - The first reference problem is `leetcode_3`.
