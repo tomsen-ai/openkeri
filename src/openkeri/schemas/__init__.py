@@ -10,6 +10,17 @@ from openkeri.schemas.evidence import (
     FailedCase,
 )
 from openkeri.schemas.learning_event import LearningEvent
+from openkeri.schemas.learning_manager import (
+    LearningHistoryEntry,
+    LearningHistoryEventType,
+    LearningManagerState,
+    LearningPlan,
+    LearningPlanDay,
+    LearningProject,
+    LearningTaskStatus,
+    LearningTaskType,
+    LearningWorkItem,
+)
 from openkeri.schemas.memory import (
     LearnerMemory,
     LearnerProfile,
@@ -33,6 +44,15 @@ __all__ = [
     "LearnerProfile",
     "LearningTask",
     "LearningEvent",
+    "LearningHistoryEventType",
+    "LearningHistoryEntry",
+    "LearningManagerState",
+    "LearningPlan",
+    "LearningPlanDay",
+    "LearningProject",
+    "LearningTaskStatus",
+    "LearningTaskType",
+    "LearningWorkItem",
     "MemoryContext",
     "NextExpectedAction",
     "Problem",

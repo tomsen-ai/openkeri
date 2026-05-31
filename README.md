@@ -59,6 +59,12 @@ export OPENKERI_DEEPSEEK_API_KEY=your_api_key
 .venv/bin/python examples/algorithm_tutor/llm_deepseek_demo.py
 ```
 
+For the learning project manager demo:
+
+```bash
+.venv/bin/python examples/learning_manager/main.py
+```
+
 `DeepSeekClient` prefers `OPENKERI_DEEPSEEK_API_KEY` and also accepts the common
 `DEEPSEEK_API_KEY` environment variable.
 
