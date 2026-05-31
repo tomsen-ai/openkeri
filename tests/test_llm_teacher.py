@@ -104,8 +104,10 @@ def test_llm_teacher_sends_teaching_context_to_client() -> None:
     assert client.messages[1].role == "user"
     assert "Use the evidence first" in client.messages[0].content
     assert "Do not invent unsupported causes" in client.messages[0].content
+    assert "snake_case label" in client.messages[0].content
     assert "TeachingContext" in client.messages[1].content
     assert "Expected output JSON shape" in client.messages[1].content
+    assert "snake_case_issue_label_or_null" in client.messages[1].content
     assert "next_expected_action" in client.messages[1].content
     assert "current_input" in client.messages[1].content
     assert "memory_context" in client.messages[1].content

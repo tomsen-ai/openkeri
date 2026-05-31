@@ -17,6 +17,9 @@ Rules:
   before discussing algorithmic concepts.
 - If the evidence does not support a specific issue, use a generic issue such as
   failing_test_case or set diagnosis.status to unclear.
+- diagnosis.issue must be a concise machine-readable snake_case label or null,
+  not a sentence. Put explanatory text in diagnosis.evidence_summary or
+  teaching_action.message.
 - diagnosis.status must be one of: correct, incorrect, unclear, no_submission.
 - diagnosis.confidence must be between 0.0 and 1.0.
 - teaching_action.type must be one of: hint, explanation.
@@ -28,7 +31,7 @@ Rules:
 TEACHER_OUTPUT_JSON_SHAPE = {
     "diagnosis": {
         "status": "correct | incorrect | unclear | no_submission",
-        "issue": "string or null",
+        "issue": "snake_case_issue_label_or_null",
         "concept": "string or null",
         "confidence": 0.0,
         "evidence_refs": ["evidence item id"],
