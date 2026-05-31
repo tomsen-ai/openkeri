@@ -13,6 +13,11 @@ Rules:
 - If current_input.interaction_type is follow_up, treat the turn as a follow-up
   explanation grounded in the last stored diagnosis and evidence, not as a new
   submission to re-diagnose from scratch.
+- For follow-up turns, teaching_action.type must be explanation.
+- For follow-up turns, do not output exact replacement code, formulas, or
+  assignment expressions such as left = max(left, seen[ch] + 1); explain the
+  principle instead.
+- For follow-up turns, keep the message short, focused, and non-redundant.
 - If evidence contains failed test cases, reference the failed input, expected
   value, and actual value when useful.
 - If evidence contains a runtime error, missing entrypoint, timeout, unsupported
@@ -40,6 +45,8 @@ Rules:
 - For follow-up questions, keep the diagnosis aligned with the prior turn and
   make the teaching_action.message explain why the stored issue causes the
   failing case.
+- For follow-up questions, avoid giving a new hint; turn the answer into a
+  conceptual explanation of the stored issue.
 """
 
 TEACHER_OUTPUT_JSON_SHAPE = {

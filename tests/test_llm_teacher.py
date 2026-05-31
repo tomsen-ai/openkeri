@@ -32,16 +32,17 @@ class FailingLLMClient:
         raise RuntimeError("provider unavailable")
 
 
-def make_context() -> TeachingContext:
+def make_context(interaction_type: str = "submission") -> TeachingContext:
     return TeachingContext(
         current_input=CurrentInput(
+            interaction_type=interaction_type,
             problem=Problem(
                 id="leetcode_3",
                 title="Longest Substring Without Repeating Characters",
                 description="Return the length of the longest substring.",
                 target_concepts=["sliding_window", "hash_map"],
                 difficulty="medium",
-            )
+            ),
         ),
         memory_context=MemoryContext(
             session_state=SessionState(session_id="sess_001", hint_count=1),
@@ -56,7 +57,10 @@ def make_context() -> TeachingContext:
                     type="execution_result",
                     source="python_code_runner",
                     summary="The code fails on input 'abba'.",
-                    content={"status": "failed"},
+                    content={
+                        "status": "failed",
+                        "failed_cases": [{"input": "abba", "expected": 3, "actual": 4}],
+                    },
                 )
             ]
         ),
@@ -109,6 +113,12 @@ def test_llm_teacher_sends_teaching_context_to_client() -> None:
     assert "guiding questions and trace instructions" in client.messages[0].content
     assert "not the exact code" in client.messages[0].content
     assert "Do not give the exact condition" in client.messages[0].content
+    assert (
+        "For follow-up turns, teaching_action.type must be explanation"
+        in client.messages[0].content
+    )
+    assert "left = max(left, seen[ch] + 1)" in client.messages[0].content
+    assert "avoid giving a new hint" in client.messages[0].content
     assert "TeachingContext" in client.messages[1].content
     assert "Expected output JSON shape" in client.messages[1].content
     assert "snake_case_issue_label_or_null" in client.messages[1].content
@@ -117,6 +127,18 @@ def test_llm_teacher_sends_teaching_context_to_client() -> None:
     assert "memory_context" in client.messages[1].content
     assert "evidence" in client.messages[1].content
     assert "ev_001" in client.messages[1].content
+
+
+def test_llm_teacher_normalizes_follow_up_response() -> None:
+    client = MockLLMClient(valid_teacher_output())
+    teacher = LLMTeacher(client=client)
+
+    output = teacher.respond(make_context(interaction_type="follow_up"))
+
+    assert output.teaching_action.type == "explanation"
+    assert "moving forward" in output.teaching_action.message
+    assert "max(left" not in output.teaching_action.message
+    assert "left = " not in output.teaching_action.message
 
 
 def test_llm_teacher_rejects_invalid_client_json_response() -> None:
