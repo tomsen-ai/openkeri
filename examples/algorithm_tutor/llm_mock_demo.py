@@ -1,13 +1,10 @@
 from typing import Any
 
 from demo import build_current_input, incorrect_code, print_turn
-from registry import build_algorithm_tutor_registry, get_test_suite
+from session_factory import build_llm_session
 
-from openkeri.agent import LLMTeacher
-from openkeri.evidence import PythonCodeRunnerEvidenceCollector
 from openkeri.llm import LLMMessage
 from openkeri.memory import InMemoryMemoryStore
-from openkeri.runtime import TeachingSession
 
 
 class MockLLMClient:
@@ -36,16 +33,12 @@ class MockLLMClient:
 
 
 def main() -> None:
-    task_registry = build_algorithm_tutor_registry()
     memory_store = InMemoryMemoryStore()
-    session = TeachingSession(
-        learner_id="learner_001",
-        session_id="sess_llm_mock",
+    session = build_llm_session(
         memory_store=memory_store,
-        evidence_collector=PythonCodeRunnerEvidenceCollector(
-            test_suites={"leetcode_3": get_test_suite(task_registry, "leetcode_3")}
-        ),
-        teacher_agent=LLMTeacher(client=MockLLMClient()),
+        problem_id="leetcode_3",
+        client=MockLLMClient(),
+        session_id="sess_llm_mock",
     )
 
     print("openkeri Mock LLMTeacher Demo")

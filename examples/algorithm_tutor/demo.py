@@ -1,9 +1,7 @@
-from registry import build_algorithm_tutor_registry, get_problem, get_test_suite
+from registry import build_algorithm_tutor_registry, get_problem
+from session_factory import build_rule_based_session
 
-from openkeri.agent import RuleBasedTeacher
-from openkeri.evidence import PythonCodeRunnerEvidenceCollector
 from openkeri.memory import InMemoryMemoryStore
-from openkeri.runtime import TeachingSession
 from openkeri.schemas import CodeSubmission, CurrentInput, TeacherOutput
 
 
@@ -37,19 +35,6 @@ def lengthOfLongestSubstring(s):
 """
 
 
-def build_session(memory_store: InMemoryMemoryStore) -> TeachingSession:
-    task_registry = build_algorithm_tutor_registry()
-    return TeachingSession(
-        learner_id="learner_001",
-        session_id="sess_001",
-        memory_store=memory_store,
-        evidence_collector=PythonCodeRunnerEvidenceCollector(
-            test_suites={"leetcode_3": get_test_suite(task_registry, "leetcode_3")}
-        ),
-        teacher_agent=RuleBasedTeacher(),
-    )
-
-
 def build_current_input(code: str) -> CurrentInput:
     task_registry = build_algorithm_tutor_registry()
     return CurrentInput(
@@ -70,7 +55,11 @@ def print_turn(turn_number: int, output: TeacherOutput) -> None:
 
 def main() -> None:
     memory_store = InMemoryMemoryStore()
-    session = build_session(memory_store)
+    session = build_rule_based_session(
+        memory_store=memory_store,
+        problem_id="leetcode_3",
+        session_id="sess_001",
+    )
     submissions = [
         incorrect_code(),
         incorrect_code(),

@@ -1,11 +1,8 @@
 from demo import build_current_input, incorrect_code, print_turn
-from registry import build_algorithm_tutor_registry, get_test_suite
+from session_factory import build_llm_session
 
-from openkeri.agent import LLMTeacher
-from openkeri.evidence import PythonCodeRunnerEvidenceCollector
 from openkeri.llm import DeepSeekClient, DeepSeekClientError
 from openkeri.memory import InMemoryMemoryStore
-from openkeri.runtime import TeachingSession
 
 
 def main() -> None:
@@ -15,16 +12,12 @@ def main() -> None:
         print("Set OPENKERI_DEEPSEEK_API_KEY or DEEPSEEK_API_KEY to run this demo.")
         return
 
-    task_registry = build_algorithm_tutor_registry()
     memory_store = InMemoryMemoryStore()
-    session = TeachingSession(
-        learner_id="learner_001",
-        session_id="sess_llm_deepseek",
+    session = build_llm_session(
         memory_store=memory_store,
-        evidence_collector=PythonCodeRunnerEvidenceCollector(
-            test_suites={"leetcode_3": get_test_suite(task_registry, "leetcode_3")}
-        ),
-        teacher_agent=LLMTeacher(client=client),
+        problem_id="leetcode_3",
+        client=client,
+        session_id="sess_llm_deepseek",
     )
 
     print("openkeri DeepSeek LLMTeacher Demo")

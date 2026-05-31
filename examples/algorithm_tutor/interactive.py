@@ -1,9 +1,8 @@
 from pathlib import Path
 
-from registry import build_algorithm_tutor_registry, get_problem, get_test_suite
+from registry import build_algorithm_tutor_registry, get_problem
+from session_factory import build_rule_based_session
 
-from openkeri.agent import RuleBasedTeacher
-from openkeri.evidence import PythonCodeRunnerEvidenceCollector
 from openkeri.memory import InMemoryMemoryStore
 from openkeri.runtime import TeachingSession
 from openkeri.schemas import CodeSubmission, CurrentInput, Problem, TeacherOutput
@@ -13,16 +12,7 @@ def build_session(
     memory_store: InMemoryMemoryStore,
     problem_id: str,
 ) -> TeachingSession:
-    task_registry = build_algorithm_tutor_registry()
-    return TeachingSession(
-        learner_id="learner_001",
-        session_id=f"sess_{problem_id}",
-        memory_store=memory_store,
-        evidence_collector=PythonCodeRunnerEvidenceCollector(
-            test_suites={problem_id: get_test_suite(task_registry, problem_id)}
-        ),
-        teacher_agent=RuleBasedTeacher(),
-    )
+    return build_rule_based_session(memory_store=memory_store, problem_id=problem_id)
 
 
 def build_current_input(problem: Problem, code: str) -> CurrentInput:

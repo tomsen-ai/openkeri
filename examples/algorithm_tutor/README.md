@@ -6,7 +6,8 @@ rule-based teacher.
 The reference problems are exposed through a `LearningTaskRegistry` in
 `examples/algorithm_tutor/registry.py`. The task type is `algorithm_problem`,
 and each task bundle attaches the legacy `Problem` plus its `ProblemTestSuite`
-as named resources.
+as named resources. Demo session wiring lives in
+`examples/algorithm_tutor/session_factory.py`.
 
 It uses the problem "Longest Substring Without Repeating Characters" and runs
 four fixed turns:

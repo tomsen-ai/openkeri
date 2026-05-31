@@ -364,6 +364,7 @@ openkeri/
       llm_mock_demo.py
       problems.py
       registry.py
+      session_factory.py
       solutions/
         correct.py
         incorrect.py
