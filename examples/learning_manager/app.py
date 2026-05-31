@@ -4,6 +4,7 @@ import os
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
+from draft_generator import LearningProjectDraft, build_project_draft
 from planner import build_learning_state
 from storage import LearningManagerStore
 
@@ -50,7 +51,7 @@ class LearningManagerApp:
         argument = argument.strip()
 
         if command == "create-project":
-            self.create_project()
+            self.create_project(argument)
             return
 
         if command == "today":
@@ -79,37 +80,40 @@ class LearningManagerApp:
         )
         print()
 
-    def create_project(self) -> None:
+    def create_project(self, seed_text: str) -> None:
         print("Create a learning project")
-        title = input("Project title: ").strip()
-        goal = input("Goal: ").strip()
-        duration_raw = input("Duration in days [7]: ").strip()
-        focus_raw = input("Focus areas (comma-separated): ").strip()
+        if not seed_text:
+            seed_text = input("What do you want to learn? ").strip()
 
-        try:
-            duration_days = int(duration_raw or "7")
-        except ValueError:
-            print("Duration must be a number.")
+        if not seed_text:
+            print("Please describe a learning goal in one sentence.")
             print()
             return
 
-        focus_areas = [item.strip() for item in focus_raw.split(",") if item.strip()]
-        if not focus_areas:
-            focus_areas = ["general foundations"]
+        draft = build_project_draft(seed_text)
+        self.print_draft(draft)
+
+        refinement = input("Adjust it (or press Enter to accept): ").strip()
+        if refinement:
+            draft = build_project_draft(f"{seed_text} {refinement}")
+            print()
+            self.print_draft(draft)
 
         self.state = build_learning_state(
-            title=title,
-            goal=goal,
-            duration_days=duration_days,
-            focus_areas=focus_areas,
+            title=draft.title,
+            goal=draft.goal,
+            duration_days=draft.duration_days,
+            focus_areas=draft.focus_areas,
         )
         self.store.save(self.state)
 
         print()
-        print(f"Project: {self.state.project.title if self.state.project else title}")
-        print(f"Goal: {self.state.project.goal if self.state.project else goal}")
+        project_title = self.state.project.title if self.state.project else draft.title
+        project_goal = self.state.project.goal if self.state.project else draft.goal
+        print(f"Project: {project_title}")
+        print(f"Goal: {project_goal}")
         if self.state.plan is None:
-            plan_days = duration_days
+            plan_days = draft.duration_days
         else:
             plan_days = self.state.plan.time_horizon_days
         print(f"Plan days: {plan_days}")
@@ -269,13 +273,28 @@ class LearningManagerApp:
 
     def print_help(self) -> None:
         print("Commands:")
-        print("  create-project")
+        print("  create-project [one-sentence goal]")
         print("  today")
         print("  complete <task_id> [note]")
         print("  history")
         print("  review")
         print("  status")
         print("  q")
+        print()
+
+    def print_draft(self, draft: LearningProjectDraft) -> None:
+        print()
+        print("Suggested plan:")
+        print(f"Title: {draft.title}")
+        print(f"Goal: {draft.goal}")
+        print(f"Duration: {draft.duration_days} days")
+        print(f"Focus areas: {', '.join(draft.focus_areas)}")
+        print("Milestones:")
+        for index, milestone in enumerate(draft.milestones, start=1):
+            print(f"  {index}. {milestone}")
+        print("Notes:")
+        for note in draft.notes:
+            print(f"  - {note}")
         print()
 
     def find_task(self, task_id: str) -> LearningWorkItem | None:

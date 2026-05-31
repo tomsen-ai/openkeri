@@ -11,7 +11,7 @@ Run it from the repository root:
 Supported commands:
 
 ```text
-create-project
+create-project [one-sentence goal]
 today
 complete <task_id> [note]
 history
@@ -19,6 +19,9 @@ review
 status
 q
 ```
+
+`create-project` first shows a generated learning plan draft and then lets you
+adjust it with one short refinement before the project is created.
 
 The demo stores state in `examples/learning_manager/learning_manager_state.json`
 by default. Set `OPENKERI_LEARNING_MANAGER_STATE` to point at a different file

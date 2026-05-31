@@ -65,6 +65,9 @@ For the learning project manager demo:
 .venv/bin/python examples/learning_manager/main.py
 ```
 
+The demo starts from a one-sentence goal, drafts a learning plan, and then lets
+you adjust it before the project is created.
+
 `DeepSeekClient` prefers `OPENKERI_DEEPSEEK_API_KEY` and also accepts the common
 `DEEPSEEK_API_KEY` environment variable.
 

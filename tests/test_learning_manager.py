@@ -24,11 +24,8 @@ def test_learning_manager_creates_completion_history_and_review(tmp_path) -> Non
 
     first = run_learning_manager(
         (
-            "create-project\n"
-            "30 天学算法\n"
-            "掌握数组、双指针和哈希\n"
-            "4\n"
-            "数组,双指针,哈希\n"
+            "create-project 我想用4天系统学算法\n"
+            "\n"
             "complete task_001 记录左边界不回退\n"
             "q\n"
         ),
@@ -36,14 +33,16 @@ def test_learning_manager_creates_completion_history_and_review(tmp_path) -> Non
     )
 
     assert "openkeri Learning Manager" in first.stdout
-    assert "Project: 30 天学算法" in first.stdout
+    assert "Suggested plan:" in first.stdout
+    assert "Focus areas: 数组, 哈希, 双指针, 滑动窗口, 栈, 二分, 树" in first.stdout
+    assert "Practice all" not in first.stdout
     assert "task_001 [practice]" in first.stdout
     assert "Completed task_001: Practice 数组" in first.stdout
     assert "记录左边界不回退" in first.stdout
 
     second = run_learning_manager("history\nreview\nstatus\nq\n", env)
 
-    assert "History for 30 天学算法" in second.stdout
+    assert "History for 算法学习计划" in second.stdout
     assert "task_completed [task_001]" in second.stdout
     assert "Review reminders" in second.stdout
     assert "task_003 [review]" in second.stdout
