@@ -64,6 +64,9 @@ export OPENKERI_DEEPSEEK_API_KEY=your_api_key
 .venv/bin/python examples/algorithm_tutor/llm_deepseek_demo.py
 ```
 
+`DeepSeekClient` prefers `OPENKERI_DEEPSEEK_API_KEY` and also accepts
+`DEEPSEEK_API_KEY`.
+
 Optional configuration:
 
 ```bash

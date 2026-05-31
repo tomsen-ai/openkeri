@@ -11,7 +11,7 @@ def main() -> None:
     try:
         client = DeepSeekClient.from_env()
     except ValueError:
-        print("Set OPENKERI_DEEPSEEK_API_KEY to run this demo.")
+        print("Set OPENKERI_DEEPSEEK_API_KEY or DEEPSEEK_API_KEY to run this demo.")
         return
 
     task_registry = build_algorithm_tutor_registry()

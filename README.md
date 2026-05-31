@@ -59,6 +59,9 @@ export OPENKERI_DEEPSEEK_API_KEY=your_api_key
 .venv/bin/python examples/algorithm_tutor/llm_deepseek_demo.py
 ```
 
+`DeepSeekClient` prefers `OPENKERI_DEEPSEEK_API_KEY` and also accepts the common
+`DEEPSEEK_API_KEY` environment variable.
+
 The DeepSeek demo is not part of the default test path. It is intended for local
 manual checks when an API key is available.
 

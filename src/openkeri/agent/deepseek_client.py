@@ -9,6 +9,7 @@ from openkeri.agent.llm_client import LLMMessage
 
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash"
+DEEPSEEK_API_KEY = "DEEPSEEK_API_KEY"
 OPENKERI_DEEPSEEK_API_KEY = "OPENKERI_DEEPSEEK_API_KEY"
 OPENKERI_DEEPSEEK_BASE_URL = "OPENKERI_DEEPSEEK_BASE_URL"
 OPENKERI_DEEPSEEK_MODEL = "OPENKERI_DEEPSEEK_MODEL"
@@ -31,7 +32,12 @@ class DeepSeekClient:
     def from_env(cls) -> "DeepSeekClient":
         api_key = os.environ.get(OPENKERI_DEEPSEEK_API_KEY, "").strip()
         if not api_key:
-            raise ValueError(f"Set {OPENKERI_DEEPSEEK_API_KEY} to use DeepSeekClient.")
+            api_key = os.environ.get(DEEPSEEK_API_KEY, "").strip()
+        if not api_key:
+            raise ValueError(
+                f"Set {OPENKERI_DEEPSEEK_API_KEY} or {DEEPSEEK_API_KEY} "
+                "to use DeepSeekClient."
+            )
 
         model = os.environ.get(OPENKERI_DEEPSEEK_MODEL, DEFAULT_DEEPSEEK_MODEL).strip()
         base_url = os.environ.get(

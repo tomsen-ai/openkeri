@@ -88,6 +88,7 @@ def test_deepseek_client_posts_chat_completion_request(
 
 def test_deepseek_client_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPENKERI_DEEPSEEK_API_KEY", "env-key")
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     monkeypatch.setenv("OPENKERI_DEEPSEEK_MODEL", "deepseek-v4-pro")
     monkeypatch.setenv("OPENKERI_DEEPSEEK_BASE_URL", "https://example.com")
 
@@ -98,12 +99,35 @@ def test_deepseek_client_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert client.base_url == "https://example.com"
 
 
+def test_deepseek_client_from_env_accepts_generic_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENKERI_DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "generic-key")
+
+    client = DeepSeekClient.from_env()
+
+    assert client.api_key == "generic-key"
+
+
+def test_deepseek_client_from_env_prefers_openkeri_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENKERI_DEEPSEEK_API_KEY", "openkeri-key")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "generic-key")
+
+    client = DeepSeekClient.from_env()
+
+    assert client.api_key == "openkeri-key"
+
+
 def test_deepseek_client_from_env_requires_api_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("OPENKERI_DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
-    with pytest.raises(ValueError, match="OPENKERI_DEEPSEEK_API_KEY"):
+    with pytest.raises(ValueError, match="OPENKERI_DEEPSEEK_API_KEY.*DEEPSEEK_API_KEY"):
         DeepSeekClient.from_env()
 
 
