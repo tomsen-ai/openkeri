@@ -310,8 +310,8 @@ class RuleBasedTeacher(BaseModel):
         if issue == "left_boundary_update_error":
             return (
                 "Your sliding window is close, but the left boundary update needs "
-                "attention. Trace the input 'abba': when the second 'b' appears, "
-                "where should left move?"
+                "attention. Check whether a repeated character can make left move "
+                "backward, and look for the condition that prevents that."
             )
 
         if failed_case is not None:

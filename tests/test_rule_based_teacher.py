@@ -133,6 +133,9 @@ def test_failed_abba_case_returns_left_boundary_hint() -> None:
     assert output.diagnosis.issue == "left_boundary_update_error"
     assert output.diagnosis.concept == "sliding_window"
     assert output.teaching_action.type == "hint"
+    assert "left boundary" in output.teaching_action.message
+    assert "backward" in output.teaching_action.message
+    assert "abba" not in output.teaching_action.message
 
 
 def test_failed_case_returns_explanation_after_hint_threshold() -> None:
@@ -152,6 +155,7 @@ def test_failed_case_returns_explanation_after_hint_threshold() -> None:
 
     assert output.diagnosis.issue == "left_boundary_update_error"
     assert output.teaching_action.type == "explanation"
+    assert "left boundary" in output.teaching_action.message
 
 
 def test_failed_non_abba_case_returns_generic_failing_test_case() -> None:

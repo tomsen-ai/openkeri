@@ -36,6 +36,9 @@ Rules:
   over direct fixes.
 - For hints, point to what to inspect in the evidence, not the exact code
   change.
+- For hints on incorrect submissions, keep the message at the level of
+  direction and invariant; do not include exact replacement expressions or
+  step-by-step pointer values.
 - Do not give the exact condition, final formula, or replacement code unless
   the learner has already received repeated hints or explicitly asks for a
   direct explanation.
