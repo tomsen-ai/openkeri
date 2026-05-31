@@ -47,6 +47,27 @@ examples/algorithm_tutor/solutions/palindrome_incorrect.py
 examples/algorithm_tutor/solutions/palindrome_correct.py
 ```
 
+## Tutor CLI
+
+The tutor CLI is the product-style entry point for trying the algorithm tutor:
+
+```bash
+.venv/bin/python examples/algorithm_tutor/tutor.py
+```
+
+It lets you choose a teacher, choose a problem, submit solution files across
+multiple turns, inspect session status, list problems, and switch problems.
+
+Supported commands:
+
+```text
+submit <path>
+status
+problems
+switch <problem_id>
+q
+```
+
 ## Mock LLMTeacher Demo
 
 This demo uses `LLMTeacher` with a mock LLM client, so it does not require an API

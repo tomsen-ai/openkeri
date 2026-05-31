@@ -378,6 +378,7 @@ openkeri/
       problems.py
       registry.py
       session_factory.py
+      tutor.py
       solutions/
         correct.py
         incorrect.py
@@ -389,6 +390,7 @@ openkeri/
     test_algorithm_tutor_llm_deepseek_demo.py
     test_algorithm_tutor_llm_mock_demo.py
     test_algorithm_tutor_problems.py
+    test_algorithm_tutor_tutor.py
     test_deepseek_client.py
     test_llm_package.py
     test_schemas.py
