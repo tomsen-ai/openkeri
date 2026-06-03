@@ -1,114 +1,140 @@
 # Learning Manager Demo
 
-This example is currently a learning-plan manager MVP, not a finished content
-tutor. The current active direction is a single-project plan graph editor:
+Single-project learning plan MVP. Not a content tutor yet.
+
+Current flow:
 
 ```text
-Create one learning project
-  -> generate an editable plan graph
-  -> manually adjust nodes and edges
-  -> track node status
-  -> enter a focused node learning page
+Start: input goal
+  -> Intake: LLM asks contextual questions (up to 5 rounds, dynamic choices)
+  -> Brief: review plan draft + phase skeleton preview
+  -> Editor: editable React Flow plan graph
+       -> node status, add/delete/edit, edges, re-layout
+       -> node learning page (placeholder content)
 ```
 
-The detailed learning content inside each node is intentionally thin for now.
-The next iterations should improve plan graph quality first, then deepen
-node-level teaching content.
+Intake and Brief are standalone pages that run before the graph editor appears.
+The graph editor only shows after the user confirms the brief.
 
-## MVP Roadmap
+The intake loop is now fully LLM-driven: choices are generated dynamically from
+the user's actual goal, not from a hardcoded menu. Each round the LLM evaluates
+whether it has enough information (WHY / HOW MUCH / WHAT scope) to produce a
+plan brief, or asks another contextual question. Max 5 rounds; if still unclear
+after round 5, force_ready produces a conservative brief.
 
-Current priority: build one genuinely usable learning project before adding
-multiple projects.
+## Current State & Priority
 
-1. Single project persistence
-   - Keep one active project.
-   - Save the goal, plan graph, node details, edges, status, and updated time.
-   - Restore the project after refresh.
+**Priority 1: Flow rhythm (intake -> brief -> editor)**
 
-2. Export and import
-   - Export the current project as JSON.
-   - Import JSON to restore the project.
+This is the gate that determines whether the product is usable.
 
-3. Mind-map editing
-   - Add nodes.
-   - Delete nodes.
-   - Edit node title, type, time, group, and description.
-   - Add edges.
-   - Delete edges.
-   - Re-layout the graph after structural edits.
+Shipped:
+- Dynamic LLM-driven intake with contextual choices (no hardcoded menus).
+- Plan skeleton preview inside brief (phase names, focus, node counts).
+- Graceful retry on plan generation failure (auto-simplify hint, 重新生成
+  button on frontend).
+- User notes/context input on intake page.
+- Conversation history passed through intake rounds so LLM remembers prior
+  choices.
+- Start / intake / brief pages visually redesigned (dark SaaS style, 8px
+  corners, single-screen layouts).
 
-4. Node status
-   - Track not started, in progress, and done.
-   - Show status on the node without adding visual clutter.
+Known gaps:
 
-5. Node learning page
-   - Open a node as a focused learning page.
-   - Show learning goal, core concepts, steps, practice, self-check, notes, and
-     completion state.
+- Brief page feels like data review rather than "approving a plan." The user
+  doesn't yet have a strong sense of buy-in before hitting generate.
+- No page transition animations; the jump between screens is abrupt.
+- The intake can still feel mechanical when the LLM produces generic questions
+  or repetitive choices.
+- Time constraints passed from the frontend are always treated as defaults
+  (time_is_default=true) — the user can't yet set a hard schedule on the
+  start page.
 
-6. AI node content generation
-   - Generate learning content for a selected node.
-   - Support regenerate, simplify, and add-practice actions.
+Next backend work:
 
-Suggested implementation order:
+- Improve the intake system prompt to produce more specific, non-generic
+  questions. The current prompt sometimes falls back to pattern-matched choices.
+- Add a "refine brief" endpoint so users can edit brief fields and re-negotiate
+  without restarting the intake loop.
 
-1. Improve generated plan graph quality.
-2. Refine the plan graph frontend interaction and layout.
-3. Add AI-generated node learning content.
+Next frontend work:
 
-## Plan Graph Quality
+- Animate page transitions (start -> intake -> brief -> editor) so the user
+  feels forward momentum.
+- Add a brief editing mode before plan generation (inline field editing).
 
-Current focus: make the generated plan useful before deepening node content.
+**Priority 2: Plan graph quality**
 
-Generation improvements:
+The generated graph must feel like a real learning route, not a generic
+mind map.
 
-1. Prompt the LLM to produce one project only.
-2. Prefer 3-5 main phases.
-3. Put 2-4 child nodes under each phase.
-4. Keep node types clear: goal, phase, concept, practice, project, review, and
-   checkpoint.
-5. Avoid too many nodes, isolated nodes, and dense cross-links.
-6. Keep estimated time realistic.
+- Node titles should be actionable ("手写快排" not "排序算法").
+- Phase ordering must be obvious; child nodes should cluster cleanly.
+- Time estimates need to be believable and not all identical.
 
-Validation improvements:
+**Priority 3: Node content depth**
 
-1. Enforce a reasonable node count.
-2. Require each phase to have at least one child node.
-3. Reject edges that reference missing nodes.
-4. Normalize missing status and node metadata.
+Each node learning page currently shows generic placeholder study steps.
+Eventually this should be AI-generated, node-specific content with:
 
-Frontend plan graph improvements:
+- targeted explanation
+- 1-2 practice prompts
+- self-check questions
+- learning notes
 
-1. Keep the plan graph as the primary screen.
-2. Reduce overlays that cover the graph.
-3. Make editing tools available without dominating the canvas.
-4. Keep the right detail panel secondary and dismissible.
-5. Preserve user-edited graph structure during re-layout.
-6. Keep the bottom generation input compact and centered.
+This is intentionally last. A beautiful learning page on a bad plan is useless.
+
+## MVP Roadmap (shipped vs next)
+
+Shipped:
+1. Single project persistence via localStorage.
+2. Export / import JSON.
+3. React Flow editor: add, delete, edit nodes and edges; re-layout.
+4. Node status (not_started / in_progress / done).
+5. Basic node learning page (placeholder content).
+6. Dynamic LLM-driven intake loop (contextual choices, up to 5 rounds).
+7. Plan skeleton preview in brief (phase names, focus, node counts).
+8. Graceful retry when graph generation fails (backend auto-simplify + frontend 重新生成 button).
+9. User notes input on intake page.
+10. Conversation history passed through intake rounds.
+11. Start / intake / brief page visual redesign.
+
+Next:
+1. Brief page editing mode (inline field editing before generation).
+2. Page transition animations (start -> intake -> brief -> editor).
+3. Improve intake prompt quality (reduce generic/repetitive questions).
+4. Node content generation per node (backend + frontend).
+5. Editor visual polish: node cards, color system, edge styling.
+
+## Architecture
+
+```text
+plan_api.py              HTTP server (intake + graph generation)
+plan_intake.py           LLM-driven intake loop: goal -> contextual Q&A -> brief
+plan_graph_generator.py  LLM prompt + validation for plan graph nodes/edges
+plan_editor/
+  src/main.jsx           React app: start / intake / brief / editor screens
+  src/styles.css         all styles
+```
+
+API endpoints:
+
+- `POST /api/intake/start` — start intake from goal
+- `POST /api/intake/answer` — answer an intake choice
+- `POST /api/generate-plan` — generate plan graph from brief
 
 ## Run
 
-CLI demo from the repository root:
-
-```bash
-.venv/bin/python examples/learning_manager/main.py
-```
-
-Legacy static frontend:
-
-```bash
-open examples/learning_manager/frontend/index.html
-```
-
-The static frontend is an older prototype. Keep it for reference, but the active
-MVP work is now in the React Flow plan graph editor below.
-
-Plan graph editor prototype:
+Backend:
 
 ```bash
 export OPENKERI_DEEPSEEK_API_KEY=your_api_key
 .venv/bin/python examples/learning_manager/plan_api.py
+```
 
+Frontend:
+
+```bash
 cd examples/learning_manager/plan_editor
 npm install
 npm run dev
@@ -116,121 +142,23 @@ npm run dev
 
 Then open `http://127.0.0.1:5173/`.
 
-This prototype calls DeepSeek to generate an editable plan graph, renders it
-with React Flow, and supports local single-project persistence, export/import,
-node editing, node status, node add/delete, edge editing, re-layout, and a basic
-node learning page.
+Legacy static frontend and CLI demo still exist in `frontend/` and `main.py`
+for reference, but active work is on the React Flow plan editor.
 
-## Frontend Structure
-
-This section describes the legacy static frontend, not the current React Flow
-plan editor.
-
-```text
-frontend/
-  index.html              page structure
-  styles.css              visual styling
-  app.js                  render logic and UI events
-  data/templates.js       route templates for algorithm / reading / custom
-  lib/planner.js          creates Project -> Stage -> Node data
-  lib/scheduler.js        builds the Today queue from all projects
-  lib/storage.js          localStorage persistence
-```
-
-Current frontend data shape:
-
-```text
-state
-  activeProjectId
-  session { projectId, nodeId }
-  projects[]
-    stages[]
-      nodes[]
-    history[]
-```
-
-Keep the frontend lightweight until the interaction model settles. When a
-backend is introduced, `lib/storage.js` is the first replacement point.
-
-## Current Frontend Behavior
-
-This behavior describes the legacy static frontend. The current active plan
-editor is the React Flow prototype described in the Run section.
-
-- `Today` shows scheduled tasks from multiple projects.
-- `Projects` shows one active project as a staged route map.
-- Clicking the colored route bar opens a project picker.
-- Clicking an unlocked node opens a lightweight session page.
-- Completing a session marks the node done, unlocks the next node, and writes
-  history.
-- `Create` generates a full project route from goal, type, duration, and daily
-  minutes.
-
-Known rough edges:
-
-- The project route UI is still being tuned. The current direction is a light
-  knowledge-route map with visible node relationships, not isolated dashboard
-  cards.
-- Node content is placeholder text. Do not spend too much time on teaching
-  depth before the project/stage/node framework feels right.
-- The browser may keep old `localStorage` state after data-shape changes. Clear
-  local storage for `openkeri.frontend.v4` if the prototype looks inconsistent.
-
-## CLI Commands
-
-Supported commands:
-
-```text
-create-project [one-sentence goal]
-today
-map
-complete <node_id> <easy|normal|hard> <minutes> [note]
-history
-review
-status
-q
-```
-
-`create-project` first shows a generated stage route draft and then lets you
-adjust it with one short refinement before the project is created. The project
-map starts with one ready node and unlocks the next node after completion.
-
-The current draft generator is a rule-based fallback. The product direction is
-LLM-first draft generation with the rule-based path kept as a fallback so the
-demo stays usable without a model key.
-
-The demo stores state in `examples/learning_manager/learning_manager_state.json`
-by default. Set `OPENKERI_LEARNING_MANAGER_STATE` to point at a different file
-when you want to isolate runs or tests.
-
-## Handoff Notes
-
-Older handoff notes for the static frontend:
-
-- Split the frontend out of the previous single-file prototype.
-- Added route templates and a planner/scheduler/storage split.
-- Upgraded frontend data from flat `project.nodes` toward
-  `project.stages[].nodes[]`.
-- Added a project picker instead of cycling projects blindly by clicking the
-  route bar.
-- Started improving the Projects route map so nodes communicate sequence and
-  dependency.
-
-Legacy suggested next steps:
-
-1. Continue refining the Projects route map so it feels like a real knowledge
-   route: clearer path, dependencies, node type, and current position.
-2. Make the project picker feel integrated with the route bar and creation flow.
-3. Improve Create route generation for different project types without adding a
-   backend yet.
-4. Keep Session lightweight: short content, steps, note, completion.
-5. Once the frontend loop is stable, decide whether to back it with the existing
-   Python schema/API or keep it static longer.
-
-Useful checks:
+## Checks
 
 ```bash
-node --check examples/learning_manager/frontend/app.js
-PYTHONPATH=src:. pytest tests/test_learning_manager.py tests/test_schemas.py
+cd examples/learning_manager/plan_editor && npm run build
+
+cd /path/to/openkeri
+.venv/bin/ruff check examples/learning_manager/plan_api.py \
+  examples/learning_manager/plan_intake.py \
+  examples/learning_manager/plan_graph_generator.py
+
+PYTHONPATH=src:. pytest \
+  tests/test_learning_manager_plan_intake.py \
+  tests/test_learning_manager_plan_graph_generator.py \
+  tests/test_learning_manager.py
+
 git diff --check
 ```

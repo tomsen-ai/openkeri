@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Background,
@@ -18,10 +18,10 @@ const ROADMAP_BRANCH_GAP = 156;
 const ROADMAP_BRANCH_START_Y = 198;
 
 const EMPTY_FORM = {
-  goal: "我想用 30 天准备算法面试，重点是能自己规划和复盘",
+  goal: "",
   durationDays: 30,
   dailyMinutes: 25,
-  preference: "生成思维导图式计划，允许分支和汇合，节点不要太多",
+  preference: "",
 };
 
 function PlanNode({ data, selected }) {
@@ -53,11 +53,40 @@ function PlanNode({ data, selected }) {
 
 const nodeTypes = { planNode: PlanNode };
 
+function PageBrand() {
+  return (
+    <div className="start-brand">
+      <span>OpenKeri</span>
+      <strong>Plan Studio</strong>
+    </div>
+  );
+}
+
+function LoadingLine({ active, label, elapsedSeconds }) {
+  if (!active) return null;
+  return (
+    <div className="loading-line">
+      <i />
+      <span>{label || "处理中"} · {elapsedSeconds}s</span>
+    </div>
+  );
+}
+
+const BRIEF_FIELDS = [
+  { key: "refined_goal", label: "本轮目标" },
+  { key: "scope", label: "学习重点" },
+  { key: "excluded_scope", label: "暂不深入" },
+  { key: "recommended_pace", label: "建议节奏" },
+  { key: "expected_outcome", label: "预期结果" },
+];
+
 function App() {
   const savedDraft = loadDraft();
   const restoredDraft = savedDraft ? restoreFlowDraftFromStorage(savedDraft) : null;
+  const hasRestoredDraft = Boolean(restoredDraft?.nodes?.length);
   const importInputRef = useRef(null);
-  const [prompt, setPrompt] = useState(EMPTY_FORM.goal);
+  const [screen, setScreen] = useState(hasRestoredDraft ? "editor" : "start");
+  const [prompt, setPrompt] = useState(savedDraft?.goal || EMPTY_FORM.goal);
   const [title, setTitle] = useState(savedDraft?.title || "计划草稿");
   const [summary, setSummary] = useState(
     savedDraft?.summary || "输入目标后生成一个可编辑的计划图。",
@@ -66,6 +95,14 @@ function App() {
   const [graphEdges, setGraphEdges] = useState(restoredDraft?.graphEdges || []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
+  const [intakeResult, setIntakeResult] = useState(null);
+  const [selectedIntakeChoiceId, setSelectedIntakeChoiceId] = useState("");
+  const [intakeNotes, setIntakeNotes] = useState("");
+  const [pendingBrief, setPendingBrief] = useState(null);
+  const [activeBriefField, setActiveBriefField] = useState("refined_goal");
+  const [loadingLabel, setLoadingLabel] = useState("");
+  const [loadingStartedAt, setLoadingStartedAt] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [selectedNodeId, setSelectedNodeId] = useState("");
   const [isConnectMode, setIsConnectMode] = useState(false);
   const [studyNodeId, setStudyNodeId] = useState("");
@@ -79,6 +116,18 @@ function App() {
     [nodes, studyNodeId],
   );
   const stats = useMemo(() => getPlanStats(nodes), [nodes]);
+
+  useEffect(() => {
+    if (!loadingStartedAt) {
+      setElapsedSeconds(0);
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds(Math.max(1, Math.floor((Date.now() - loadingStartedAt) / 1000)));
+    }, 300);
+    return () => window.clearInterval(intervalId);
+  }, [loadingStartedAt]);
 
   const onNodesChange = useCallback(
     (changes) => {
@@ -143,33 +192,129 @@ function App() {
     }
 
     setIsGenerating(true);
+    setLoadingLabel("分析目标");
+    setLoadingStartedAt(Date.now());
+    setIntakeResult(null);
+    setSelectedIntakeChoiceId("");
+    setPendingBrief(null);
     setMessage("");
     try {
-      const response = await fetch("/api/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          goal: prompt,
-          durationDays: EMPTY_FORM.durationDays,
-          dailyMinutes: EMPTY_FORM.dailyMinutes,
-          preference: EMPTY_FORM.preference,
-        }),
+      const intake = await postJson("/api/intake/start", {
+        goal: prompt,
+        preference: "",
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "生成失败");
-      const next = toFlowDraft(payload);
-      setTitle(payload.title);
-      setSummary(payload.summary);
-      setNodes(next.nodes);
-      setGraphEdges(next.graphEdges);
-      setSelectedNodeId(next.nodes[0]?.id || "");
-      persistDraft(payload.title, payload.summary, next.nodes, next.graphEdges);
-      setMessage("已生成计划草稿。");
+      if (intake.status === "needs_choice") {
+        setIntakeResult(intake);
+        setSelectedIntakeChoiceId("");
+        setScreen("intake");
+        setMessage("");
+        return;
+      }
+      setPendingBrief(intake.brief);
+      setActiveBriefField("refined_goal");
+      setScreen("brief");
     } catch (error) {
       setMessage(error.message);
     } finally {
       setIsGenerating(false);
+      setLoadingLabel("");
+      setLoadingStartedAt(0);
     }
+  }
+
+  function chooseIntakeOption(choiceId) {
+    setSelectedIntakeChoiceId(choiceId);
+  }
+
+  async function continueIntake() {
+    if (!intakeResult?.state || !selectedIntakeChoiceId) return;
+
+    setIsGenerating(true);
+    setLoadingLabel("整理方案");
+    setLoadingStartedAt(Date.now());
+    setMessage("");
+    try {
+      const nextIntake = await postJson("/api/intake/answer", {
+        state: intakeResult.state,
+        choiceId: selectedIntakeChoiceId,
+        notes: intakeNotes,
+      });
+      if (nextIntake.status === "needs_choice") {
+        setIntakeResult(nextIntake);
+        setSelectedIntakeChoiceId("");
+        setScreen("intake");
+        setMessage("");
+        return;
+      }
+      setIntakeResult(nextIntake);
+      setPendingBrief(nextIntake.brief);
+      setActiveBriefField("refined_goal");
+      setScreen("brief");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setIsGenerating(false);
+      setLoadingLabel("");
+      setLoadingStartedAt(0);
+    }
+  }
+
+  async function confirmGeneratePlan() {
+    if (!pendingBrief) return;
+
+    setIsGenerating(true);
+    setLoadingLabel("生成计划图");
+    setLoadingStartedAt(Date.now());
+    setMessage("");
+    try {
+      await generatePlanFromBrief(pendingBrief);
+    } catch (error) {
+      const text = error.message || "生成失败";
+      setMessage(text.length > 120 ? `${text.slice(0, 120)}…` : text);
+    } finally {
+      setIsGenerating(false);
+      setLoadingLabel("");
+      setLoadingStartedAt(0);
+    }
+  }
+
+  async function generatePlanFromBrief(brief) {
+    const payload = await postJson("/api/generate-plan", {
+      goal: brief?.refined_goal || prompt,
+      durationDays: brief?.constraints?.duration_days || EMPTY_FORM.durationDays,
+      dailyMinutes: brief?.constraints?.daily_minutes || EMPTY_FORM.dailyMinutes,
+      preference: EMPTY_FORM.preference,
+      brief,
+    });
+    const next = toFlowDraft(payload);
+    setTitle(payload.title);
+    setSummary(payload.summary);
+    setNodes(next.nodes);
+    setGraphEdges(next.graphEdges);
+    setSelectedNodeId(next.nodes[0]?.id || "");
+    persistDraft(payload.title, payload.summary, next.nodes, next.graphEdges);
+    setScreen("editor");
+    setIntakeResult(null);
+    setSelectedIntakeChoiceId("");
+    setPendingBrief(null);
+    setActiveBriefField("refined_goal");
+    setMessage(brief?.user_summary?.headline || "已生成计划草稿。");
+  }
+
+  function updatePendingBrief(field, value) {
+    setPendingBrief((brief) => {
+      if (!brief) return brief;
+      const nextSummary = { ...(brief.user_summary || {}) };
+      if (field === "refined_goal") nextSummary.headline = value;
+      if (field === "scope") nextSummary.focus = value;
+      if (field === "excluded_scope") nextSummary.not_included = value;
+      if (field === "expected_outcome") nextSummary.outcome = value;
+      return {
+        ...brief,
+        [field]: value,
+        user_summary: nextSummary,
+      };
+    });
   }
 
   function persistDraft(draftTitle, draftSummary, draftNodes, draftEdges) {
@@ -206,6 +351,9 @@ function App() {
       setNodes(restored.nodes);
       setGraphEdges(restored.graphEdges);
       setSelectedNodeId("");
+      setScreen("editor");
+      setIntakeResult(null);
+      setSelectedIntakeChoiceId("");
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify(
@@ -298,6 +446,252 @@ function App() {
     const next = applyFlowLayout(nodes, graphEdges);
     setNodes(next.nodes);
     persistDraft(title, summary, next.nodes, graphEdges);
+  }
+
+function OpenKeriLogo({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="14" stroke="rgba(155,242,111,0.5)" strokeWidth="2" />
+      <path d="M10 16C10 12.686 12.686 10 16 10" stroke="#9bf26f" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="16" cy="16" r="3" fill="#9bf26f" />
+    </svg>
+  );
+}
+
+  if (screen === "start") {
+    return (
+      <main className="intake-workspace">
+        <section className="start-shell">
+          <div className="start-brand">
+            <OpenKeriLogo size={32} />
+            <span>OpenKeri</span>
+            <strong>Plan Studio</strong>
+          </div>
+          <div className="start-copy">
+            <h1>你想完成什么？</h1>
+            <p>先选学习路线，再生成可编辑计划图</p>
+          </div>
+          <div className="start-form">
+            <input
+              className="start-input"
+              value={prompt}
+              placeholder="输入你的学习目标，例如：准备算法面试"
+              onChange={(event) => {
+                setPrompt(event.target.value);
+                setMessage("");
+              }}
+              onKeyDown={(event) => {
+                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                  generateDraft();
+                }
+              }}
+            />
+          </div>
+          <LoadingLine
+            active={isGenerating}
+            label={loadingLabel}
+            elapsedSeconds={elapsedSeconds}
+          />
+          <div className="start-actions">
+            <button type="button" className="primary" onClick={generateDraft} disabled={isGenerating}>
+              开始规划
+            </button>
+            <div className="start-weak-actions">
+              <button className="ghost" type="button" onClick={() => importInputRef.current?.click()}>
+                导入已有计划
+              </button>
+              {hasRestoredDraft ? (
+                <button className="ghost" type="button" onClick={() => setScreen("editor")}>
+                  返回编辑器
+                </button>
+              ) : null}
+            </div>
+          </div>
+          {message ? <p className="form-message">{message}</p> : null}
+        </section>
+        <input
+          ref={importInputRef}
+          className="project-import-input"
+          type="file"
+          accept="application/json,.json"
+          onChange={importProject}
+        />
+      </main>
+    );
+  }
+
+  if (screen === "intake" && intakeResult?.status === "needs_choice") {
+    const selectedChoice = intakeResult.question?.choices.find(
+      (c) => c.id === selectedIntakeChoiceId
+    );
+
+    return (
+      <main className="intake-workspace">
+        <section className="intake-shell">
+          <header className="intake-header">
+            <span className="intake-step">计划协商</span>
+            <h1>选择一条学习路线</h1>
+            <p className="intake-prompt">{prompt}</p>
+          </header>
+
+          <div className="route-list">
+            {intakeResult.question?.choices.map((choice) => {
+              const selected = selectedIntakeChoiceId === choice.id;
+              return (
+                <button
+                  type="button"
+                  key={choice.id}
+                  className={selected ? "selected" : ""}
+                  onClick={() => chooseIntakeOption(choice.id)}
+                >
+                  <span className="route-radio" />
+                  <div className="route-body">
+                    <strong>{choice.label}</strong>
+                    <span>{choice.description}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedChoice ? (
+            <div className="route-detail">
+              <p>{selectedChoice.description}</p>
+            </div>
+          ) : null}
+
+          <label className="intake-notes">
+            <span>补充说明（可选）</span>
+            <textarea
+              rows={2}
+              placeholder="比如：我有编程基础 / 每天只有30分钟 / 主要是为了面试"
+              value={intakeNotes}
+              onChange={(event) => setIntakeNotes(event.target.value)}
+            />
+          </label>
+
+          <LoadingLine
+            active={isGenerating}
+            label={loadingLabel}
+            elapsedSeconds={elapsedSeconds}
+          />
+          <footer className="intake-actions">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                setScreen("start");
+                setIntakeResult(null);
+                setSelectedIntakeChoiceId("");
+                setIntakeNotes("");
+              }}
+            >
+              返回
+            </button>
+            <button
+              type="button"
+              className="primary"
+              disabled={!selectedIntakeChoiceId || isGenerating}
+              onClick={continueIntake}
+            >
+              继续
+            </button>
+          </footer>
+          {message ? <p className="form-message">{message}</p> : null}
+        </section>
+      </main>
+    );
+  }
+
+  if (screen === "brief" && pendingBrief) {
+    return (
+      <main className="intake-workspace">
+        <section className="brief-shell">
+          <header className="brief-header">
+            <span className="brief-step">计划草案</span>
+            <h1>确认后生成可编辑计划图</h1>
+            <p className="brief-prompt">{pendingBrief.title}</p>
+          </header>
+
+          <div className="brief-body">
+            <div className="brief-list">
+              {BRIEF_FIELDS.map((field) => (
+                <button
+                  type="button"
+                  key={field.key}
+                  className={activeBriefField === field.key ? "active" : ""}
+                  onClick={() => setActiveBriefField(field.key)}
+                >
+                  <span className="brief-field-label">{field.label}</span>
+                  <span className="brief-field-preview">
+                    {getBriefFieldValue(pendingBrief, field.key)}
+                  </span>
+                </button>
+              ))}
+              {pendingBrief.skeleton?.length ? (
+                <div className="brief-skeleton">
+                  <span className="brief-field-label">计划骨架</span>
+                  <div className="skeleton-list">
+                    {pendingBrief.skeleton.map((phase, index) => (
+                      <div className="skeleton-item" key={index}>
+                        <strong>{phase.phase_name}</strong>
+                        <span>{phase.focus}</span>
+                        <small>{phase.estimated_child_count} 个节点</small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            <div className="brief-editor-pane">
+              <label>
+                <span>{briefFieldLabel(activeBriefField)}</span>
+                <textarea
+                  value={getBriefFieldValue(pendingBrief, activeBriefField)}
+                  onChange={(event) => updatePendingBrief(activeBriefField, event.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+
+          <LoadingLine
+            active={isGenerating}
+            label={loadingLabel}
+            elapsedSeconds={elapsedSeconds}
+          />
+          <footer className="brief-actions">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setScreen(intakeResult?.status === "needs_choice" ? "intake" : "start")}
+            >
+              返回修改
+            </button>
+            <button
+              type="button"
+              className="primary"
+              disabled={isGenerating}
+              onClick={confirmGeneratePlan}
+            >
+              生成计划图
+            </button>
+          </footer>
+          {message ? (
+            <div className="form-message-box">
+              <p className="form-message">{message}</p>
+              <button
+                type="button"
+                className="secondary"
+                onClick={confirmGeneratePlan}
+                disabled={isGenerating}
+              >
+                重新生成
+              </button>
+            </div>
+          ) : null}
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -536,7 +930,10 @@ function App() {
         <input
           value={prompt}
           placeholder="What would you like to create?"
-          onChange={(event) => setPrompt(event.target.value)}
+          onChange={(event) => {
+            setPrompt(event.target.value);
+            setIntakeResult(null);
+          }}
           onKeyDown={(event) => {
             if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
               generateDraft();
@@ -569,6 +966,29 @@ function App() {
     setNodes(nextNodes);
     persistDraft(title, summary, nextNodes, graphEdges);
   }
+}
+
+async function postJson(path, body) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || "请求失败");
+  return payload;
+}
+
+function briefFieldLabel(fieldKey) {
+  return BRIEF_FIELDS.find((field) => field.key === fieldKey)?.label || "详情";
+}
+
+function getBriefFieldValue(brief, fieldKey) {
+  if (!brief) return "";
+  if (fieldKey === "recommended_pace") {
+    return brief.recommended_pace || "按实际情况推进";
+  }
+  return brief[fieldKey] || "";
 }
 
 function toProjectDraft(draftTitle, draftSummary, draftNodes, draftGraphEdges, draftGoal) {

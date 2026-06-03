@@ -20,6 +20,8 @@ PlanNodeKind = Literal[
     "resource",
 ]
 
+PlanNodeStatus = Literal["not_started", "in_progress", "done"]
+
 
 class PlanGraphClient(Protocol):
     def complete_json(self, messages: list[LLMMessage]) -> dict[str, Any]:
@@ -38,6 +40,7 @@ class PlanGraphNode(BaseModel):
     description: str
     estimated_minutes: int = Field(default=25, ge=0, le=2000)
     group: str | None = None
+    status: PlanNodeStatus = "not_started"
     position: PlanNodePosition | None = None
 
     @field_validator("id")
@@ -48,6 +51,14 @@ class PlanGraphNode(BaseModel):
                 "node id must start with a letter and use letters, numbers, _ or -"
             )
         return value
+
+    @field_validator("estimated_minutes", mode="before")
+    @classmethod
+    def clamp_estimated_minutes(cls, value: Any) -> int:
+        if value is None:
+            return 25
+        minutes = int(value)
+        return max(5, min(minutes, 480))
 
 
 class PlanGraphEdge(BaseModel):
@@ -66,7 +77,7 @@ class PlanGraphEdge(BaseModel):
 class PlanGraphDraft(BaseModel):
     title: str
     summary: str
-    nodes: list[PlanGraphNode] = Field(min_length=2)
+    nodes: list[PlanGraphNode] = Field(min_length=8, max_length=18)
     edges: list[PlanGraphEdge] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -83,6 +94,48 @@ class PlanGraphDraft(BaseModel):
                 raise ValueError(
                     f"edge {edge.id} references missing target {edge.target}"
                 )
+        return self
+
+    @model_validator(mode="after")
+    def validate_single_project_structure(self) -> PlanGraphDraft:
+        goal_nodes = [node for node in self.nodes if node.kind == "goal"]
+        if len(goal_nodes) != 1:
+            raise ValueError("plan graph must contain exactly one goal node")
+
+        phase_nodes = [node for node in self.nodes if node.kind == "phase"]
+        if not 3 <= len(phase_nodes) <= 5:
+            raise ValueError("plan graph must contain 3 to 5 phase nodes")
+
+        phase_ids = {node.id for node in phase_nodes}
+        child_by_phase = {phase_id: 0 for phase_id in phase_ids}
+        incident_ids = set()
+        for edge in self.edges:
+            incident_ids.add(edge.source)
+            incident_ids.add(edge.target)
+            if edge.source in phase_ids and edge.target not in phase_ids:
+                child_by_phase[edge.source] += 1
+
+        missing_children = [
+            phase_id
+            for phase_id, child_count in child_by_phase.items()
+            if child_count < 1
+        ]
+        if missing_children:
+            raise ValueError(
+                "each phase must have at least one child node: "
+                + ", ".join(sorted(missing_children))
+            )
+
+        isolated_ids = [
+            node.id
+            for node in self.nodes
+            if node.kind != "goal" and node.id not in incident_ids
+        ]
+        if isolated_ids:
+            raise ValueError(
+                "non-goal nodes must not be isolated: "
+                + ", ".join(sorted(isolated_ids))
+            )
         return self
 
 
@@ -116,7 +169,7 @@ def generate_plan_graph_draft(
 
 def build_system_prompt() -> str:
     return """
-You generate editable learning-plan mind maps.
+You generate one editable learning-plan graph for exactly one learning project.
 
 Return only one valid JSON object. Do not include markdown.
 
@@ -128,10 +181,11 @@ The JSON schema:
     {
       "id": "n1",
       "title": "short node title",
-      "kind": "goal|phase|concept|task|practice|review|project|checkpoint|resource",
+      "kind": "goal|phase|concept|practice|review|project|checkpoint|resource",
       "description": "specific action or learning purpose",
       "estimated_minutes": 25,
       "group": "optional visual group name",
+      "status": "not_started",
       "position": {"x": 0, "y": 0}
     }
   ],
@@ -141,16 +195,28 @@ The JSON schema:
 }
 
 Planning rules:
-- Do not force every plan into three stages.
-- Choose the graph shape that fits the goal: linear, branching, converging,
-  hub-and-spoke, or mixed.
-- Make one root goal node.
-- Prefer 8 to 16 nodes for an MVP preview.
-- Use edges to show prerequisites, branches, and synthesis paths.
+- Generate a single project only. Do not create multiple projects, Today tasks,
+  calendars, daily task queues, or weekly schedules.
+- Use this fixed structure: one goal node -> 3 to 5 phase nodes -> each phase
+  has 2 to 4 child nodes.
+- Prefer 10 to 16 total nodes. Never exceed 18 nodes.
+- Use clear node kinds: goal, phase, concept, practice, project, review,
+  checkpoint, or resource.
+- The goal node is the root. Each phase should connect from the goal or previous
+  phase, and each phase must connect to its own child nodes.
+- Phase children should be knowledge points, exercises, small projects,
+  checkpoints, resources, or reviews.
+- Keep the main path obvious: goal -> phase 1 -> phase 2 -> phase 3...
+- Avoid isolated nodes, dense cross-links, cycles, and complicated edge
+  crossings. Use only a few prerequisite or synthesis edges when necessary.
 - Keep node titles concise enough to fit inside visual cards.
-- Use concrete learning actions instead of vague slogans.
-- Estimate minutes per node from the requested daily capacity.
-- Positions should make a readable left-to-right mind map.
+- Use concrete learning actions instead of vague slogans or broad topics.
+- Estimate minutes realistically from the requested duration and daily capacity.
+  Most child nodes should be 15 to 120 minutes. Large project/checkpoint nodes
+  may be 120 to 240 minutes. Never invent impossible workloads.
+- Set missing status to not_started.
+- Positions should make a readable left-to-right graph: goal on the left,
+  phases in the middle, children near their phase.
 """.strip()
 
 
