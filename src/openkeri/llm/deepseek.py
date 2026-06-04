@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -27,6 +28,8 @@ class DeepSeekClient:
     timeout_seconds: float = 60.0
     max_tokens: int = 2048
     temperature: float = 0.2
+    max_retries: int = 2
+    retry_delay_seconds: float = 0.4
 
     @classmethod
     def from_env(cls) -> "DeepSeekClient":
@@ -83,20 +86,7 @@ class DeepSeekClient:
             method="POST",
         )
 
-        try:
-            with urllib.request.urlopen(
-                request, timeout=self.timeout_seconds
-            ) as response:
-                body = response.read().decode("utf-8")
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")
-            raise DeepSeekClientError(
-                f"DeepSeek API request failed with HTTP {exc.code}: {detail}"
-            ) from exc
-        except urllib.error.URLError as exc:
-            raise DeepSeekClientError(
-                f"DeepSeek API request failed: {exc.reason}"
-            ) from exc
+        body = self._urlopen_with_retries(request)
 
         try:
             parsed = json.loads(body)
@@ -108,6 +98,30 @@ class DeepSeekClient:
         if not isinstance(parsed, dict):
             raise DeepSeekClientError("DeepSeek API response must be an object.")
         return parsed
+
+    def _urlopen_with_retries(self, request: urllib.request.Request) -> str:
+        last_error: urllib.error.URLError | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                with urllib.request.urlopen(
+                    request, timeout=self.timeout_seconds
+                ) as response:
+                    return response.read().decode("utf-8")
+            except urllib.error.HTTPError as exc:
+                detail = exc.read().decode("utf-8", errors="replace")
+                raise DeepSeekClientError(
+                    f"DeepSeek API request failed with HTTP {exc.code}: {detail}"
+                ) from exc
+            except urllib.error.URLError as exc:
+                last_error = exc
+                if attempt >= self.max_retries:
+                    break
+                time.sleep(self.retry_delay_seconds * (attempt + 1))
+
+        assert last_error is not None
+        raise DeepSeekClientError(
+            f"DeepSeek API request failed: {last_error.reason}"
+        ) from last_error
 
     def _extract_message_content(self, response: dict[str, Any]) -> str:
         choices = response.get("choices")

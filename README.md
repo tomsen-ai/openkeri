@@ -1,88 +1,81 @@
 # openkeri
 
-openkeri is a runtime for building adaptive teacher agents.
+openkeri is currently focused on **Learning Manager / Plan Studio**: an
+AI-assisted learning plan and knowledge-route workspace.
 
-The first reference use case is an algorithm tutor for adult technical learners.
-The project is currently in early design and MVP scaffolding.
+The active product direction is not the older algorithm tutor. The algorithm
+tutor remains in `examples/algorithm_tutor/` as an early runtime reference, but
+current development should start from `examples/learning_manager/`.
 
-## Core Loop
+## Active Product
+
+Plan Studio turns a raw learning intent into an editable learning route:
 
 ```text
-current_input
-+ memory_context
-+ evidence
--> diagnosis
--> teaching_action
--> memory_update
+raw intent
+-> dynamic intake questions
+-> rule-based completeness gate
+-> dynamic plan brief
+-> editable plan graph
+-> node-level learning page
 ```
 
-## Development Status
+The current implementation lives here:
 
-The repository is not ready for production use. The first implementation will
-focus on:
-
-- Pydantic schemas
-- learning task registry primitives
-- in-memory learning memory
-- execution evidence for simple algorithm problems
-- a rule-based teacher agent
-- a minimal runnable demo
-
-See the `docs/` directory for the current design contracts.
-
-## Run The Demo
-
-```bash
-.venv/bin/python examples/algorithm_tutor/demo.py
+```text
+examples/learning_manager/
+  plan_api.py              local HTTP API for intake and graph generation
+  plan_intake.py           raw intent -> slots -> dynamic questions/brief
+  plan_graph_generator.py  brief-aligned plan graph generation and validation
+  plan_editor/             React Flow Plan Studio frontend
 ```
 
-The demo is deterministic and does not call an LLM. It shows a learner failing
-the same algorithm problem several times, receiving hints first, and then
-getting an explanation after memory records repeated struggle.
+## Current Flow
 
-For a file-based interactive version:
+1. The user enters a natural-language learning goal.
+2. The intake model extracts structured slots from the raw intent.
+3. Python rules decide whether required information is missing.
+4. If needed, the model asks one contextual multiple-choice question.
+5. Once enough information is known, the model creates a dynamic plan brief.
+6. The user confirms the brief.
+7. The graph generator creates an editable learning route aligned to the brief.
 
-```bash
-.venv/bin/python examples/algorithm_tutor/interactive.py
-```
+This is designed to keep the first screen free-form while avoiding hardcoded
+menus and fixed upfront forms.
 
-For an LLMTeacher integration demo with a mock LLM client:
+## Run Plan Studio
 
-```bash
-.venv/bin/python examples/algorithm_tutor/llm_mock_demo.py
-```
-
-For an optional DeepSeek-backed LLMTeacher demo:
+Backend:
 
 ```bash
 export OPENKERI_DEEPSEEK_API_KEY=your_api_key
-.venv/bin/python examples/algorithm_tutor/llm_deepseek_demo.py
+PYTHONPATH=src:. .venv/bin/python examples/learning_manager/plan_api.py
 ```
 
-For the learning project manager demo:
+Frontend:
 
 ```bash
-.venv/bin/python examples/learning_manager/main.py
+cd examples/learning_manager/plan_editor
+npm install
+npm run dev
 ```
 
-The demo starts from a one-sentence goal, drafts a stage-route learning map, and
-then lets you work through `today`, `map`, and `complete` commands. Completing a
-node unlocks the next node in the route.
+Open:
 
-Current status: the route draft is still rule-based fallback logic. The intended
-shape is LLM-first route generation with a rule-based fallback, so the CLI
-always has a usable project map even when no model is configured.
+```text
+http://127.0.0.1:5173/
+```
 
-`DeepSeekClient` prefers `OPENKERI_DEEPSEEK_API_KEY` and also accepts the common
-`DEEPSEEK_API_KEY` environment variable.
-
-The DeepSeek demo is not part of the default test path. It is intended for local
-manual checks when an API key is available.
-
-## Local Verification
+## Verification
 
 ```bash
-.venv/bin/python -m pytest
+PYTHONPATH=src:. .venv/bin/python -m pytest
 .venv/bin/python -m ruff check .
-.venv/bin/python -m ruff format --check .
+cd examples/learning_manager/plan_editor && npm run build
 ```
+
+## Legacy Reference
+
+`examples/algorithm_tutor/` is a deterministic teacher-agent runtime reference.
+It is useful background for schemas, memory, evidence, and teacher-agent
+experiments, but it is not the current product focus.

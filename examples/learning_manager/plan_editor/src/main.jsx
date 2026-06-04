@@ -73,11 +73,11 @@ function LoadingLine({ active, label, elapsedSeconds }) {
 }
 
 const BRIEF_FIELDS = [
-  { key: "refined_goal", label: "本轮目标" },
-  { key: "scope", label: "学习重点" },
-  { key: "excluded_scope", label: "暂不深入" },
-  { key: "recommended_pace", label: "建议节奏" },
-  { key: "expected_outcome", label: "预期结果" },
+  { key: "objective.one_sentence", label: "本轮目标" },
+  { key: "objective.outcome", label: "预期结果" },
+  { key: "scope.include", label: "学习重点" },
+  { key: "scope.exclude", label: "暂不深入" },
+  { key: "strategy.rationale", label: "路线策略" },
 ];
 
 function App() {
@@ -99,7 +99,7 @@ function App() {
   const [selectedIntakeChoiceId, setSelectedIntakeChoiceId] = useState("");
   const [intakeNotes, setIntakeNotes] = useState("");
   const [pendingBrief, setPendingBrief] = useState(null);
-  const [activeBriefField, setActiveBriefField] = useState("refined_goal");
+  const [activeBriefField, setActiveBriefField] = useState("objective.one_sentence");
   const [loadingLabel, setLoadingLabel] = useState("");
   const [loadingStartedAt, setLoadingStartedAt] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -211,7 +211,7 @@ function App() {
         return;
       }
       setPendingBrief(intake.brief);
-      setActiveBriefField("refined_goal");
+      setActiveBriefField("objective.one_sentence");
       setScreen("brief");
     } catch (error) {
       setMessage(error.message);
@@ -248,7 +248,7 @@ function App() {
       }
       setIntakeResult(nextIntake);
       setPendingBrief(nextIntake.brief);
-      setActiveBriefField("refined_goal");
+      setActiveBriefField("objective.one_sentence");
       setScreen("brief");
     } catch (error) {
       setMessage(error.message);
@@ -280,9 +280,9 @@ function App() {
 
   async function generatePlanFromBrief(brief) {
     const payload = await postJson("/api/generate-plan", {
-      goal: brief?.refined_goal || prompt,
-      durationDays: brief?.constraints?.duration_days || EMPTY_FORM.durationDays,
-      dailyMinutes: brief?.constraints?.daily_minutes || EMPTY_FORM.dailyMinutes,
+      goal: brief?.objective?.one_sentence || prompt,
+      durationDays: brief?.schedule?.duration_days || EMPTY_FORM.durationDays,
+      dailyMinutes: brief?.schedule?.daily_minutes || EMPTY_FORM.dailyMinutes,
       preference: EMPTY_FORM.preference,
       brief,
     });
@@ -297,23 +297,14 @@ function App() {
     setIntakeResult(null);
     setSelectedIntakeChoiceId("");
     setPendingBrief(null);
-    setActiveBriefField("refined_goal");
-    setMessage(brief?.user_summary?.headline || "已生成计划草稿。");
+    setActiveBriefField("objective.one_sentence");
+    setMessage(brief?.title || "已生成计划草稿。");
   }
 
   function updatePendingBrief(field, value) {
     setPendingBrief((brief) => {
       if (!brief) return brief;
-      const nextSummary = { ...(brief.user_summary || {}) };
-      if (field === "refined_goal") nextSummary.headline = value;
-      if (field === "scope") nextSummary.focus = value;
-      if (field === "excluded_scope") nextSummary.not_included = value;
-      if (field === "expected_outcome") nextSummary.outcome = value;
-      return {
-        ...brief,
-        [field]: value,
-        user_summary: nextSummary,
-      };
+      return setBriefFieldValue(brief, field, value);
     });
   }
 
@@ -628,15 +619,29 @@ function OpenKeriLogo({ size = 28 }) {
                   </span>
                 </button>
               ))}
-              {pendingBrief.skeleton?.length ? (
+              {pendingBrief.preview?.phases?.length ? (
                 <div className="brief-skeleton">
                   <span className="brief-field-label">计划骨架</span>
                   <div className="skeleton-list">
-                    {pendingBrief.skeleton.map((phase, index) => (
+                    {pendingBrief.preview.phases.map((phase, index) => (
                       <div className="skeleton-item" key={index}>
                         <strong>{phase.phase_name}</strong>
                         <span>{phase.focus}</span>
                         <small>{phase.estimated_child_count} 个节点</small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {pendingBrief.sections?.length ? (
+                <div className="brief-skeleton">
+                  <span className="brief-field-label">动态模块</span>
+                  <div className="skeleton-list">
+                    {pendingBrief.sections.map((section) => (
+                      <div className="skeleton-item" key={section.id}>
+                        <strong>{section.title}</strong>
+                        <span>{section.summary}</span>
+                        <small>{section.kind}</small>
                       </div>
                     ))}
                   </div>
@@ -985,10 +990,27 @@ function briefFieldLabel(fieldKey) {
 
 function getBriefFieldValue(brief, fieldKey) {
   if (!brief) return "";
-  if (fieldKey === "recommended_pace") {
-    return brief.recommended_pace || "按实际情况推进";
+  const value = fieldKey.split(".").reduce((current, key) => current?.[key], brief);
+  if (Array.isArray(value)) {
+    return value.join("\n");
   }
-  return brief[fieldKey] || "";
+  return value || "";
+}
+
+function setBriefFieldValue(brief, fieldKey, value) {
+  const next = structuredClone(brief);
+  const keys = fieldKey.split(".");
+  let target = next;
+  for (const key of keys.slice(0, -1)) {
+    target[key] = target[key] || {};
+    target = target[key];
+  }
+  const finalKey = keys[keys.length - 1];
+  const previousValue = target[finalKey];
+  target[finalKey] = Array.isArray(previousValue)
+    ? value.split("\n").map((item) => item.trim()).filter(Boolean)
+    : value;
+  return next;
 }
 
 function toProjectDraft(draftTitle, draftSummary, draftNodes, draftGraphEdges, draftGoal) {

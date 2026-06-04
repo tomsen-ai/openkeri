@@ -4,6 +4,27 @@ This document defines the first engineering shape of openkeri: the runtime
 flow, module boundaries, proposed directory structure, MVP behavior, testing
 strategy, and initial CI policy.
 
+## Current Product Track
+
+Current development is centered on **Learning Manager / Plan Studio** under
+`examples/learning_manager/`.
+
+The older algorithm tutor still documents the first runtime experiment, but new
+product work should not treat it as the primary direction. The active product is
+a learning plan and knowledge-route workspace:
+
+```text
+raw intent
+-> slot-based dynamic intake
+-> dynamic plan brief
+-> brief-aligned editable graph
+-> node-level learning
+```
+
+The next major design work is graph quality: learning routes should support
+parallel branches, prerequisite clusters, convergence, optional side paths, and
+review loops instead of always becoming a linear phase route.
+
 It is not a marketing document. It is an engineering reference for future
 implementation work. New modules should fit back into this blueprint or cause
 the blueprint to be updated deliberately.

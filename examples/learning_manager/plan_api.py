@@ -124,11 +124,14 @@ class PlanApiHandler(BaseHTTPRequestHandler):
         duration_days = coerce_int(payload.get("durationDays"), 30)
         daily_minutes = coerce_int(payload.get("dailyMinutes"), 25)
         if brief is not None:
-            goal = brief.refined_goal
-            duration_days = brief.constraints.duration_days
-            daily_minutes = brief.constraints.daily_minutes
+            goal = brief.objective.one_sentence
+            duration_days = brief.schedule.duration_days
+            daily_minutes = brief.schedule.daily_minutes
 
         preference = build_generation_preference(payload, brief)
+        plan_brief_context = (
+            brief.model_dump(mode="json") if brief is not None else None
+        )
         client = make_deepseek_client()
 
         try:
@@ -138,6 +141,7 @@ class PlanApiHandler(BaseHTTPRequestHandler):
                 duration_days=duration_days,
                 daily_minutes=daily_minutes,
                 preference=preference,
+                plan_brief_context=plan_brief_context,
             )
         except (ValueError, DeepSeekClientError) as error:
             error_text = str(error)
@@ -157,6 +161,7 @@ class PlanApiHandler(BaseHTTPRequestHandler):
                         duration_days=duration_days,
                         daily_minutes=daily_minutes,
                         preference=retry_preference,
+                        plan_brief_context=plan_brief_context,
                     )
                 except (ValueError, DeepSeekClientError) as retry_error:
                     self.send_json({"error": str(retry_error)}, status=500)

@@ -1,6 +1,11 @@
+import json
+
 import pytest
 
-from examples.learning_manager.plan_graph_generator import generate_plan_graph_draft
+from examples.learning_manager.plan_graph_generator import (
+    build_system_prompt,
+    generate_plan_graph_draft,
+)
 
 
 class FakePlanClient:
@@ -137,6 +142,62 @@ def test_generate_plan_graph_draft_validates_response() -> None:
     assert draft.nodes[0].status == "not_started"
     assert draft.edges[1].source == "n2"
     assert "output_language" in client.messages[1].content
+
+
+def test_generate_plan_graph_draft_includes_structured_brief_context() -> None:
+    client = FakePlanClient(valid_plan_graph())
+    brief_context = {
+        "title": "Python 文件自动化入门",
+        "objective": {
+            "one_sentence": "30 天内学会用 Python 写基础文件整理脚本",
+            "outcome": "能完成 2-3 个整理照片和文档的小脚本",
+            "success_criteria": ["批量重命名文件", "按规则移动照片"],
+        },
+        "scope": {
+            "include": ["Python 基础", "文件路径", "批量重命名"],
+            "exclude": ["Web 后端"],
+        },
+        "preview": {
+            "phases": [
+                {"phase_name": "语法热身", "focus": "变量、循环、函数"},
+                {"phase_name": "文件操作", "focus": "路径、遍历、移动"},
+                {"phase_name": "脚本产出", "focus": "照片和文档整理"},
+            ],
+        },
+        "sections": [
+            {
+                "kind": "practice",
+                "title": "练习方式",
+                "summary": "每个阶段都产出一个小脚本。",
+            }
+        ],
+    }
+
+    generate_plan_graph_draft(
+        client,
+        goal="30 天内学会用 Python 写基础文件整理脚本",
+        duration_days=30,
+        daily_minutes=25,
+        preference="Use negotiated brief.",
+        plan_brief_context=brief_context,
+    )
+
+    payload = json.loads(client.messages[1].content)
+    assert payload["plan_brief_context"] == brief_context
+    assert payload["plan_brief_context"]["objective"]["one_sentence"].startswith(
+        "30 天内"
+    )
+    assert payload["plan_brief_context"]["scope"]["exclude"] == ["Web 后端"]
+
+
+def test_graph_prompt_includes_brief_alignment_rules() -> None:
+    prompt = build_system_prompt()
+
+    assert "Brief alignment rules" in prompt
+    assert "negotiated source of truth" in prompt
+    assert "preview.phases" in prompt
+    assert "scope.exclude" in prompt
+    assert "If there are 5 phases" in prompt
 
 
 def test_generate_plan_graph_draft_rejects_missing_edge_target() -> None:

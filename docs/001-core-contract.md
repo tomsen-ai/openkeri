@@ -2,6 +2,25 @@
 
 openkeri is a runtime for building adaptive teacher agents.
 
+## Current Product Track
+
+The current active product work is **Learning Manager / Plan Studio** in
+`examples/learning_manager/`.
+
+The algorithm tutor described below is an early reference implementation for
+the teacher-agent runtime. It remains useful background for schemas, memory,
+evidence, and agent experiments, but it is not the current product focus.
+
+Plan Studio's active loop is:
+
+```text
+raw learning intent
+-> dynamic intake
+-> plan brief
+-> editable learning graph
+-> node-level learning page
+```
+
 It is not a general chatbot framework, and it is not a course generator. The
 goal is to help a teacher agent observe a learner's current action, use learning
 memory and evidence, produce a diagnosis, and choose an appropriate teaching

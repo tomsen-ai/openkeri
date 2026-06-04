@@ -1,127 +1,196 @@
-# Learning Manager Demo
+# Learning Manager / Plan Studio
 
-Single-project learning plan MVP. Not a content tutor yet.
+This is the active openkeri product direction.
 
-Current flow:
+Plan Studio is a single-project learning plan and knowledge-route workspace. It
+starts from a free-form learning intent, negotiates only the information that is
+actually missing, produces a plan brief, and then generates an editable graph.
+
+It is not a content tutor yet. Node-level learning content is the next major
+area after route quality and graph layout are stable.
+
+## Product Flow
 
 ```text
-Start: input goal
-  -> Intake: LLM asks contextual questions (up to 5 rounds, dynamic choices)
-  -> Brief: review plan draft + phase skeleton preview
+Start: raw intent
+  -> Intake: slot extraction + rule-based completeness gate
+  -> Question: one dynamic contextual choice when required
+  -> Brief: fixed core + dynamic sections
   -> Editor: editable React Flow plan graph
        -> node status, add/delete/edit, edges, re-layout
        -> node learning page (placeholder content)
 ```
 
-Intake and Brief are standalone pages that run before the graph editor appears.
-The graph editor only shows after the user confirms the brief.
+The active frontend is `plan_editor/`. The legacy static frontend and CLI demo
+still exist for reference, but active work should target the React Flow editor.
 
-The intake loop is now fully LLM-driven: choices are generated dynamically from
-the user's actual goal, not from a hardcoded menu. Each round the LLM evaluates
-whether it has enough information (WHY / HOW MUCH / WHAT scope) to produce a
-plan brief, or asks another contextual question. Max 5 rounds; if still unclear
-after round 5, force_ready produces a conservative brief.
-
-## Current State & Priority
-
-**Priority 1: Flow rhythm (intake -> brief -> editor)**
-
-This is the gate that determines whether the product is usable.
-
-Shipped:
-- Dynamic LLM-driven intake with contextual choices (no hardcoded menus).
-- Plan skeleton preview inside brief (phase names, focus, node counts).
-- Graceful retry on plan generation failure (auto-simplify hint, 重新生成
-  button on frontend).
-- User notes/context input on intake page.
-- Conversation history passed through intake rounds so LLM remembers prior
-  choices.
-- Start / intake / brief pages visually redesigned (dark SaaS style, 8px
-  corners, single-screen layouts).
-
-Known gaps:
-
-- Brief page feels like data review rather than "approving a plan." The user
-  doesn't yet have a strong sense of buy-in before hitting generate.
-- No page transition animations; the jump between screens is abrupt.
-- The intake can still feel mechanical when the LLM produces generic questions
-  or repetitive choices.
-- Time constraints passed from the frontend are always treated as defaults
-  (time_is_default=true) — the user can't yet set a hard schedule on the
-  start page.
-
-Next backend work:
-
-- Improve the intake system prompt to produce more specific, non-generic
-  questions. The current prompt sometimes falls back to pattern-matched choices.
-- Add a "refine brief" endpoint so users can edit brief fields and re-negotiate
-  without restarting the intake loop.
-
-Next frontend work:
-
-- Animate page transitions (start -> intake -> brief -> editor) so the user
-  feels forward momentum.
-- Add a brief editing mode before plan generation (inline field editing).
-
-**Priority 2: Plan graph quality**
-
-The generated graph must feel like a real learning route, not a generic
-mind map.
-
-- Node titles should be actionable ("手写快排" not "排序算法").
-- Phase ordering must be obvious; child nodes should cluster cleanly.
-- Time estimates need to be believable and not all identical.
-
-**Priority 3: Node content depth**
-
-Each node learning page currently shows generic placeholder study steps.
-Eventually this should be AI-generated, node-specific content with:
-
-- targeted explanation
-- 1-2 practice prompts
-- self-check questions
-- learning notes
-
-This is intentionally last. A beautiful learning page on a bad plan is useless.
-
-## MVP Roadmap (shipped vs next)
-
-Shipped:
-1. Single project persistence via localStorage.
-2. Export / import JSON.
-3. React Flow editor: add, delete, edit nodes and edges; re-layout.
-4. Node status (not_started / in_progress / done).
-5. Basic node learning page (placeholder content).
-6. Dynamic LLM-driven intake loop (contextual choices, up to 5 rounds).
-7. Plan skeleton preview in brief (phase names, focus, node counts).
-8. Graceful retry when graph generation fails (backend auto-simplify + frontend 重新生成 button).
-9. User notes input on intake page.
-10. Conversation history passed through intake rounds.
-11. Start / intake / brief page visual redesign.
-
-Next:
-1. Brief page editing mode (inline field editing before generation).
-2. Page transition animations (start -> intake -> brief -> editor).
-3. Improve intake prompt quality (reduce generic/repetitive questions).
-4. Node content generation per node (backend + frontend).
-5. Editor visual polish: node cards, color system, edge styling.
-
-## Architecture
+## Current Architecture
 
 ```text
-plan_api.py              HTTP server (intake + graph generation)
-plan_intake.py           LLM-driven intake loop: goal -> contextual Q&A -> brief
-plan_graph_generator.py  LLM prompt + validation for plan graph nodes/edges
+plan_api.py              HTTP API for intake and graph generation
+plan_intake.py           raw intent -> slots -> dynamic question or brief
+plan_graph_generator.py  brief-aligned graph prompt + graph validation
 plan_editor/
   src/main.jsx           React app: start / intake / brief / editor screens
-  src/styles.css         all styles
+  src/styles.css         app styling
 ```
 
 API endpoints:
 
-- `POST /api/intake/start` — start intake from goal
-- `POST /api/intake/answer` — answer an intake choice
-- `POST /api/generate-plan` — generate plan graph from brief
+- `POST /api/intake/start` — start intake from raw intent.
+- `POST /api/intake/answer` — answer one dynamic intake choice.
+- `POST /api/generate-plan` — generate a plan graph from the confirmed brief.
+
+## Intake Model
+
+The intake is not a fixed questionnaire. The first input is a raw natural
+language intent, such as:
+
+```text
+我想 30 天提升英语口语，主要用于工作会议表达观点、做简单汇报和回应同事问题；目前能日常交流，但会议上不够流畅，每天晚上能练一会儿。
+```
+
+The model extracts slots:
+
+```text
+required:
+- learning_subject
+- target_outcome
+
+optional:
+- use_context
+- learner_background
+- time_window
+- available_rhythm
+- preferred_style
+```
+
+Python rules decide whether the flow can continue:
+
+```text
+required slots missing -> ask one dynamic question
+required slots filled + at least 2 optional slots -> generate brief
+required slots filled + optional slots below threshold -> ask next priority slot
+round limit reached -> allow only if required slots are filled
+```
+
+This keeps the start screen simple while avoiding generic plans.
+
+## Plan Brief
+
+The brief has a stable core plus dynamic sections.
+
+Stable core:
+
+- objective
+- scope
+- constraints
+- strategy
+- assumptions
+- risks
+- preview phases
+
+Dynamic sections:
+
+- context
+- strategy
+- time
+- background
+- output
+- warning
+- resources
+- practice
+
+The brief is the product's planning contract. The graph generator receives the
+confirmed brief as structured context, not just as a loose text preference.
+
+## Plan Graph
+
+The graph generator currently uses this structure:
+
+```text
+one goal node
+-> 3 to 5 phase nodes
+-> child concept/practice/project/review/checkpoint/resource nodes
+```
+
+It validates:
+
+- exactly one goal node
+- 3 to 5 phase nodes
+- 8 to 18 total nodes
+- no isolated non-goal nodes
+- every phase has at least one child node
+- all edges reference existing nodes
+
+The generator now aligns to the brief:
+
+- goal node reflects `objective.one_sentence`
+- phase nodes follow `preview.phases`
+- child nodes come from scope, success criteria, and dynamic sections
+- excluded scope should not be introduced into the graph
+- 5-phase briefs are compressed to avoid oversized graphs
+
+## Current State
+
+Shipped:
+
+1. Single project persistence via localStorage.
+2. Export / import JSON.
+3. React Flow editor: add, delete, edit nodes and edges; re-layout.
+4. Node status: `not_started`, `in_progress`, `done`.
+5. Basic node learning page with placeholder content.
+6. Raw-intent intake with dynamic questions.
+7. Rule-based slot completeness gate.
+8. Dynamic plan brief with dynamic sections.
+9. Brief-aligned graph generation.
+10. DeepSeek transient network retry.
+
+Known gaps:
+
+- Brief page UI is only structurally compatible with the new brief; it still
+  needs a better confirmation experience.
+- Graph layout is still mostly route-like and phase-linear. Some learning plans
+  need richer graph shapes: parallel branches, prerequisite clusters, review
+  loops, convergence nodes, and optional side paths.
+- Node learning pages still show generic placeholder content.
+- Public/free deployment needs call budgets, rate limits, and provider options.
+
+## Next Priorities
+
+**Priority 1: Knowledge-Graph Route Quality**
+
+The plan graph should not always feel linear. Improve generation and layout for:
+
+- parallel tracks
+- prerequisite clusters
+- optional branches
+- convergence/synthesis nodes
+- review loops
+- resource side paths
+- better edge labeling
+
+The challenge is to keep graph readability while allowing non-linear structure.
+
+**Priority 2: Node-Level Learning**
+
+After route quality improves, generate node-specific learning content:
+
+- targeted explanation
+- 1-2 practice prompts
+- self-check questions
+- notes and reflection
+- next-step recommendation
+
+**Priority 3: Public Service Safety**
+
+Before any public free deployment:
+
+- request/session/IP limits
+- daily model call budget
+- graph retry budget
+- model provider configuration
+- self-host/BYOK path
 
 ## Run
 
@@ -129,7 +198,7 @@ Backend:
 
 ```bash
 export OPENKERI_DEEPSEEK_API_KEY=your_api_key
-.venv/bin/python examples/learning_manager/plan_api.py
+PYTHONPATH=src:. .venv/bin/python examples/learning_manager/plan_api.py
 ```
 
 Frontend:
@@ -140,25 +209,24 @@ npm install
 npm run dev
 ```
 
-Then open `http://127.0.0.1:5173/`.
+Then open:
 
-Legacy static frontend and CLI demo still exist in `frontend/` and `main.py`
-for reference, but active work is on the React Flow plan editor.
+```text
+http://127.0.0.1:5173/
+```
 
 ## Checks
 
 ```bash
-cd examples/learning_manager/plan_editor && npm run build
-
-cd /path/to/openkeri
-.venv/bin/ruff check examples/learning_manager/plan_api.py \
-  examples/learning_manager/plan_intake.py \
-  examples/learning_manager/plan_graph_generator.py
-
-PYTHONPATH=src:. pytest \
+PYTHONPATH=src:. .venv/bin/python -m pytest \
   tests/test_learning_manager_plan_intake.py \
   tests/test_learning_manager_plan_graph_generator.py \
   tests/test_learning_manager.py
 
-git diff --check
+.venv/bin/python -m ruff check \
+  examples/learning_manager/plan_api.py \
+  examples/learning_manager/plan_intake.py \
+  examples/learning_manager/plan_graph_generator.py
+
+cd examples/learning_manager/plan_editor && npm run build
 ```

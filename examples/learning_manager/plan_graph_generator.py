@@ -146,6 +146,7 @@ def generate_plan_graph_draft(
     duration_days: int,
     daily_minutes: int,
     preference: str = "",
+    plan_brief_context: dict[str, Any] | None = None,
 ) -> PlanGraphDraft:
     response = client.complete_json(
         [
@@ -157,6 +158,7 @@ def generate_plan_graph_draft(
                     duration_days=duration_days,
                     daily_minutes=daily_minutes,
                     preference=preference,
+                    plan_brief_context=plan_brief_context,
                 ),
             ),
         ]
@@ -198,8 +200,13 @@ Planning rules:
 - Generate a single project only. Do not create multiple projects, Today tasks,
   calendars, daily task queues, or weekly schedules.
 - Use this fixed structure: one goal node -> 3 to 5 phase nodes -> each phase
-  has 2 to 4 child nodes.
-- Prefer 10 to 16 total nodes. Never exceed 18 nodes.
+  has child nodes.
+- Hard node budget: prefer 10 to 16 total nodes. Never exceed 18 nodes.
+- If there are 5 phases, use only 1 to 2 child nodes per phase.
+- If there are 4 phases, use 2 to 3 child nodes per phase.
+- If there are 3 phases, use 2 to 4 child nodes per phase.
+- When plan_brief_context.preview has 5 phases, preserve the 5 phase names but
+  compress child nodes aggressively instead of adding every possible detail.
 - Use clear node kinds: goal, phase, concept, practice, project, review,
   checkpoint, or resource.
 - The goal node is the root. Each phase should connect from the goal or previous
@@ -217,6 +224,21 @@ Planning rules:
 - Set missing status to not_started.
 - Positions should make a readable left-to-right graph: goal on the left,
   phases in the middle, children near their phase.
+
+Brief alignment rules:
+- If plan_brief_context is provided, treat it as the negotiated source of truth.
+- The single goal node must reflect objective.one_sentence.
+- Phase nodes should follow preview.phases in order. Use the phase names and
+  focus as the primary phase structure unless doing so would violate graph
+  limits.
+- Child nodes must come from scope.include, success criteria, dynamic sections,
+  and the phase focus. Do not introduce broad unrelated topics from
+  scope.exclude.
+- If risks or assumptions are provided, include them as checkpoint/review
+  descriptions rather than expanding the plan scope.
+- Dynamic sections should influence node kinds: practice sections should create
+  practice/project nodes, resource sections may create one resource node, warning
+  sections should create a checkpoint or review node.
 """.strip()
 
 
@@ -226,6 +248,7 @@ def build_user_prompt(
     duration_days: int,
     daily_minutes: int,
     preference: str,
+    plan_brief_context: dict[str, Any] | None = None,
 ) -> str:
     return json.dumps(
         {
@@ -233,6 +256,7 @@ def build_user_prompt(
             "duration_days": duration_days,
             "daily_minutes": daily_minutes,
             "preference": preference,
+            "plan_brief_context": plan_brief_context,
             "output_language": "zh-CN",
         },
         ensure_ascii=False,

@@ -1,5 +1,6 @@
 import json
 from typing import Any
+from urllib.error import URLError
 from urllib.request import Request
 
 import pytest
@@ -83,6 +84,41 @@ def test_deepseek_client_posts_chat_completion_request(
     assert payload["stream"] is False
     assert payload["response_format"] == {"type": "json_object"}
     assert payload["thinking"] == {"type": "disabled"}
+    assert output["diagnosis"]["issue"] == "left_boundary_update_error"
+
+
+def test_deepseek_client_retries_transient_url_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts = 0
+
+    def fake_urlopen(request: Request, timeout: float) -> FakeHTTPResponse:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise URLError("temporary ssl eof")
+        return FakeHTTPResponse(
+            {
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": json.dumps(valid_teacher_output())},
+                    }
+                ]
+            }
+        )
+
+    monkeypatch.setattr(deepseek_client_module.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(deepseek_client_module.time, "sleep", lambda delay: None)
+    client = DeepSeekClient(
+        api_key="test-key",
+        max_retries=1,
+        retry_delay_seconds=0.01,
+    )
+
+    output = client.complete_json([LLMMessage(role="user", content="Return JSON.")])
+
+    assert attempts == 2
     assert output["diagnosis"]["issue"] == "left_boundary_update_error"
 
 
