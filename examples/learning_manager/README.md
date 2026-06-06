@@ -110,26 +110,51 @@ The graph generator currently uses this structure:
 
 ```text
 one goal node
--> 3 to 5 phase nodes
--> child concept/practice/project/review/checkpoint/resource nodes
+-> 3 to 5 stage nodes as the route scaffold
+-> learn/project child nodes inside each stage
 ```
 
 It validates:
 
 - exactly one goal node
-- 3 to 5 phase nodes
+- 3 to 5 stage nodes
 - 8 to 18 total nodes
 - no isolated non-goal nodes
-- every phase has at least one child node
+- every non-goal node has an incoming edge
+- every node is reachable from the goal node
+- every stage has at least one child node
+- stage children are only `learn` or `project` nodes
 - all edges reference existing nodes
 
 The generator now aligns to the brief:
 
 - goal node reflects `objective.one_sentence`
-- phase nodes follow `preview.phases`
+- stage nodes follow `preview.phases`
 - child nodes come from scope, success criteria, and dynamic sections
 - excluded scope should not be introduced into the graph
-- 5-phase briefs are compressed to avoid oversized graphs
+- 5-stage briefs are compressed to avoid oversized graphs
+
+Plan graph node kinds are intentionally small, with a computer-learning bias:
+
+```text
+goal     final observable capability or result
+stage    ordered route segment
+learn    one knowledge point or capability unit, with details inside the node
+project  integrated output that combines multiple learn units
+```
+
+Edges carry a semantic `relation` field so generation, validation, and rendering
+do not depend on free-form labels:
+
+```text
+next      main route progression
+contains  stage owns a learn/project child
+```
+
+Former graph-level concepts are folded into node details: concept/practice/lab
+content belongs inside `learn`; resources, review prompts, and acceptance
+criteria belong inside `learn` or `project`; checkpoints are represented as
+project acceptance criteria rather than separate default graph nodes.
 
 ## Current State
 
@@ -150,31 +175,31 @@ Known gaps:
 
 - Brief page UI is only structurally compatible with the new brief; it still
   needs a better confirmation experience.
-- Graph layout is still mostly route-like and phase-linear. Some learning plans
-  need richer graph shapes: parallel branches, prerequisite clusters, review
-  loops, convergence nodes, and optional side paths.
+- Graph layout is still a compatibility layer over React Flow. The next UI pass
+  should present stages as route cards and show learn/project children inside
+  each stage rather than treating every child as a graph peer.
 - Node learning pages still show generic placeholder content.
 - Public/free deployment needs call budgets, rate limits, and provider options.
 
 ## Next Priorities
 
-**Priority 1: Knowledge-Graph Route Quality**
+**Priority 1: Route Clarity**
 
-The plan graph should not always feel linear. Improve generation and layout for:
+The plan graph should feel like an executable learning route, not a dense
+knowledge graph. Improve generation and layout for:
 
-- parallel tracks
-- prerequisite clusters
-- optional branches
-- convergence/synthesis nodes
-- review loops
-- resource side paths
-- better edge labeling
+- concise `goal/stage/learn/project` generation
+- stage route cards instead of graph-peer child clutter
+- learn node details with explanation, examples, mini labs, exercises,
+  resources, self-checks, and review prompts
+- project nodes with requirements and acceptance criteria
 
-The challenge is to keep graph readability while allowing non-linear structure.
+The challenge is to keep the visible graph simple while preserving useful
+learning detail inside nodes.
 
 **Priority 2: Node-Level Learning**
 
-After route quality improves, generate node-specific learning content:
+After route clarity improves, generate node-specific learning content:
 
 - targeted explanation
 - 1-2 practice prompts

@@ -152,8 +152,9 @@ class PlanApiHandler(BaseHTTPRequestHandler):
                         f"{preference}\n\n"
                         "IMPORTANT: The previous attempt failed because the graph "
                         "was too large or structurally invalid. Please simplify: "
-                        "use fewer nodes (aim for 10-14 total), keep phases to 3-4, "
-                        "and ensure every phase has at least one child node."
+                        "use fewer nodes (aim for 10-14 total), keep stages to 3-4, "
+                        "use only goal/stage/learn/project node kinds, and ensure "
+                        "every stage has at least one learn or project child node."
                     )
                     draft = generate_plan_graph_draft(
                         client,

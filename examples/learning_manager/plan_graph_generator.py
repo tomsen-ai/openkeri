@@ -10,17 +10,16 @@ from openkeri.llm import LLMMessage
 
 PlanNodeKind = Literal[
     "goal",
-    "phase",
-    "concept",
-    "task",
-    "practice",
-    "review",
+    "stage",
+    "learn",
     "project",
-    "checkpoint",
-    "resource",
 ]
 
 PlanNodeStatus = Literal["not_started", "in_progress", "done"]
+PlanEdgeRelation = Literal[
+    "contains",
+    "next",
+]
 
 
 class PlanGraphClient(Protocol):
@@ -65,12 +64,15 @@ class PlanGraphEdge(BaseModel):
     id: str
     source: str
     target: str
+    relation: PlanEdgeRelation = "contains"
     label: str | None = None
 
     @model_validator(mode="after")
     def validate_not_self_loop(self) -> PlanGraphEdge:
         if self.source == self.target:
             raise ValueError("edge source and target must be different")
+        if not self.label:
+            self.label = relation_label(self.relation)
         return self
 
 
@@ -102,28 +104,51 @@ class PlanGraphDraft(BaseModel):
         if len(goal_nodes) != 1:
             raise ValueError("plan graph must contain exactly one goal node")
 
-        phase_nodes = [node for node in self.nodes if node.kind == "phase"]
-        if not 3 <= len(phase_nodes) <= 5:
-            raise ValueError("plan graph must contain 3 to 5 phase nodes")
+        stage_nodes = [node for node in self.nodes if node.kind == "stage"]
+        if not 3 <= len(stage_nodes) <= 5:
+            raise ValueError("plan graph must contain 3 to 5 stage nodes")
 
-        phase_ids = {node.id for node in phase_nodes}
-        child_by_phase = {phase_id: 0 for phase_id in phase_ids}
+        goal_id = goal_nodes[0].id
+        kind_by_id = {node.id: node.kind for node in self.nodes}
+        stage_ids = {node.id for node in stage_nodes}
+        child_by_stage = {stage_id: 0 for stage_id in stage_ids}
+        incoming_by_node = {node.id: 0 for node in self.nodes}
+        children_by_source = {node.id: [] for node in self.nodes}
         incident_ids = set()
         for edge in self.edges:
             incident_ids.add(edge.source)
             incident_ids.add(edge.target)
-            if edge.source in phase_ids and edge.target not in phase_ids:
-                child_by_phase[edge.source] += 1
+            incoming_by_node[edge.target] += 1
+            children_by_source[edge.source].append(edge.target)
+            if (
+                edge.source in stage_ids
+                and edge.target not in stage_ids
+                and edge.relation == "contains"
+            ):
+                child_by_stage[edge.source] += 1
 
         missing_children = [
-            phase_id
-            for phase_id, child_count in child_by_phase.items()
+            stage_id
+            for stage_id, child_count in child_by_stage.items()
             if child_count < 1
         ]
         if missing_children:
             raise ValueError(
-                "each phase must have at least one child node: "
+                "each stage must have at least one child node: "
                 + ", ".join(sorted(missing_children))
+            )
+
+        invalid_child_ids = [
+            edge.target
+            for edge in self.edges
+            if edge.source in stage_ids
+            and edge.relation == "contains"
+            and kind_by_id[edge.target] not in {"learn", "project"}
+        ]
+        if invalid_child_ids:
+            raise ValueError(
+                "stage children must be learn or project nodes: "
+                + ", ".join(sorted(set(invalid_child_ids)))
             )
 
         isolated_ids = [
@@ -135,6 +160,35 @@ class PlanGraphDraft(BaseModel):
             raise ValueError(
                 "non-goal nodes must not be isolated: "
                 + ", ".join(sorted(isolated_ids))
+            )
+
+        unreachable_ids = [
+            node.id
+            for node in self.nodes
+            if node.kind != "goal" and incoming_by_node[node.id] < 1
+        ]
+        if unreachable_ids:
+            raise ValueError(
+                "non-goal nodes must have at least one incoming edge: "
+                + ", ".join(sorted(unreachable_ids))
+            )
+
+        reachable_ids = {goal_id}
+        queue = [goal_id]
+        while queue:
+            source_id = queue.pop(0)
+            for target_id in children_by_source[source_id]:
+                if target_id not in reachable_ids:
+                    reachable_ids.add(target_id)
+                    queue.append(target_id)
+
+        disconnected_ids = [
+            node.id for node in self.nodes if node.id not in reachable_ids
+        ]
+        if disconnected_ids:
+            raise ValueError(
+                "nodes must be reachable from the goal node: "
+                + ", ".join(sorted(disconnected_ids))
             )
         return self
 
@@ -183,7 +237,7 @@ The JSON schema:
     {
       "id": "n1",
       "title": "short node title",
-      "kind": "goal|phase|concept|practice|review|project|checkpoint|resource",
+      "kind": "goal|stage|learn|project",
       "description": "specific action or learning purpose",
       "estimated_minutes": 25,
       "group": "optional visual group name",
@@ -191,54 +245,76 @@ The JSON schema:
       "position": {"x": 0, "y": 0}
     }
   ],
-  "edges": [
-    {"id": "e1", "source": "n1", "target": "n2", "label": "optional relation"}
+    "edges": [
+    {
+      "id": "e1",
+      "source": "n1",
+      "target": "n2",
+      "relation": "contains|next",
+      "label": "short visible relation label"
+    }
   ]
 }
 
 Planning rules:
 - Generate a single project only. Do not create multiple projects, Today tasks,
   calendars, daily task queues, or weekly schedules.
-- Use this fixed structure: one goal node -> 3 to 5 phase nodes -> each phase
-  has child nodes.
+- Optimize for computer-science and software learning plans. Generate a clean
+  learning route, not a dense knowledge graph.
+- Use this fixed structure: one goal node, 3 to 5 stage nodes, and learn/project
+  child nodes under stages.
 - Hard node budget: prefer 10 to 16 total nodes. Never exceed 18 nodes.
-- If there are 5 phases, use only 1 to 2 child nodes per phase.
-- If there are 4 phases, use 2 to 3 child nodes per phase.
-- If there are 3 phases, use 2 to 4 child nodes per phase.
-- When plan_brief_context.preview has 5 phases, preserve the 5 phase names but
+- If there are 5 stages, use only 1 to 2 child nodes per stage.
+- If there are 4 stages, use 2 to 3 child nodes per stage.
+- If there are 3 stages, use 2 to 4 child nodes per stage.
+- When plan_brief_context.preview has 5 phases, preserve the 5 stage names but
   compress child nodes aggressively instead of adding every possible detail.
-- Use clear node kinds: goal, phase, concept, practice, project, review,
-  checkpoint, or resource.
-- The goal node is the root. Each phase should connect from the goal or previous
-  phase, and each phase must connect to its own child nodes.
-- Phase children should be knowledge points, exercises, small projects,
-  checkpoints, resources, or reviews.
-- Keep the main path obvious: goal -> phase 1 -> phase 2 -> phase 3...
-- Avoid isolated nodes, dense cross-links, cycles, and complicated edge
-  crossings. Use only a few prerequisite or synthesis edges when necessary.
+- Use clear node kinds:
+  - goal: the final observable capability or result.
+  - stage: an ordered route segment that explains why this part comes here.
+  - learn: one knowledge point or capability unit. It may include explanation,
+    examples, mini labs, exercises, self-checks, resources, and review prompts
+    in its description/detail, but it remains one graph node.
+  - project: an integrated output that combines multiple learn nodes into a
+    runnable, submitable, visible, or otherwise verifiable artifact.
+- Do not use concept, task, practice, review, checkpoint, or resource as graph
+  node kinds. Fold them into learn/project descriptions and future node detail.
+- The goal node is the root. Each stage must be reachable from the goal or a
+  previous stage, and each stage must connect to at least one learn/project
+  child node.
+- Use relation "next" only for the main route: goal -> stage 1 and stage ->
+  stage.
+- Use relation "contains" only for stage -> learn/project ownership.
+- Do not add prerequisite, parallel, resource, convergence, review-loop, or
+  cross-stage edges. Mention strong prerequisites, resources, acceptance
+  criteria, and review prompts in node descriptions instead of drawing them.
+- Keep the visible graph simple and executable: stages show order; children
+  show what to learn or build in that stage.
+- Use informative edge labels. Prefer "开始", "下一阶段", "学习", or "项目".
 - Keep node titles concise enough to fit inside visual cards.
 - Use concrete learning actions instead of vague slogans or broad topics.
 - Estimate minutes realistically from the requested duration and daily capacity.
-  Most child nodes should be 15 to 120 minutes. Large project/checkpoint nodes
-  may be 120 to 240 minutes. Never invent impossible workloads.
+  Most learn nodes should be 30 to 120 minutes. Project nodes may be 120 to 240
+  minutes. Never invent impossible workloads.
 - Set missing status to not_started.
 - Positions should make a readable left-to-right graph: goal on the left,
-  phases in the middle, children near their phase.
+  stages in the middle, children near their stage.
 
 Brief alignment rules:
 - If plan_brief_context is provided, treat it as the negotiated source of truth.
 - The single goal node must reflect objective.one_sentence.
-- Phase nodes should follow preview.phases in order. Use the phase names and
-  focus as the primary phase structure unless doing so would violate graph
+- Stage nodes should follow preview.phases in order. Use the phase names and
+  focus as the primary stage structure unless doing so would violate graph
   limits.
 - Child nodes must come from scope.include, success criteria, dynamic sections,
-  and the phase focus. Do not introduce broad unrelated topics from
+  and the stage focus. Do not introduce broad unrelated topics from
   scope.exclude.
-- If risks or assumptions are provided, include them as checkpoint/review
-  descriptions rather than expanding the plan scope.
-- Dynamic sections should influence node kinds: practice sections should create
-  practice/project nodes, resource sections may create one resource node, warning
-  sections should create a checkpoint or review node.
+- If risks, assumptions, resources, or review needs are provided, include them
+  in learn/project descriptions rather than expanding graph node kinds.
+- Dynamic sections should influence node details: practice sections should make
+  learn descriptions more hands-on or create project nodes; resource sections
+  should be listed inside relevant learn/project descriptions; warning sections
+  should become acceptance criteria or review prompts in project descriptions.
 """.strip()
 
 
@@ -261,3 +337,10 @@ def build_user_prompt(
         },
         ensure_ascii=False,
     )
+
+
+def relation_label(relation: PlanEdgeRelation) -> str:
+    return {
+        "contains": "包含",
+        "next": "下一阶段",
+    }[relation]

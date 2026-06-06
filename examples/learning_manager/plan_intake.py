@@ -611,7 +611,7 @@ Rules:
 - Choices should be mutually exclusive enough to change the plan.
 - Each choice must include a fills object that fills the target slot and may
   fill other slots only when the choice clearly implies them.
-- Provide 2 to 4 choices.
+- Provide 3 to 4 choices.
 
 JSON schema:
 {

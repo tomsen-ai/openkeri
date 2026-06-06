@@ -1,21 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  Background,
-  Handle,
-  Position,
-  ReactFlow,
-  ReactFlowProvider,
-  addEdge,
-  applyNodeChanges,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+import MindElixir from "mind-elixir";
+import "mind-elixir/style";
 import "./styles.css";
 
 const STORAGE_KEY = "openkeri.planEditorDraft.v1";
-const ROADMAP_COLUMN_GAP = 520;
-const ROADMAP_BRANCH_GAP = 156;
-const ROADMAP_BRANCH_START_Y = 198;
+
+const STAGE_COLORS = [
+  { line: "#3b82f6", soft: "#dbeafe", ink: "#1e40af" },
+  { line: "#10b981", soft: "#d1fae5", ink: "#065f46" },
+  { line: "#f59e0b", soft: "#fef3c7", ink: "#92400e" },
+  { line: "#8b5cf6", soft: "#ede9fe", ink: "#5b21b6" },
+  { line: "#ec4899", soft: "#fce7f3", ink: "#9d174d" },
+];
 
 const EMPTY_FORM = {
   goal: "",
@@ -24,41 +21,527 @@ const EMPTY_FORM = {
   preference: "",
 };
 
-function PlanNode({ data, selected }) {
-  const shortDescription =
-    data.description && data.description.length > 55
-      ? `${data.description.slice(0, 35)}…`
-      : data.description || "";
-  const shouldShowDescription = selected || data.kind === "goal";
+const BRIEF_FIELDS = [
+  { key: "objective.one_sentence", label: "本轮目标" },
+  { key: "objective.outcome", label: "预期结果" },
+  { key: "scope.include", label: "学习重点" },
+  { key: "scope.exclude", label: "暂不深入" },
+  { key: "strategy.rationale", label: "路线策略" },
+];
 
+const CHIP_ICONS = {
+  code: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 7 4 12 9 17" />
+      <polyline points="15 7 20 12 15 17" />
+    </svg>
+  ),
+  python: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 6h6a3 3 0 0 1 3 3v3H10a3 3 0 0 0-3 3v3a3 3 0 0 0 3 3" />
+      <path d="M16 18h-6a3 3 0 0 1-3-3V12h7a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3" />
+    </svg>
+  ),
+  atom: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-60 12 12)" />
+    </svg>
+  ),
+};
+
+const START_EXAMPLES = [
+  { label: "30 天算法面试", icon: "code" },
+  { label: "两周入门 Python", icon: "python" },
+  { label: "系统学习 React 状态管理", icon: "atom" },
+];
+const START_MAX_CHARS = 300;
+
+const PREVIEW_BRIEF = {
+  title: "30天算法面试冲刺计划",
+  objective: {
+    one_sentence: "在30天内系统复习算法核心知识，提升面试常见题型的解题能力。",
+    outcome: "能够独立完成常见数据结构、动态规划、图论与搜索题，并清楚复盘解题思路。",
+    success_criteria: [
+      "能稳定识别数组、链表、树、图、动态规划等常见题型",
+      "能在限时环境下完成中等难度高频题",
+      "能复盘复杂题的思路和边界条件",
+    ],
+  },
+  scope: {
+    include: [
+      "数组与字符串",
+      "链表",
+      "树",
+      "图等基础数据结构",
+      "排序与搜索算法",
+      "动态规划",
+      "贪心等核心算法",
+    ],
+    exclude: ["竞赛级算法证明", "底层系统设计"],
+    light_touch: ["复杂数学证明", "低频冷门算法"],
+  },
+  constraints: {
+    time_window: "30天",
+    pace: "每天集中练习并复盘",
+    learner_background: "已有基础编程经验",
+    use_context: "算法面试准备",
+  },
+  strategy: {
+    route_type: "practice_first",
+    rationale: "以高频题型为主线，先建立解题模板，再通过练习和复盘提升速度与稳定性。",
+  },
+  assumptions: ["用户已经掌握一门编程语言的基础语法。"],
+  risks: ["只刷题不复盘会导致模板迁移能力不足。"],
+  preview: {
+    phases: [
+      { phase_name: "题型框架建立", focus: "整理常见数据结构和解题模板", estimated_child_count: 3 },
+      { phase_name: "高频题专项练习", focus: "按题型进行限时训练", estimated_child_count: 4 },
+      { phase_name: "综合模拟与复盘", focus: "模拟面试节奏并总结薄弱点", estimated_child_count: 3 },
+    ],
+  },
+  sections: [
+    {
+      id: "practice-plan",
+      title: "练习方式",
+      kind: "practice",
+      summary: "每天用固定题型训练加错题复盘形成稳定节奏。",
+      bullets: ["先做模板题", "再做变式题", "最后复盘错题"],
+      editable: true,
+    },
+    {
+      id: "risk-control",
+      title: "风险控制",
+      kind: "warning",
+      summary: "避免只追求刷题数量，优先保证复盘质量。",
+      bullets: ["记录卡点", "整理边界条件", "复述解法"],
+      editable: true,
+    },
+  ],
+  schedule: {
+    duration_days: 30,
+    daily_minutes: 90,
+    total_minutes: 2700,
+  },
+  slots: {
+    learning_subject: "算法面试",
+    target_outcome: "30天内提升算法面试解题能力",
+    time_window: "30天",
+    available_rhythm: "每天练习",
+    learner_background: "有基础编程经验",
+    preferred_style: "刷题与复盘结合",
+    use_context: "技术面试",
+  },
+  user_choices: [],
+};
+
+const PREVIEW_INTAKE = {
+  status: "needs_choice",
+  state: {
+    raw_goal: "两周入门 Python",
+    slots: {
+      learning_subject: "Python",
+      target_outcome: "两周内完成 Python 入门并能做一个小项目",
+    },
+    constraints: { duration_days: 14, daily_minutes: 30, total_minutes: 420 },
+    decisions: [],
+    round_index: 0,
+  },
+  question: {
+    id: "preview-route",
+    target_slot: "use_context",
+    title: "选择一条学习路线",
+    description: "根据你的目标，先确定这次学习更偏向哪种产出。",
+    choices: [
+      {
+        id: "foundation",
+        label: "掌握基础语法",
+        description: "能读懂简单 Python 代码，编写基本脚本。",
+        fills: { use_context: "基础语法入门" },
+      },
+      {
+        id: "project",
+        label: "完成一个小项目",
+        description: "例如数据分析、网页爬虫或自动化脚本。",
+        fills: { use_context: "项目驱动学习" },
+      },
+      {
+        id: "interview",
+        label: "准备面试",
+        description: "重点学习常见面试题和算法基础。",
+        fills: { use_context: "技术面试准备" },
+      },
+      {
+        id: "automation",
+        label: "工作自动化",
+        description: "用于处理 Excel、邮件、文件等办公任务。",
+        fills: { use_context: "办公自动化" },
+      },
+    ],
+  },
+};
+
+function SparkleIcon({ size = 18 }) {
   return (
-    <div className={`plan-node ${selected ? "selected" : ""} ${data.kind} ${data.layoutRole || ""}`}>
-      <Handle id="left" className="plan-handle left" type="target" position={Position.Left} />
-      <Handle id="top" className="plan-handle top" type="target" position={Position.Top} />
-      <div className="node-meta">
-        <span>{nodeKindLabel(data.kind)}</span>
-        <div className="node-badges">
-          <i className={`status-dot ${data.status || "not_started"}`} title={nodeStatusLabel(data.status)} />
-          {data.orderIndex ? <b>{data.orderIndex}</b> : null}
-        </div>
-      </div>
-      <strong>{data.title}</strong>
-      <small>{data.group || "未分组"} · {data.estimated_minutes || 0} min</small>
-      {shouldShowDescription && shortDescription ? <p>{shortDescription}</p> : null}
-      <Handle id="right" className="plan-handle right" type="source" position={Position.Right} />
-      <Handle id="bottom" className="plan-handle bottom" type="source" position={Position.Bottom} />
-    </div>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M12 3l1.6 4.6L18 9.2l-4.4 1.6L12 15.4l-1.6-4.6L6 9.2l4.4-1.6L12 3z"
+        fill="currentColor"
+      />
+      <path d="M18.5 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" fill="currentColor" opacity="0.6" />
+    </svg>
   );
 }
 
-const nodeTypes = { planNode: PlanNode };
+function installMindElixirTopicDragForwarding(host, me) {
+  let forwarding = false;
+  const interactiveSelector = [
+    "#input-box",
+    "a",
+    "button",
+    "input",
+    "select",
+    "textarea",
+    "[contenteditable='true']",
+    "[contenteditable='plaintext-only']",
+    "me-epd",
+    ".hyper-link",
+  ].join(",");
 
-function PageBrand() {
+  const handlePointerDown = (event) => {
+    if (
+      forwarding ||
+      event.pointerType !== "mouse" ||
+      event.button !== 0 ||
+      me.spacePressed
+    ) {
+      return;
+    }
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || target.closest(interactiveSelector)) return;
+
+    const topic = target.closest("me-tpc");
+    if (!topic || target === topic) return;
+
+    forwarding = true;
+    try {
+      topic.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          button: event.button,
+          buttons: event.buttons,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+          altKey: event.altKey,
+          pointerId: event.pointerId,
+          pointerType: event.pointerType,
+        }),
+      );
+    } finally {
+      forwarding = false;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  host.addEventListener("pointerdown", handlePointerDown, true);
+  return () => host.removeEventListener("pointerdown", handlePointerDown, true);
+}
+
+function installMindElixirSelectionSync(host, me, onSelectNode) {
+  const interactiveSelector = [
+    "#input-box",
+    "a",
+    "button",
+    "input",
+    "select",
+    "textarea",
+    "[contenteditable='true']",
+    "[contenteditable='plaintext-only']",
+    "me-epd",
+    ".hyper-link",
+  ].join(",");
+
+  const syncSelection = (event) => {
+    if (event.pointerType !== "mouse" || event.button !== 0 || me.spacePressed) return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || target.closest(interactiveSelector)) return;
+
+    const topic = target.closest("me-tpc");
+    if (!topic?.nodeObj?.id) return;
+
+    me.selectNode(topic, true);
+    onSelectNode?.(topic.nodeObj.id);
+  };
+
+  host.addEventListener("pointerdown", syncSelection, true);
+  return () => host.removeEventListener("pointerdown", syncSelection, true);
+}
+
+function MindMapCanvas({
+  nodes,
+  graphEdges,
+  title,
+  selectedNodeId,
+  onSelectNode,
+  onZoomChange,
+  onTreeChange,
+  instanceRef: externalInstanceRef,
+}) {
+  const containerRef = useRef(null);
+  const instanceRef = useRef(null);
+  const lastSerializedRef = useRef("");
+
+  // Initialize once
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const data = buildMindElixirData(nodes, graphEdges, title);
+    const me = new MindElixir({
+      el: containerRef.current,
+      direction: MindElixir.RIGHT,
+      editable: true,
+      contextMenu: false,
+      toolBar: false,
+      keypress: true,
+      allowUndo: false,
+      scaleSensitivity: 0.18,
+      scaleMin: 0.2,
+      scaleMax: 3,
+      theme: {
+        name: "openkeri-light",
+        type: "light",
+        palette: STAGE_COLORS.map((c) => c.line),
+        cssVar: {
+          "--main-color": "#0f172a",
+          "--main-bgcolor": "#ffffff",
+          "--color": "#0f172a",
+          "--bgcolor": "#ffffff",
+          "--root-color": "#f8fafc",
+          "--root-bgcolor": "#0f172a",
+          "--root-border-color": "#0f172a",
+          "--selected": "#0f172a",
+          "--panel-color": "#0f172a",
+          "--panel-bgcolor": "#ffffff",
+          "--panel-border-color": "rgba(15, 23, 42, 0.08)",
+        },
+      },
+    });
+    me.init(data);
+    instanceRef.current = me;
+    if (externalInstanceRef) externalInstanceRef.current = me;
+    lastSerializedRef.current = JSON.stringify(data);
+    const cleanupTopicDragForwarding = installMindElixirTopicDragForwarding(containerRef.current, me);
+    const cleanupSelectionSync = installMindElixirSelectionSync(
+      containerRef.current,
+      me,
+      onSelectNode,
+    );
+
+    const handleOperation = () => {
+      const tree = me.getData();
+      const serialized = JSON.stringify(tree);
+      if (serialized === lastSerializedRef.current) return;
+      lastSerializedRef.current = serialized;
+      onTreeChange?.(tree);
+    };
+    const handleSelect = (node) => onSelectNode?.(node?.id || "");
+    const handleScale = (scale) => onZoomChange?.(scale);
+
+    me.bus.addListener("operation", handleOperation);
+    me.bus.addListener("selectNewNode", handleSelect);
+    me.bus.addListener("scale", handleScale);
+
+    return () => {
+      me.bus.removeListener("operation", handleOperation);
+      me.bus.removeListener("selectNewNode", handleSelect);
+      me.bus.removeListener("scale", handleScale);
+      cleanupTopicDragForwarding();
+      cleanupSelectionSync();
+      me.destroy?.();
+      instanceRef.current = null;
+      if (externalInstanceRef) externalInstanceRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Push external data changes (generate / import / undo / inspector edit) in
+  useEffect(() => {
+    const me = instanceRef.current;
+    if (!me) return;
+    const data = buildMindElixirData(nodes, graphEdges, title);
+    const serialized = JSON.stringify(data);
+    if (serialized === lastSerializedRef.current) return;
+    lastSerializedRef.current = serialized;
+    me.refresh(data);
+    me.clearHistory?.();
+  }, [nodes, graphEdges, title]);
+
+  // Reflect external selection
+  useEffect(() => {
+    const me = instanceRef.current;
+    if (!me || !selectedNodeId) return;
+    try {
+      const el = me.findEle(selectedNodeId);
+      if (el) me.selectNode(el);
+    } catch {
+      /* selection target may not exist yet */
+    }
+  }, [selectedNodeId]);
+
+  return <div ref={containerRef} className="mm-canvas-host" />;
+}
+
+function buildMindElixirData(nodes, graphEdges, title) {
+  const goal = nodes.find((n) => n.data?.kind === "goal");
+  if (!goal) {
+    return { nodeData: { id: "empty", topic: title || "新计划", children: [] } };
+  }
+
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const childrenBySource = new Map();
+  for (const edge of graphEdges) {
+    if (!childrenBySource.has(edge.source)) childrenBySource.set(edge.source, []);
+    childrenBySource.get(edge.source).push(edge.target);
+  }
+
+  const stageIds = orderedStageIds(goal.id, nodes, graphEdges);
+
+  function buildChildNode(nodeId, stageIndex = 0) {
+    const node = nodeById.get(nodeId);
+    const kind = node?.data?.kind;
+    const isProject = kind === "project";
+    const childIds = (childrenBySource.get(nodeId) || []).filter((id) => {
+      const childKind = nodeById.get(id)?.data?.kind;
+      return childKind === "learn" || childKind === "project";
+    });
+
+    return {
+      id: nodeId,
+      topic: node?.data?.title || (isProject ? "未命名项目" : "未命名学习单元"),
+      style: isProject
+        ? { background: "#fff8ec", color: "#92400e", border: "1px solid rgba(241, 193, 121, 0.6)" }
+        : { background: "#ffffff", color: "#0f172a", border: "1px solid rgba(15, 23, 42, 0.08)" },
+      children: childIds.map((childId) => buildChildNode(childId, stageIndex)),
+    };
+  }
+
+  const stageChildren = stageIds.map((stageId, index) => {
+    const stage = nodeById.get(stageId);
+    const color = STAGE_COLORS[index % STAGE_COLORS.length];
+    const childIds = (childrenBySource.get(stageId) || []).filter((id) => {
+      const k = nodeById.get(id)?.data?.kind;
+      return k === "learn" || k === "project";
+    });
+    return {
+      id: stageId,
+      topic: stage?.data?.title || "未命名阶段",
+      branchColor: color.line,
+      style: { background: color.soft, color: color.ink, border: `1px solid ${color.line}` },
+      expanded: false,
+      children: childIds.map((childId) => buildChildNode(childId, index)),
+    };
+  });
+
+  return {
+    nodeData: {
+      id: goal.id,
+      topic: goal.data?.title || title || "目标",
+      root: true,
+      children: stageChildren,
+    },
+    direction: MindElixir.RIGHT,
+  };
+}
+
+function orderedStageIds(goalId, nodes, edges) {
+  const directGoalChildIds = new Set(
+    edges.filter((edge) => edge.source === goalId).map((edge) => edge.target),
+  );
+  const stages = nodes.filter(
+    (n) => n.data?.kind === "stage" || directGoalChildIds.has(n.id),
+  );
+  if (!stages.length) return [];
+  const stageIds = new Set(stages.map((s) => s.id));
+  const nextBySource = new Map();
+  for (const edge of edges) {
+    if (edge.relation !== "next") continue;
+    if (!nextBySource.has(edge.source)) nextBySource.set(edge.source, []);
+    nextBySource.get(edge.source).push(edge.target);
+  }
+  const ordered = [];
+  const visited = new Set();
+  function walk(fromId) {
+    for (const tid of nextBySource.get(fromId) || []) {
+      if (stageIds.has(tid) && !visited.has(tid)) {
+        visited.add(tid);
+        ordered.push(tid);
+        walk(tid);
+      }
+    }
+  }
+  walk(goalId);
+  for (const sid of [...ordered]) walk(sid);
+  for (const s of stages) {
+    if (!visited.has(s.id)) {
+      visited.add(s.id);
+      ordered.push(s.id);
+    }
+  }
+  return ordered;
+}
+
+function OpenKeriLogo({ size = 22 }) {
   return (
-    <div className="start-brand">
-      <span>OpenKeri</span>
-      <strong>Plan Studio</strong>
-    </div>
+    <svg
+      className="ok-logo"
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M50.7 18.5A23.8 23.8 0 1 0 51 45.8"
+        stroke="currentColor"
+        strokeWidth="4.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M23 44V24M23 32.5l17.5-13M23 32.5l17.5 13"
+        stroke="currentColor"
+        strokeWidth="4.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="23" cy="24" r="5.2" fill="currentColor" />
+      <circle cx="23" cy="44" r="5.2" fill="currentColor" />
+      <circle cx="42.5" cy="18.5" r="5.2" fill="currentColor" />
+      <circle cx="42.5" cy="45.5" r="5.2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function OpenKeriBrand({ className = "", compact = false, onClick }) {
+  const Component = onClick ? "button" : "div";
+  return (
+    <Component
+      className={`ok-brand ${compact ? "compact" : ""} ${onClick ? "clickable" : ""} ${className}`}
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+    >
+      <OpenKeriLogo size={compact ? 20 : 24} />
+      <strong>OpenKeri</strong>
+      <span>Plan Studio</span>
+    </Component>
   );
 }
 
@@ -72,21 +555,24 @@ function LoadingLine({ active, label, elapsedSeconds }) {
   );
 }
 
-const BRIEF_FIELDS = [
-  { key: "objective.one_sentence", label: "本轮目标" },
-  { key: "objective.outcome", label: "预期结果" },
-  { key: "scope.include", label: "学习重点" },
-  { key: "scope.exclude", label: "暂不深入" },
-  { key: "strategy.rationale", label: "路线策略" },
-];
-
 function App() {
+  const previewMode = new URLSearchParams(window.location.search).get("preview");
+  const shouldPreviewBrief = previewMode === "brief";
+  const shouldPreviewIntake = previewMode === "intake";
   const savedDraft = loadDraft();
   const restoredDraft = savedDraft ? restoreFlowDraftFromStorage(savedDraft) : null;
   const hasRestoredDraft = Boolean(restoredDraft?.nodes?.length);
   const importInputRef = useRef(null);
-  const [screen, setScreen] = useState(hasRestoredDraft ? "editor" : "start");
-  const [prompt, setPrompt] = useState(savedDraft?.goal || EMPTY_FORM.goal);
+  const [screen, setScreen] = useState(
+    shouldPreviewBrief ? "brief" : shouldPreviewIntake ? "intake" : hasRestoredDraft ? "editor" : "start",
+  );
+  const [prompt, setPrompt] = useState(
+    shouldPreviewBrief
+      ? "30天算法面试冲刺"
+      : shouldPreviewIntake
+        ? "两周入门 Python"
+        : savedDraft?.goal || EMPTY_FORM.goal,
+  );
   const [title, setTitle] = useState(savedDraft?.title || "计划草稿");
   const [summary, setSummary] = useState(
     savedDraft?.summary || "输入目标后生成一个可编辑的计划图。",
@@ -95,17 +581,79 @@ function App() {
   const [graphEdges, setGraphEdges] = useState(restoredDraft?.graphEdges || []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
-  const [intakeResult, setIntakeResult] = useState(null);
-  const [selectedIntakeChoiceId, setSelectedIntakeChoiceId] = useState("");
+  const [intakeResult, setIntakeResult] = useState(shouldPreviewIntake ? PREVIEW_INTAKE : null);
+  const [selectedIntakeChoiceId, setSelectedIntakeChoiceId] = useState(
+    shouldPreviewIntake ? "project" : "",
+  );
   const [intakeNotes, setIntakeNotes] = useState("");
-  const [pendingBrief, setPendingBrief] = useState(null);
-  const [activeBriefField, setActiveBriefField] = useState("objective.one_sentence");
+  const [pendingBrief, setPendingBrief] = useState(shouldPreviewBrief ? PREVIEW_BRIEF : null);
+  const [activeBriefField, setActiveBriefField] = useState("");
   const [loadingLabel, setLoadingLabel] = useState("");
   const [loadingStartedAt, setLoadingStartedAt] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [selectedNodeId, setSelectedNodeId] = useState("");
-  const [isConnectMode, setIsConnectMode] = useState(false);
   const [studyNodeId, setStudyNodeId] = useState("");
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const mindElixirRef = useRef(null);
+  const promptRef = useRef(null);
+
+  const historyRef = useRef({ past: [], future: [] });
+  const skipHistoryRef = useRef(false);
+  const [historyTick, setHistoryTick] = useState(0);
+  const canUndo = historyRef.current.past.length > 0;
+  const canRedo = historyRef.current.future.length > 0;
+
+  const snapshot = useCallback(
+    () => ({
+      title,
+      summary,
+      nodes,
+      graphEdges,
+    }),
+    [title, summary, nodes, graphEdges],
+  );
+
+  const pushHistory = useCallback(() => {
+    if (skipHistoryRef.current) return;
+    historyRef.current.past.push(snapshot());
+    if (historyRef.current.past.length > 100) {
+      historyRef.current.past.shift();
+    }
+    historyRef.current.future = [];
+    setHistoryTick((t) => t + 1);
+  }, [snapshot]);
+
+  const applySnapshot = useCallback((snap) => {
+    skipHistoryRef.current = true;
+    setTitle(snap.title);
+    setSummary(snap.summary);
+    setNodes(snap.nodes);
+    setGraphEdges(snap.graphEdges);
+    setSelectedNodeId("");
+    persistDraft(snap.title, snap.summary, snap.nodes, snap.graphEdges);
+    // Release the guard on next tick so the state writes above don't push history
+    queueMicrotask(() => {
+      skipHistoryRef.current = false;
+    });
+  }, []);
+
+  const undo = useCallback(() => {
+    const past = historyRef.current.past;
+    if (!past.length) return;
+    const prev = past.pop();
+    historyRef.current.future.push(snapshot());
+    applySnapshot(prev);
+    setHistoryTick((t) => t + 1);
+  }, [snapshot, applySnapshot]);
+
+  const redo = useCallback(() => {
+    const future = historyRef.current.future;
+    if (!future.length) return;
+    const next = future.pop();
+    historyRef.current.past.push(snapshot());
+    applySnapshot(next);
+    setHistoryTick((t) => t + 1);
+  }, [snapshot, applySnapshot]);
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId),
@@ -122,75 +670,40 @@ function App() {
       setElapsedSeconds(0);
       return undefined;
     }
-
     const intervalId = window.setInterval(() => {
       setElapsedSeconds(Math.max(1, Math.floor((Date.now() - loadingStartedAt) / 1000)));
     }, 300);
     return () => window.clearInterval(intervalId);
   }, [loadingStartedAt]);
 
-  const onNodesChange = useCallback(
-    (changes) => {
-      setNodes((items) => {
-        const nextNodes = applyNodeChanges(changes, items);
-        persistDraft(title, summary, nextNodes, graphEdges);
-        return nextNodes;
-      });
-    },
-    [graphEdges, summary, title],
-  );
+  // Auto-expand prompt textarea to fit content
+  useEffect(() => {
+    const el = promptRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(el.scrollHeight, 128)}px`;
+  }, [prompt]);
 
-  const onEdgesChange = useCallback(
-    (changes) => {
-      const removedIds = new Set(
-        changes.filter((change) => change.type === "remove").map((change) => change.id),
+  // Sync edits from the mind-elixir canvas back into our nodes/graphEdges
+  const onTreeChange = useCallback(
+    (tree) => {
+      pushHistory();
+      const { nodes: nextNodes, edges: nextEdges } = treeToNodesAndEdges(
+        tree,
+        nodes,
       );
-      if (!removedIds.size) return;
-      const removedViewEdges = applyFlowLayout(nodes, graphEdges).edges.filter((edge) =>
-        removedIds.has(edge.id),
-      );
-      setGraphEdges((items) => {
-        const nextEdges = items.filter(
-          (edge) =>
-            !removedIds.has(edge.id) &&
-            !removedViewEdges.some(
-              (removedEdge) => removedEdge.source === edge.source && removedEdge.target === edge.target,
-            ),
-        );
-        persistDraft(title, summary, nodes, nextEdges);
-        return nextEdges;
-      });
+      setNodes(nextNodes);
+      setGraphEdges(nextEdges);
+      persistDraft(title, summary, nextNodes, nextEdges);
     },
-    [graphEdges, nodes, summary, title],
+    [nodes, title, summary, pushHistory],
   );
-
-  const onConnect = useCallback(
-    (connection) => {
-      setGraphEdges((items) => {
-        const nextEdges = addEdge(
-          {
-            ...connection,
-            id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
-            type: "smoothstep",
-          },
-          items,
-        );
-        persistDraft(title, summary, nodes, nextEdges);
-        return nextEdges;
-      });
-    },
-    [nodes, summary, title],
-  );
-
-  const flowNodes = useMemo(() => nodes, [nodes]);
-  const flowEdges = useMemo(() => applyFlowLayout(nodes, graphEdges).edges, [graphEdges, nodes]);
 
   async function generateDraft() {
     if (!prompt.trim()) {
       setMessage("先输入一个学习目标。");
       return;
     }
-
     setIsGenerating(true);
     setLoadingLabel("分析目标");
     setLoadingStartedAt(Date.now());
@@ -199,19 +712,15 @@ function App() {
     setPendingBrief(null);
     setMessage("");
     try {
-      const intake = await postJson("/api/intake/start", {
-        goal: prompt,
-        preference: "",
-      });
+      const intake = await postJson("/api/intake/start", { goal: prompt, preference: "" });
       if (intake.status === "needs_choice") {
         setIntakeResult(intake);
         setSelectedIntakeChoiceId("");
         setScreen("intake");
-        setMessage("");
         return;
       }
       setPendingBrief(intake.brief);
-      setActiveBriefField("objective.one_sentence");
+      setActiveBriefField("");
       setScreen("brief");
     } catch (error) {
       setMessage(error.message);
@@ -228,7 +737,6 @@ function App() {
 
   async function continueIntake() {
     if (!intakeResult?.state || !selectedIntakeChoiceId) return;
-
     setIsGenerating(true);
     setLoadingLabel("整理方案");
     setLoadingStartedAt(Date.now());
@@ -243,12 +751,11 @@ function App() {
         setIntakeResult(nextIntake);
         setSelectedIntakeChoiceId("");
         setScreen("intake");
-        setMessage("");
         return;
       }
       setIntakeResult(nextIntake);
       setPendingBrief(nextIntake.brief);
-      setActiveBriefField("objective.one_sentence");
+      setActiveBriefField("");
       setScreen("brief");
     } catch (error) {
       setMessage(error.message);
@@ -261,7 +768,6 @@ function App() {
 
   async function confirmGeneratePlan() {
     if (!pendingBrief) return;
-
     setIsGenerating(true);
     setLoadingLabel("生成计划图");
     setLoadingStartedAt(Date.now());
@@ -291,21 +797,17 @@ function App() {
     setSummary(payload.summary);
     setNodes(next.nodes);
     setGraphEdges(next.graphEdges);
-    setSelectedNodeId(next.nodes[0]?.id || "");
+    setSelectedNodeId("");
     persistDraft(payload.title, payload.summary, next.nodes, next.graphEdges);
     setScreen("editor");
     setIntakeResult(null);
     setSelectedIntakeChoiceId("");
     setPendingBrief(null);
-    setActiveBriefField("objective.one_sentence");
-    setMessage(brief?.title || "已生成计划草稿。");
+    setMessage("");
   }
 
   function updatePendingBrief(field, value) {
-    setPendingBrief((brief) => {
-      if (!brief) return brief;
-      return setBriefFieldValue(brief, field, value);
-    });
+    setPendingBrief((brief) => (brief ? setBriefFieldValue(brief, field, value) : brief));
   }
 
   function persistDraft(draftTitle, draftSummary, draftNodes, draftEdges) {
@@ -317,9 +819,7 @@ function App() {
 
   function exportProject() {
     const project = toProjectDraft(title, summary, nodes, graphEdges, prompt);
-    const blob = new Blob([JSON.stringify(project, null, 2)], {
-      type: "application/json",
-    });
+    const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -331,7 +831,6 @@ function App() {
   async function importProject(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-
     try {
       const raw = await file.text();
       const project = JSON.parse(raw);
@@ -357,7 +856,7 @@ function App() {
           ),
         ),
       );
-      setMessage("已导入 project。");
+      setMessage("");
     } catch (error) {
       setMessage(`导入失败：${error.message}`);
     } finally {
@@ -366,13 +865,20 @@ function App() {
   }
 
   function updateSelectedNode(field, value) {
+    pushHistory();
     const nextNodes = nodes.map((node) =>
       node.id === selectedNodeId
         ? {
             ...node,
+            type: field === "kind" ? normalizeNodeKind(value) : node.type,
             data: {
               ...node.data,
-              [field]: field === "estimated_minutes" ? Number(value) || 0 : value,
+              [field]:
+                field === "kind"
+                  ? normalizeNodeKind(value)
+                  : field === "estimated_minutes"
+                    ? Number(value) || 0
+                    : value,
             },
           }
         : node,
@@ -381,124 +887,163 @@ function App() {
     persistDraft(title, summary, nextNodes, graphEdges);
   }
 
-  function addNode() {
-    const parentNode = selectedNode || nodes[0];
+  function addChildNode() {
+    const me = mindElixirRef.current;
+    if (!me) return;
+    const parentEl = me.currentNode;
+    if (!parentEl) {
+      setMessage("请先选中一个节点，再添加子节点。");
+      return;
+    }
     const id = `node-${Date.now()}`;
-    const nextNode = {
-      id,
-      type: "planNode",
-      position: parentNode
-        ? { x: parentNode.position.x, y: parentNode.position.y + 170 }
-        : { x: 0, y: 120 },
-      data: {
-        title: "新节点",
-        kind: "task",
-        description: "",
-        estimated_minutes: 25,
-        group: parentNode?.data?.group || "",
-        status: "not_started",
-        learningNotes: "",
-      },
-    };
-    const nextNodes = [...nodes, nextNode];
-    const nextEdges = parentNode
-      ? [
-          ...graphEdges,
-          {
-            id: `edge-${parentNode.id}-${id}`,
-            source: parentNode.id,
-            target: id,
-            sourceHandle: "bottom",
-            targetHandle: "top",
-            type: "smoothstep",
-            className: "branch-edge",
-          },
-        ]
-      : graphEdges;
-    setNodes(nextNodes);
-    setGraphEdges(nextEdges);
-    setSelectedNodeId(id);
-    persistDraft(title, summary, nextNodes, nextEdges);
+    const topic = parentEl.nodeObj?.root ? "新阶段" : "新学习节点";
+    me.addChild(parentEl, { id, topic });
   }
 
   function deleteSelectedNode() {
-    if (!selectedNodeId) return;
-    const nextNodes = nodes.filter((node) => node.id !== selectedNodeId);
-    const nextEdges = graphEdges.filter(
-      (edge) => edge.source !== selectedNodeId && edge.target !== selectedNodeId,
-    );
-    setNodes(nextNodes);
-    setGraphEdges(nextEdges);
-    setSelectedNodeId("");
-    persistDraft(title, summary, nextNodes, nextEdges);
+    const me = mindElixirRef.current;
+    if (!me) return;
+    const currentEl = me.currentNode;
+    if (!currentEl) {
+      setMessage("请先选中一个节点再删除。");
+      return;
+    }
+    // Don't allow deleting the root (goal) node
+    if (currentEl.nodeObj?.root) {
+      setMessage("不能删除目标节点。");
+      return;
+    }
+    me.removeNodes([currentEl]);
   }
-
-  function relayoutGraph() {
-    const next = applyFlowLayout(nodes, graphEdges);
-    setNodes(next.nodes);
-    persistDraft(title, summary, next.nodes, graphEdges);
-  }
-
-function OpenKeriLogo({ size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="16" cy="16" r="14" stroke="rgba(155,242,111,0.5)" strokeWidth="2" />
-      <path d="M10 16C10 12.686 12.686 10 16 10" stroke="#9bf26f" strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="16" cy="16" r="3" fill="#9bf26f" />
-    </svg>
-  );
-}
 
   if (screen === "start") {
+    const trimmedPrompt = prompt.trim();
+    const canSubmit = !!trimmedPrompt && !isGenerating;
+    const charCount = prompt.length;
     return (
-      <main className="intake-workspace">
-        <section className="start-shell">
-          <div className="start-brand">
-            <OpenKeriLogo size={32} />
-            <span>OpenKeri</span>
-            <strong>Plan Studio</strong>
-          </div>
-          <div className="start-copy">
-            <h1>你想完成什么？</h1>
-            <p>先选学习路线，再生成可编辑计划图</p>
-          </div>
-          <div className="start-form">
-            <input
-              className="start-input"
-              value={prompt}
-              placeholder="输入你的学习目标，例如：准备算法面试"
-              onChange={(event) => {
-                setPrompt(event.target.value);
-                setMessage("");
-              }}
-              onKeyDown={(event) => {
-                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                  generateDraft();
-                }
-              }}
-            />
-          </div>
-          <LoadingLine
-            active={isGenerating}
-            label={loadingLabel}
-            elapsedSeconds={elapsedSeconds}
-          />
-          <div className="start-actions">
-            <button type="button" className="primary" onClick={generateDraft} disabled={isGenerating}>
-              开始规划
-            </button>
-            <div className="start-weak-actions">
-              <button className="ghost" type="button" onClick={() => importInputRef.current?.click()}>
-                导入已有计划
-              </button>
-              {hasRestoredDraft ? (
-                <button className="ghost" type="button" onClick={() => setScreen("editor")}>
-                  返回编辑器
-                </button>
-              ) : null}
+      <main className="start-workspace">
+        <div className="start-bg" aria-hidden="true">
+          <span className="start-bg-blur start-bg-blur--tl" />
+          <span className="start-bg-blur start-bg-blur--br" />
+          <span className="start-bg-blur start-bg-blur--bl" />
+          <span className="start-bg-dots" />
+        </div>
+        <div className="app-brand-anchor">
+          <OpenKeriBrand onClick={() => setScreen("start")} />
+        </div>
+        <section className="start-main">
+          <div className="start-panel">
+            <div className="start-head">
+              <div className="start-head-icon" aria-hidden="true">
+                <SparkleIcon size={16} />
+              </div>
+              <div className="start-head-text">
+                <h1>创建学习计划</h1>
+                <p>输入目标，生成可编辑的学习导图</p>
+              </div>
             </div>
+            <div className="start-form">
+              <div className="start-textarea-wrap">
+                <textarea
+                  ref={promptRef}
+                  className="start-textarea"
+                  value={prompt}
+                  rows={1}
+                  maxLength={START_MAX_CHARS}
+                  disabled={isGenerating}
+                  placeholder="例如：30 天准备算法面试，重点补动态规划和图论，每天晚上 1 小时"
+                  onChange={(event) => {
+                    setPrompt(event.target.value);
+                    setMessage("");
+                    const el = event.target;
+                    el.style.height = "auto";
+                    el.style.height = `${Math.max(el.scrollHeight, 128)}px`;
+                  }}
+                  onKeyDown={(event) => {
+                    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                      if (canSubmit) generateDraft();
+                    }
+                  }}
+                />
+                <span className="start-counter">{charCount} / {START_MAX_CHARS}</span>
+              </div>
+              <div className="start-examples">
+                <span className="start-examples-label">试试这些：</span>
+                <div className="start-chip-row">
+                  {START_EXAMPLES.map((example) => (
+                    <button
+                      type="button"
+                      key={example.label}
+                      className="start-chip"
+                      disabled={isGenerating}
+                      onClick={() => {
+                        setPrompt(example.label);
+                        setMessage("");
+                        queueMicrotask(() => {
+                          const el = promptRef.current;
+                          if (el) {
+                            el.style.height = "auto";
+                            el.style.height = `${Math.max(el.scrollHeight, 128)}px`;
+                          }
+                        });
+                      }}
+                    >
+                      <span className="start-chip-icon">{CHIP_ICONS[example.icon]}</span>
+                      <span>{example.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="start-divider" />
+            <div className="start-footer">
+              <div className="start-footer-left">
+                <button
+                  type="button"
+                  className="start-import"
+                  onClick={() => importInputRef.current?.click()}
+                  disabled={isGenerating}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 7h5l2-2h11v12a2 2 0 0 1-2 2H3z" />
+                  </svg>
+                  <span>导入已有计划</span>
+                </button>
+                {hasRestoredDraft ? (
+                  <button
+                    type="button"
+                    className="start-import"
+                    onClick={() => setScreen("editor")}
+                  >
+                    返回编辑器
+                  </button>
+                ) : null}
+              </div>
+              <div className="start-footer-right">
+                {!isGenerating ? <span className="start-hint">Cmd / Ctrl + Enter</span> : null}
+                <button
+                  type="button"
+                  className={`start-primary ${isGenerating ? "is-loading" : ""}`}
+                  onClick={generateDraft}
+                  disabled={!canSubmit}
+                >
+                  {isGenerating ? (
+                    <>
+                      <span className="start-spinner" />
+                      <span>{loadingLabel || "生成中"}</span>
+                      <span className="start-primary-time">{elapsedSeconds}s</span>
+                    </>
+                  ) : (
+                    <>
+                      <SparkleIcon size={14} />
+                      <span>生成学习导图</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+            {message ? <p className="form-message start-message">{message}</p> : null}
           </div>
-          {message ? <p className="form-message">{message}</p> : null}
         </section>
         <input
           ref={importInputRef}
@@ -512,20 +1057,18 @@ function OpenKeriLogo({ size = 28 }) {
   }
 
   if (screen === "intake" && intakeResult?.status === "needs_choice") {
-    const selectedChoice = intakeResult.question?.choices.find(
-      (c) => c.id === selectedIntakeChoiceId
-    );
-
     return (
       <main className="intake-workspace">
+        <div className="app-brand-anchor">
+          <OpenKeriBrand onClick={() => setScreen("start")} />
+        </div>
         <section className="intake-shell">
           <header className="intake-header">
             <span className="intake-step">计划协商</span>
             <h1>选择一条学习路线</h1>
             <p className="intake-prompt">{prompt}</p>
           </header>
-
-          <div className="route-list">
+          <div className={`route-list route-count-${Math.min(intakeResult.question?.choices.length || 0, 4)}`}>
             {intakeResult.question?.choices.map((choice) => {
               const selected = selectedIntakeChoiceId === choice.id;
               return (
@@ -544,32 +1087,20 @@ function OpenKeriLogo({ size = 28 }) {
               );
             })}
           </div>
-
-          {selectedChoice ? (
-            <div className="route-detail">
-              <p>{selectedChoice.description}</p>
-            </div>
-          ) : null}
-
           <label className="intake-notes">
             <span>补充说明（可选）</span>
             <textarea
               rows={2}
-              placeholder="比如：我有编程基础 / 每天只有30分钟 / 主要是为了面试"
+              placeholder="例如：我有编程基础 / 每天只有 30 分钟"
               value={intakeNotes}
               onChange={(event) => setIntakeNotes(event.target.value)}
             />
           </label>
-
-          <LoadingLine
-            active={isGenerating}
-            label={loadingLabel}
-            elapsedSeconds={elapsedSeconds}
-          />
           <footer className="intake-actions">
             <button
               type="button"
               className="secondary"
+              disabled={isGenerating}
               onClick={() => {
                 setScreen("start");
                 setIntakeResult(null);
@@ -581,11 +1112,19 @@ function OpenKeriLogo({ size = 28 }) {
             </button>
             <button
               type="button"
-              className="primary"
+              className={`primary ${isGenerating ? "is-loading" : ""}`}
               disabled={!selectedIntakeChoiceId || isGenerating}
               onClick={continueIntake}
             >
-              继续
+              {isGenerating ? (
+                <>
+                  <span className="start-spinner" />
+                  <span>{loadingLabel || "处理中"}</span>
+                  <span className="start-primary-time">{elapsedSeconds}s</span>
+                </>
+              ) : (
+                "继续"
+              )}
             </button>
           </footer>
           {message ? <p className="form-message">{message}</p> : null}
@@ -595,101 +1134,153 @@ function OpenKeriLogo({ size = 28 }) {
   }
 
   if (screen === "brief" && pendingBrief) {
+    const BRIEF_CARDS = [
+      { key: "objective.one_sentence", label: "本轮目标", icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="4" />
+        </svg>
+      )},
+      { key: "scope.include", label: "学习重点", icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      )},
+      { key: "strategy.rationale", label: "路线策略", icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      )},
+    ];
+
+    function getTagsForScope(value) {
+      if (!value) return [];
+      if (typeof value === "string") {
+        return value.split(/[,，、;；\n]/).map((s) => s.trim()).filter(Boolean);
+      }
+      if (Array.isArray(value)) return value.map(String).filter(Boolean);
+      return [String(value)];
+    }
+
     return (
       <main className="intake-workspace">
+        <div className="app-brand-anchor">
+          <OpenKeriBrand onClick={() => setScreen("start")} />
+        </div>
         <section className="brief-shell">
           <header className="brief-header">
             <span className="brief-step">计划草案</span>
-            <h1>确认后生成可编辑计划图</h1>
-            <p className="brief-prompt">{pendingBrief.title}</p>
+            <h1>确认计划要点</h1>
+            <p className="brief-subtitle">我们已根据你的目标生成以下学习方案，确认后将生成可编辑思维导图</p>
+            <div className="brief-target-pill">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="4" />
+              </svg>
+              <span>{pendingBrief.title || "学习计划"}</span>
+            </div>
           </header>
 
           <div className="brief-body">
-            <div className="brief-list">
-              {BRIEF_FIELDS.map((field) => (
-                <button
-                  type="button"
-                  key={field.key}
-                  className={activeBriefField === field.key ? "active" : ""}
-                  onClick={() => setActiveBriefField(field.key)}
+            {BRIEF_CARDS.map((card, index) => {
+              const expanded = activeBriefField === card.key;
+              const fullText = getBriefFieldValue(pendingBrief, card.key);
+              const isScope = card.key === "scope.include";
+              const tags = isScope ? getTagsForScope(fullText) : [];
+              return (
+                <div
+                  key={card.key}
+                  className={`brief-card ${expanded ? "expanded" : ""}`}
                 >
-                  <span className="brief-field-label">{field.label}</span>
-                  <span className="brief-field-preview">
-                    {getBriefFieldValue(pendingBrief, field.key)}
-                  </span>
-                </button>
-              ))}
-              {pendingBrief.preview?.phases?.length ? (
-                <div className="brief-skeleton">
-                  <span className="brief-field-label">计划骨架</span>
-                  <div className="skeleton-list">
-                    {pendingBrief.preview.phases.map((phase, index) => (
-                      <div className="skeleton-item" key={index}>
-                        <strong>{phase.phase_name}</strong>
-                        <span>{phase.focus}</span>
-                        <small>{phase.estimated_child_count} 个节点</small>
-                      </div>
-                    ))}
+                  <div className="brief-card-main">
+                    <span className="brief-card-num">{String(index + 1).padStart(2, "0")}</span>
+                    <div className="brief-card-icon" aria-hidden="true">{card.icon}</div>
+                    <div className="brief-card-content">
+                      <strong className="brief-card-title">{card.label}</strong>
+                      {isScope && tags.length > 0 ? (
+                        <div className="brief-card-tags">
+                          {tags.slice(0, 8).map((tag, i) => (
+                            <span key={i} className="brief-tag-chip">{tag}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="brief-card-desc">{fullText}</p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="brief-card-expand"
+                      onClick={() => setActiveBriefField(expanded ? "" : card.key)}
+                    >
+                      {expanded ? "收起" : "查看详情"}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points={expanded ? "18 15 12 9 6 15" : "6 9 12 15 18 9"} />
+                      </svg>
+                    </button>
                   </div>
-                </div>
-              ) : null}
-              {pendingBrief.sections?.length ? (
-                <div className="brief-skeleton">
-                  <span className="brief-field-label">动态模块</span>
-                  <div className="skeleton-list">
-                    {pendingBrief.sections.map((section) => (
-                      <div className="skeleton-item" key={section.id}>
-                        <strong>{section.title}</strong>
-                        <span>{section.summary}</span>
-                        <small>{section.kind}</small>
+                  {expanded ? (
+                    <div className="brief-card-editor">
+                      <div className="brief-editor-head">
+                        <span>编辑详情</span>
+                        <small>{card.label}</small>
                       </div>
-                    ))}
-                  </div>
+                      <textarea
+                        value={fullText}
+                        onChange={(event) =>
+                          updatePendingBrief(card.key, event.target.value)
+                        }
+                        rows={4}
+                      />
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-            <div className="brief-editor-pane">
-              <label>
-                <span>{briefFieldLabel(activeBriefField)}</span>
-                <textarea
-                  value={getBriefFieldValue(pendingBrief, activeBriefField)}
-                  onChange={(event) => updatePendingBrief(activeBriefField, event.target.value)}
-                />
-              </label>
-            </div>
+              );
+            })}
           </div>
 
-          <LoadingLine
-            active={isGenerating}
-            label={loadingLabel}
-            elapsedSeconds={elapsedSeconds}
-          />
           <footer className="brief-actions">
             <button
               type="button"
-              className="secondary"
+              className="brief-back"
+              disabled={isGenerating}
               onClick={() => setScreen(intakeResult?.status === "needs_choice" ? "intake" : "start")}
             >
-              返回修改
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span>返回修改</span>
             </button>
             <button
               type="button"
-              className="primary"
+              className={`brief-cta ${isGenerating ? "is-loading" : ""}`}
               disabled={isGenerating}
               onClick={confirmGeneratePlan}
             >
-              生成计划图
+              {isGenerating ? (
+                <>
+                  <span className="start-spinner" />
+                  <span>{loadingLabel || "生成中"}</span>
+                  <span className="start-primary-time">{elapsedSeconds}s</span>
+                </>
+              ) : (
+                <>
+                  <SparkleIcon size={14} />
+                  <span>生成思维导图</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </>
+              )}
             </button>
           </footer>
           {message ? (
             <div className="form-message-box">
               <p className="form-message">{message}</p>
-              <button
-                type="button"
-                className="secondary"
-                onClick={confirmGeneratePlan}
-                disabled={isGenerating}
-              >
+              <button type="button" className="secondary" onClick={confirmGeneratePlan} disabled={isGenerating}>
                 重新生成
               </button>
             </div>
@@ -700,41 +1291,69 @@ function OpenKeriLogo({ size = 28 }) {
   }
 
   return (
-    <main className="workspace">
-      <nav className="app-toolbar">
-        <div className="brand-lockup">
-          <span>OpenKeri</span>
-          <strong>Plan Studio</strong>
+    <main className="mm-workspace">
+      <header className="mm-topbar">
+        <div className="mm-topbar-left">
+          <OpenKeriBrand className="mm-brand" onClick={() => setScreen("start")} />
+          <div className="mm-title-stack">
+            <strong>{title || "计划草稿"}</strong>
+            <span>Learning Plan</span>
+          </div>
         </div>
-        <div className="toolbar-title">
-          <strong>{title}</strong>
-          <span>{nodes.length || 0} 节点 · {stats.phaseCount} 阶段 · {stats.totalMinutes} min</span>
-        </div>
-        <div className="toolbar-actions">
-          <button type="button" onClick={addNode}>
-            新增
-          </button>
-          <button type="button" disabled={!selectedNodeId} onClick={deleteSelectedNode}>
-            删除
+        <div className="mm-topbar-center">
+          <button
+            type="button"
+            className="mm-tool"
+            disabled={!canUndo}
+            onClick={undo}
+            title="撤销 (Cmd/Ctrl+Z)"
+          >
+            ↺
           </button>
           <button
             type="button"
-            className={isConnectMode ? "active" : ""}
-            onClick={() => setIsConnectMode((value) => !value)}
+            className="mm-tool"
+            disabled={!canRedo}
+            onClick={redo}
+            title="重做 (Cmd/Ctrl+Shift+Z)"
           >
-            连线
+            ↻
           </button>
-          <button type="button" onClick={relayoutGraph}>
-            布局
+          <span className="mm-tool-divider" />
+          <button
+            type="button"
+            className="mm-tool"
+            onClick={addChildNode}
+            title="在当前选中节点下新增子节点"
+          >
+            + 子节点
           </button>
-          <button type="button" onClick={() => importInputRef.current?.click()}>
+          <button
+            type="button"
+            className="mm-tool"
+            onClick={deleteSelectedNode}
+            title="删除选中节点"
+          >
+            − 删除
+          </button>
+        </div>
+        <div className="mm-topbar-right">
+          <div className="mm-stats">
+            <span>{nodes.length} 节点</span>
+            <em>·</em>
+            <span>{stats.phaseCount} 阶段</span>
+            <em>·</em>
+            <span>{formatMinutes(stats.totalMinutes)}</span>
+          </div>
+          <button type="button" className="mm-ghost" onClick={() => importInputRef.current?.click()}>
             导入
           </button>
-          <button type="button" onClick={exportProject}>
+          <button type="button" className="mm-cta" onClick={exportProject}>
             导出
           </button>
         </div>
-      </nav>
+      </header>
+
       <input
         ref={importInputRef}
         className="project-import-input"
@@ -743,88 +1362,75 @@ function OpenKeriLogo({ size = 28 }) {
         onChange={importProject}
       />
 
-      <section className="canvas-panel">
-        <ReactFlowProvider>
-          <ReactFlow
-            nodes={flowNodes}
-            edges={flowEdges}
-            nodeTypes={nodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-            fitView
-            nodesDraggable
-            nodesConnectable={isConnectMode}
-            elementsSelectable
-            defaultEdgeOptions={{
-              type: "smoothstep",
-              style: {
-                strokeWidth: 3.4,
-                stroke: "rgba(190, 236, 178, 0.9)",
-              },
-              labelBgPadding: [8, 6],
-              labelBgStyle: { fill: "rgba(18, 22, 18, 0.82)", fillOpacity: 0.92 },
-              labelStyle: {
-                fill: "#ecffe6",
-                fontWeight: 700,
-                fontSize: 13,
-              },
-            }}
-            fitViewOptions={{ padding: 0.16, minZoom: 0.18, maxZoom: 1.45 }}
-          >
-            <Background gap={22} size={1.5} color="#4b4b4f" />
-          </ReactFlow>
-        </ReactFlowProvider>
+      <section className="mm-canvas-area">
+        <MindMapCanvas
+          nodes={nodes}
+          graphEdges={graphEdges}
+          title={title}
+          selectedNodeId={selectedNodeId}
+          onSelectNode={setSelectedNodeId}
+          onZoomChange={setZoomLevel}
+          onTreeChange={onTreeChange}
+          instanceRef={mindElixirRef}
+        />
         {!nodes.length ? (
           <div className="empty-canvas">
-            <strong>创建一个学习计划图</strong>
-            <span>在底部输入目标，生成后可以拖动、连线和编辑节点。</span>
+            <strong>还没有计划图</strong>
+            <span>回到起始页输入目标，或导入已有计划。</span>
+            <button type="button" className="mm-cta" onClick={() => setScreen("start")}>
+              新建计划
+            </button>
           </div>
         ) : null}
-        {isGenerating ? <div className="loading-mask">正在生成计划结构...</div> : null}
+        {isGenerating ? <div className="loading-mask">正在生成计划结构…</div> : null}
       </section>
 
       {selectedNode ? (
-        <aside className="node-panel">
-          <div className="node-panel-header">
-            <div>
-              <span>{nodeKindLabel(selectedNode.data.kind)}节点</span>
-              <strong>{selectedNode.data.title}</strong>
+        <aside className={`mm-inspector node-kind-${selectedNode.data.kind || "learn"}`}>
+          <div className="mm-inspector-sheen" aria-hidden="true" />
+          <div className="mm-inspector-head">
+            <div className="node-kind-mark" aria-hidden="true">
+              <span>{nodeKindLabel(selectedNode.data.kind).slice(0, 1)}</span>
             </div>
-            <button type="button" onClick={() => setSelectedNodeId("")}>
-              ×
-            </button>
+            <div className="node-title-block">
+              <span>{nodeKindLabel(selectedNode.data.kind)}</span>
+              <input
+                className="node-title-input"
+                value={selectedNode.data.title || ""}
+                onChange={(event) => updateSelectedNode("title", event.target.value)}
+              />
+              <small>
+                {formatMinutes(Number(selectedNode.data.estimated_minutes || 0))} · {nodeStatusLabel(selectedNode.data.status)}
+              </small>
+            </div>
+            <button type="button" onClick={() => setSelectedNodeId("")} aria-label="关闭">×</button>
           </div>
 
-          <label>
-            标题
-            <input
-              value={selectedNode.data.title || ""}
-              onChange={(event) => updateSelectedNode("title", event.target.value)}
+          <label className="mm-field mm-description-field">
+            <span>说明</span>
+            <textarea
+              rows={4}
+              value={selectedNode.data.description || ""}
+              onChange={(event) => updateSelectedNode("description", event.target.value)}
+              placeholder="补充这个节点在计划中的作用..."
             />
           </label>
 
-          <div className="panel-grid">
-            <label>
-              类型
+          <div className="node-property-row">
+            <label className="node-property">
+              <span>类型</span>
               <select
-                value={selectedNode.data.kind || "task"}
+                value={selectedNode.data.kind || "learn"}
                 onChange={(event) => updateSelectedNode("kind", event.target.value)}
               >
                 <option value="goal">目标</option>
-                <option value="phase">阶段</option>
-                <option value="concept">概念</option>
-                <option value="task">任务</option>
-                <option value="practice">练习</option>
-                <option value="review">复盘</option>
+                <option value="stage">阶段</option>
+                <option value="learn">学习</option>
                 <option value="project">项目</option>
-                <option value="checkpoint">检查</option>
-                <option value="resource">资源</option>
               </select>
             </label>
-            <label>
-              时间
+            <label className="node-property">
+              <span>时间</span>
               <input
                 type="number"
                 min="0"
@@ -832,44 +1438,18 @@ function OpenKeriLogo({ size = 28 }) {
                 onChange={(event) => updateSelectedNode("estimated_minutes", event.target.value)}
               />
             </label>
+            <label className="node-property">
+              <span>状态</span>
+              <select
+                value={selectedNode.data.status || "not_started"}
+                onChange={(event) => updateSelectedNode("status", event.target.value)}
+              >
+                <option value="not_started">未开始</option>
+                <option value="in_progress">进行中</option>
+                <option value="done">已完成</option>
+              </select>
+            </label>
           </div>
-
-          <label>
-            状态
-            <select
-              value={selectedNode.data.status || "not_started"}
-              onChange={(event) => updateSelectedNode("status", event.target.value)}
-            >
-              <option value="not_started">未开始</option>
-              <option value="in_progress">进行中</option>
-              <option value="done">已完成</option>
-            </select>
-          </label>
-
-          <label>
-            分组
-            <input
-              value={selectedNode.data.group || ""}
-              onChange={(event) => updateSelectedNode("group", event.target.value)}
-            />
-          </label>
-
-          <label>
-            说明
-            <textarea
-              rows={6}
-              value={selectedNode.data.description || ""}
-              onChange={(event) => updateSelectedNode("description", event.target.value)}
-            />
-          </label>
-
-          <button
-            className="study-entry-button"
-            type="button"
-            onClick={() => setStudyNodeId(selectedNode.id)}
-          >
-            进入学习
-          </button>
         </aside>
       ) : null}
 
@@ -877,15 +1457,12 @@ function OpenKeriLogo({ size = 28 }) {
         <section className="study-page">
           <div className="study-shell">
             <header className="study-header">
-              <button type="button" onClick={() => setStudyNodeId("")}>
-                返回计划图
-              </button>
+              <button type="button" onClick={() => setStudyNodeId("")}>返回思维导图</button>
               <div>
                 <span>{nodeKindLabel(studyNode.data.kind)} · {nodeStatusLabel(studyNode.data.status)}</span>
                 <h1>{studyNode.data.title}</h1>
               </div>
             </header>
-
             <div className="study-grid">
               <article>
                 <span>学习目标</span>
@@ -917,7 +1494,6 @@ function OpenKeriLogo({ size = 28 }) {
                 </ul>
               </article>
             </div>
-
             <label className="study-notes">
               学习笔记
               <textarea
@@ -931,41 +1507,18 @@ function OpenKeriLogo({ size = 28 }) {
         </section>
       ) : null}
 
-      <section className="composer">
-        <input
-          value={prompt}
-          placeholder="What would you like to create?"
-          onChange={(event) => {
-            setPrompt(event.target.value);
-            setIntakeResult(null);
-          }}
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-              generateDraft();
-            }
-          }}
-        />
-        <div className="composer-bottom">
-          <span>⌘ Enter 生成</span>
-          <button className="send-button" onClick={generateDraft} disabled={isGenerating}>
-            ↑
-          </button>
+      <footer className="mm-bottombar">
+        <div className="mm-map-status">
+          <span>{Math.round(zoomLevel * 100)}%</span>
         </div>
-        {message ? <p className="message">{message}</p> : null}
-      </section>
+      </footer>
     </main>
   );
 
   function updateStudyNode(field, value) {
     const nextNodes = nodes.map((node) =>
       node.id === studyNodeId
-        ? {
-            ...node,
-            data: {
-              ...node.data,
-              [field]: value,
-            },
-          }
+        ? { ...node, data: { ...node.data, [field]: value } }
         : node,
     );
     setNodes(nextNodes);
@@ -984,17 +1537,20 @@ async function postJson(path, body) {
   return payload;
 }
 
-function briefFieldLabel(fieldKey) {
-  return BRIEF_FIELDS.find((field) => field.key === fieldKey)?.label || "详情";
-}
-
 function getBriefFieldValue(brief, fieldKey) {
   if (!brief) return "";
   const value = fieldKey.split(".").reduce((current, key) => current?.[key], brief);
-  if (Array.isArray(value)) {
-    return value.join("\n");
-  }
+  if (Array.isArray(value)) return value.join("\n");
   return value || "";
+}
+
+function getBriefFieldKeyword(brief, fieldKey, maxLen = 24) {
+  const full = getBriefFieldValue(brief, fieldKey);
+  if (!full) return "";
+  const firstLine = full.split(/[\n;；]/)[0].trim();
+  const firstClause = firstLine.split(/[。！？.!?]/)[0].trim() || firstLine;
+  if (firstClause.length <= maxLen) return firstClause;
+  return `${firstClause.slice(0, maxLen)}…`;
 }
 
 function setBriefFieldValue(brief, fieldKey, value) {
@@ -1027,57 +1583,57 @@ function toProjectDraft(draftTitle, draftSummary, draftNodes, draftGraphEdges, d
 }
 
 function slugify(value) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "learning-project";
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "learning-project"
+  );
 }
 
 function toFlowDraft(draft) {
   const nodes = draft.nodes.map((node) => ({
     id: node.id,
-    type: "planNode",
+    type: normalizeNodeKind(node.kind),
     data: {
       title: node.title,
-      kind: node.kind,
+      kind: normalizeNodeKind(node.kind),
       description: node.description,
       estimated_minutes: node.estimated_minutes,
       group: node.group || "",
       status: node.status || "not_started",
       learningNotes: node.learningNotes || "",
     },
+    position: { x: 0, y: 0 },
   }));
 
   const graphEdges = draft.edges.map((edge) => ({
     id: edge.id,
     source: edge.source,
     target: edge.target,
-    label: edge.label || "",
-    type: "smoothstep",
+    relation: edge.relation || inferEdgeRelation(edge),
+    label: "",
   }));
-  const layout = applyFlowLayout(nodes, graphEdges);
 
-  return {
-    nodes: layout.nodes,
-    graphEdges,
-  };
+  return { nodes, graphEdges };
 }
 
 function restoreFlowDraftFromStorage(draft) {
   const draftNodes = draft.nodes?.map((node) => ({
     id: node.id,
-    type: "planNode",
+    type: normalizeNodeKind(node.data?.kind || node.kind),
     data: {
       title: node.data?.title || node.title,
-      kind: node.data?.kind || node.kind,
+      kind: normalizeNodeKind(node.data?.kind || node.kind),
       description: node.data?.description || node.description,
       estimated_minutes: node.data?.estimated_minutes || node.estimated_minutes || 0,
       group: node.data?.group || node.group || "",
       status: node.data?.status || node.status || "not_started",
       learningNotes: node.data?.learningNotes || node.learningNotes || "",
     },
+    position: node.position || { x: 0, y: 0 },
   }));
 
   const sourceEdges = draft.graphEdges || draft.edges || [];
@@ -1085,172 +1641,80 @@ function restoreFlowDraftFromStorage(draft) {
     id: edge.id,
     source: edge.source,
     target: edge.target,
-    label: edge.label || "",
-    type: "smoothstep",
+    relation: edge.relation || inferEdgeRelation(edge),
+    label: "",
+    type: "bezier",
   }));
 
   if (!draftNodes?.length || !draftEdges?.length) {
     return { nodes: [], graphEdges: [] };
   }
-  const layout = applyFlowLayout(draftNodes, draftEdges);
-
-  return {
-    nodes: layout.nodes,
-    graphEdges: draftEdges,
-  };
+  return { nodes: draftNodes, graphEdges: draftEdges };
 }
 
-function applyFlowLayout(nodes, edges) {
-  const parentsByTarget = new Map();
-  const childrenBySource = new Map();
-  const indegree = new Map(nodes.map((node) => [node.id, 0]));
-
-  for (const edge of edges) {
-    if (!childrenBySource.has(edge.source)) childrenBySource.set(edge.source, []);
-    if (!parentsByTarget.has(edge.target)) parentsByTarget.set(edge.target, []);
-    childrenBySource.get(edge.source).push(edge.target);
-    parentsByTarget.get(edge.target).push(edge.source);
-    indegree.set(edge.target, (indegree.get(edge.target) || 0) + 1);
-  }
-
-  const depthById = getDepthById(nodes, childrenBySource, indegree);
-  const spineNodes = nodes
-    .filter((node) => isRoadmapSpineNode(node))
-    .sort((a, b) => {
-      const depthDiff = (depthById.get(a.id) ?? 0) - (depthById.get(b.id) ?? 0);
-      return depthDiff || nodes.indexOf(a) - nodes.indexOf(b);
-    });
-
-  const mainNodes = spineNodes.length >= 2 ? spineNodes : nodes.slice(0, Math.min(nodes.length, 5));
-  const mainIndexById = new Map(mainNodes.map((node, index) => [node.id, index]));
-  const branchBuckets = new Map(mainNodes.map((node) => [node.id, []]));
-
-  for (const node of nodes) {
-    if (mainIndexById.has(node.id)) continue;
-    const ownerId = findNearestMainParent(node.id, parentsByTarget, mainIndexById);
-    const fallbackId = mainNodes[Math.min(mainNodes.length - 1, Math.max(0, depthById.get(node.id) ?? 0))]?.id;
-    const bucketId = ownerId || fallbackId || mainNodes[0]?.id;
-    if (!branchBuckets.has(bucketId)) branchBuckets.set(bucketId, []);
-    branchBuckets.get(bucketId).push(node);
-  }
-
-  const positionedMainNodes = mainNodes.map((node, index) => ({
-    ...node,
-    data: { ...node.data, layoutRole: "spine", orderIndex: index + 1 },
-    position: {
-      x: index * ROADMAP_COLUMN_GAP,
-      y: 120,
-    },
-  }));
-
-  const positionedBranchNodes = [];
-  const displayEdges = [];
-
-  for (let index = 0; index < mainNodes.length - 1; index += 1) {
-    const source = mainNodes[index];
-    const target = mainNodes[index + 1];
-    displayEdges.push({
-      id: `roadmap-main-${source.id}-${target.id}`,
-      source: source.id,
-      target: target.id,
-      sourceHandle: "right",
-      targetHandle: "left",
-      type: "smoothstep",
-      className: "main-edge",
-    });
-  }
-
-  for (const [mainId, branchNodes] of branchBuckets.entries()) {
-    const mainIndex = mainIndexById.get(mainId) ?? 0;
-    const x = mainIndex * ROADMAP_COLUMN_GAP;
-    branchNodes.forEach((node, index) => {
-      const sideOffset = branchNodes.length > 3 && index % 2 ? 260 : 0;
-      positionedBranchNodes.push({
-        ...node,
-        data: { ...node.data, layoutRole: "branch" },
-        position: {
-          x: x + sideOffset,
-          y: 120 + ROADMAP_BRANCH_START_Y + Math.floor(index / 2) * ROADMAP_BRANCH_GAP,
-        },
-      });
-      displayEdges.push({
-        id: `roadmap-branch-${mainId}-${node.id}`,
-        source: mainId,
-        target: node.id,
-        sourceHandle: "bottom",
-        targetHandle: "top",
-        type: "smoothstep",
-        className: "branch-edge",
-      });
-    });
-  }
-
-  return {
-    nodes: centeredFlowLayout([...positionedMainNodes, ...positionedBranchNodes]),
-    edges: displayEdges,
-  };
+function inferEdgeRelation(edge) {
+  const label = edge.label || "";
+  if (/开始|下一阶段|next/i.test(label)) return "next";
+  return "contains";
 }
 
-function getDepthById(nodes, childrenBySource, indegree) {
-  const depthById = new Map();
-  const queue = nodes
-    .filter((node) => (indegree.get(node.id) || 0) === 0)
-    .map((node) => node.id);
+function treeToNodesAndEdges(tree, existingNodes) {
+  const nodeById = new Map(existingNodes.map((n) => [n.id, n]));
+  const nextNodes = [];
+  const nextEdges = [];
+  const root = tree.nodeData;
 
-  if (!queue.length) {
-    nodes.forEach((node, index) => depthById.set(node.id, index));
-    return depthById;
-  }
-
-  queue.forEach((nodeId) => depthById.set(nodeId, 0));
-  while (queue.length) {
-    const nodeId = queue.shift();
-    const nextDepth = (depthById.get(nodeId) ?? 0) + 1;
-    for (const childId of childrenBySource.get(nodeId) || []) {
-      if (depthById.get(childId) === undefined || nextDepth < depthById.get(childId)) {
-        depthById.set(childId, nextDepth);
-        queue.push(childId);
-      }
+  function visit(obj, parentId, kindHint = "learn") {
+    const existing = nodeById.get(obj.id);
+    const isRoot = !parentId;
+    const kind = isRoot
+      ? "goal"
+      : parentId === root.id
+        ? "stage"
+        : !existing
+        ? kindHint
+        : existing.data?.kind;
+    nextNodes.push({
+      id: obj.id,
+      type: kind,
+      position: { x: 0, y: 0 },
+      data: {
+        ...existing?.data,
+        title: obj.topic,
+        kind,
+      },
+    });
+    if (parentId) {
+      nextEdges.push({
+        id: `edge-${parentId}-${obj.id}`,
+        source: parentId,
+        target: obj.id,
+        relation: parentId === root.id ? "next" : "contains",
+        label: "",
+      });
+    }
+    for (const child of obj.children || []) {
+      visit(child, obj.id, obj.id === root.id ? "stage" : "learn");
     }
   }
 
-  nodes.forEach((node) => {
-    if (!depthById.has(node.id)) depthById.set(node.id, 0);
-  });
-  return depthById;
+  visit(root, null, "goal");
+  return { nodes: nextNodes, edges: nextEdges };
 }
 
-function findNearestMainParent(nodeId, parentsByTarget, mainIndexById) {
-  const seen = new Set();
-  const queue = [...(parentsByTarget.get(nodeId) || [])];
-  while (queue.length) {
-    const parentId = queue.shift();
-    if (seen.has(parentId)) continue;
-    seen.add(parentId);
-    if (mainIndexById.has(parentId)) return parentId;
-    queue.push(...(parentsByTarget.get(parentId) || []));
-  }
-  return null;
-}
 
-function isRoadmapSpineNode(node) {
-  return ["goal", "phase", "project", "checkpoint", "review"].includes(node.data?.kind);
-}
-
-function centeredFlowLayout(nodes) {
-  if (!nodes.length) return nodes;
-  const minX = Math.min(...nodes.map((node) => node.position.x));
-  const maxX = Math.max(...nodes.map((node) => node.position.x));
-  if (maxX - minX < 420) return nodes;
-  const shift = -minX - (maxX - minX) / 2;
-
-  return nodes.map((node) => ({
-    ...node,
-    position: {
-      ...node.position,
-      x: node.position.x + shift,
-    },
-  }));
+function normalizeNodeKind(kind) {
+  const normalized =
+    {
+      phase: "stage",
+      concept: "learn",
+      task: "learn",
+      practice: "learn",
+      review: "learn",
+      checkpoint: "project",
+      resource: "learn",
+    }[kind] || kind;
+  return ["goal", "stage", "learn", "project"].includes(normalized) ? normalized : "learn";
 }
 
 function loadDraft() {
@@ -1263,40 +1727,31 @@ function loadDraft() {
 }
 
 function nodeKindLabel(kind) {
-  return (
-    {
-      goal: "目标",
-      phase: "阶段",
-      concept: "概念",
-      task: "任务",
-      practice: "练习",
-      review: "复盘",
-      project: "项目",
-      checkpoint: "检查",
-      resource: "资源",
-    }[kind] || "节点"
-  );
+  return { goal: "目标", stage: "阶段", learn: "学习", project: "项目" }[kind] || "节点";
 }
 
 function nodeStatusLabel(status) {
-  return (
-    {
-      not_started: "未开始",
-      in_progress: "进行中",
-      done: "已完成",
-    }[status] || "未开始"
-  );
+  return { not_started: "未开始", in_progress: "进行中", done: "已完成" }[status] || "未开始";
 }
 
 function getPlanStats(nodes) {
   return nodes.reduce(
     (acc, node) => {
-      if (node.data?.kind === "phase") acc.phaseCount += 1;
+      if (node.data?.kind === "stage") acc.phaseCount += 1;
       acc.totalMinutes += Number(node.data?.estimated_minutes || 0);
       return acc;
     },
     { phaseCount: 0, totalMinutes: 0 },
   );
+}
+
+function formatMinutes(total) {
+  if (!total) return "0 min";
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  if (hours && minutes) return `${hours} h ${minutes} min`;
+  if (hours) return `${hours} h`;
+  return `${minutes} min`;
 }
 
 createRoot(document.getElementById("root")).render(
