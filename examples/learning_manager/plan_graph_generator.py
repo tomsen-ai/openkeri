@@ -23,8 +23,7 @@ PlanEdgeRelation = Literal[
 
 
 class PlanGraphClient(Protocol):
-    def complete_json(self, messages: list[LLMMessage]) -> dict[str, Any]:
-        ...
+    def complete_json(self, messages: list[LLMMessage]) -> dict[str, Any]: ...
 
 
 class PlanNodePosition(BaseModel):

@@ -94,7 +94,9 @@ class PlanApiHandler(BaseHTTPRequestHandler):
             state = PlanIntakeState.model_validate(state_payload)
             client = make_deepseek_client()
             result = answer_plan_intake(
-                client, state, choice_id=choice_id,
+                client,
+                state,
+                choice_id=choice_id,
                 notes=str(payload.get("notes", "")).strip(),
             )
         except (ValueError, DeepSeekClientError) as error:
@@ -189,10 +191,15 @@ class PlanApiHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         origin = self.headers.get("Origin")
-        allowed_origin = origin if origin in {
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-        } else "http://localhost:5173"
+        allowed_origin = (
+            origin
+            if origin
+            in {
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+            }
+            else "http://localhost:5173"
+        )
         self.send_header("Access-Control-Allow-Origin", allowed_origin)
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")

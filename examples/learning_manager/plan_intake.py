@@ -53,8 +53,7 @@ OPTIONAL_SLOT_PRIORITY: tuple[SlotName, ...] = (
 
 
 class PlanIntakeClient(Protocol):
-    def complete_json(self, messages: list[LLMMessage]) -> dict[str, Any]:
-        ...
+    def complete_json(self, messages: list[LLMMessage]) -> dict[str, Any]: ...
 
 
 class PlanConstraints(BaseModel):
@@ -510,8 +509,7 @@ def issue_for_completeness(completeness: IntakeCompleteness) -> PlanIntakeIssue:
         type="missing_optional_slot",
         slot=completeness.target_slot,
         summary=(
-            "Need one more adjustable detail: "
-            f"{slot_label(completeness.target_slot)}."
+            f"Need one more adjustable detail: {slot_label(completeness.target_slot)}."
         ),
         reason=(
             "The core goal is clear, but one more detail will make the brief "

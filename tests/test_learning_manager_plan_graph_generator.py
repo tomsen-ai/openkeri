@@ -313,8 +313,7 @@ def test_graph_prompt_includes_brief_alignment_rules() -> None:
     assert "goal|stage|learn|project" in prompt
     assert '"relation": "contains|next"' in prompt
     assert (
-        "Do not use concept, task, practice, review, checkpoint, or resource"
-        in prompt
+        "Do not use concept, task, practice, review, checkpoint, or resource" in prompt
     )
 
 
@@ -366,11 +365,7 @@ def test_generate_plan_graph_draft_rejects_isolated_non_goal_node() -> None:
 
 def test_generate_plan_graph_draft_rejects_unreachable_non_goal_node() -> None:
     payload = valid_plan_graph()
-    payload["edges"] = [
-        edge
-        for edge in payload["edges"]
-        if edge["target"] != "n5"
-    ]
+    payload["edges"] = [edge for edge in payload["edges"] if edge["target"] != "n5"]
     client = FakePlanClient(payload)
 
     with pytest.raises(ValueError, match="incoming edge"):
