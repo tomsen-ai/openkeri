@@ -17,9 +17,14 @@ Plan Studio's active loop is:
 raw learning intent
 -> dynamic intake
 -> plan brief
--> editable learning graph
+-> editable learning mind map
 -> node-level learning page
 ```
+
+The active Plan Studio UI keeps graph-level concepts deliberately small:
+`goal`, `stage`, `learn`, and `project`. Detailed explanation, practice, labs,
+resources, review prompts, and acceptance criteria should live inside node
+details instead of becoming default top-level graph node types.
 
 It is not a general chatbot framework, and it is not a course generator. The
 goal is to help a teacher agent observe a learner's current action, use learning

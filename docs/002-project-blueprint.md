@@ -17,13 +17,14 @@ a learning plan and knowledge-route workspace:
 raw intent
 -> slot-based dynamic intake
 -> dynamic plan brief
--> brief-aligned editable graph
+-> brief-aligned editable mind map
 -> node-level learning
 ```
 
-The next major design work is graph quality: learning routes should support
-parallel branches, prerequisite clusters, convergence, optional side paths, and
-review loops instead of always becoming a linear phase route.
+The current UI direction intentionally keeps the visible route simple:
+`goal/stage/learn/project` nodes rendered as an editable mind map. The next
+major product work is node detail quality and node-level learning content,
+rather than adding many graph-level relationship types.
 
 It is not a marketing document. It is an engineering reference for future
 implementation work. New modules should fit back into this blueprint or cause

@@ -1399,9 +1399,13 @@ function App() {
                 value={selectedNode.data.title || ""}
                 onChange={(event) => updateSelectedNode("title", event.target.value)}
               />
-              <small>
-                {formatMinutes(Number(selectedNode.data.estimated_minutes || 0))} · {nodeStatusLabel(selectedNode.data.status)}
-              </small>
+              <div className="node-title-meta">
+                <span>{formatMinutes(Number(selectedNode.data.estimated_minutes || 0))}</span>
+                <i />
+                <span className={`node-status-text status-${selectedNode.data.status || "not_started"}`}>
+                  {nodeStatusLabel(selectedNode.data.status)}
+                </span>
+              </div>
             </div>
             <button type="button" onClick={() => setSelectedNodeId("")} aria-label="关闭">×</button>
           </div>
@@ -1440,15 +1444,39 @@ function App() {
             </label>
             <label className="node-property">
               <span>状态</span>
-              <select
-                value={selectedNode.data.status || "not_started"}
-                onChange={(event) => updateSelectedNode("status", event.target.value)}
-              >
-                <option value="not_started">未开始</option>
-                <option value="in_progress">进行中</option>
-                <option value="done">已完成</option>
-              </select>
+              <div className="node-status-toggle">
+                {["not_started", "in_progress", "done"].map((status) => (
+                  <button
+                    type="button"
+                    key={status}
+                    className={(selectedNode.data.status || "not_started") === status ? "active" : ""}
+                    onClick={() => updateSelectedNode("status", status)}
+                    title={nodeStatusLabel(status)}
+                    aria-label={`设置状态为${nodeStatusLabel(status)}`}
+                    aria-pressed={(selectedNode.data.status || "not_started") === status}
+                  >
+                    <span className={`node-status-dot status-${status}`} />
+                  </button>
+                ))}
+              </div>
             </label>
+          </div>
+
+          <div className="node-action-row">
+            <div>
+              <span>节点内容</span>
+              <small>后续将在这里生成解释、练习和项目验收标准</small>
+            </div>
+            <button
+              type="button"
+              className="node-open-study"
+              onClick={() => setStudyNodeId(selectedNode.id)}
+            >
+              打开
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
           </div>
         </aside>
       ) : null}

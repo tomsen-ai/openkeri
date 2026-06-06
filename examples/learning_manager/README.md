@@ -4,10 +4,10 @@ This is the active openkeri product direction.
 
 Plan Studio is a single-project learning plan and knowledge-route workspace. It
 starts from a free-form learning intent, negotiates only the information that is
-actually missing, produces a plan brief, and then generates an editable graph.
+actually missing, produces a plan brief, and then generates an editable mind map.
 
 It is not a content tutor yet. Node-level learning content is the next major
-area after route quality and graph layout are stable.
+area after route clarity and node detail editing are stable.
 
 ## Product Flow
 
@@ -16,13 +16,13 @@ Start: raw intent
   -> Intake: slot extraction + rule-based completeness gate
   -> Question: one dynamic contextual choice when required
   -> Brief: fixed core + dynamic sections
-  -> Editor: editable React Flow plan graph
-       -> node status, add/delete/edit, edges, re-layout
+  -> Editor: editable mind-map plan canvas
+       -> node status, add/delete/edit, import/export
        -> node learning page (placeholder content)
 ```
 
 The active frontend is `plan_editor/`. The legacy static frontend and CLI demo
-still exist for reference, but active work should target the React Flow editor.
+still exist for reference, but active work should target the mind-map editor.
 
 ## Current Architecture
 
@@ -31,7 +31,7 @@ plan_api.py              HTTP API for intake and graph generation
 plan_intake.py           raw intent -> slots -> dynamic question or brief
 plan_graph_generator.py  brief-aligned graph prompt + graph validation
 plan_editor/
-  src/main.jsx           React app: start / intake / brief / editor screens
+  src/main.jsx           React app: start / intake / brief / mind-map editor
   src/styles.css         app styling
 ```
 
@@ -156,13 +156,35 @@ content belongs inside `learn`; resources, review prompts, and acceptance
 criteria belong inside `learn` or `project`; checkpoints are represented as
 project acceptance criteria rather than separate default graph nodes.
 
+## Plan Studio UI
+
+The current frontend is a browser-based plan studio:
+
+- start screen: one free-form intent box with example prompts
+- intake screen: one dynamic 3-4 choice negotiation question
+- brief screen: compact confirmation cards with inline detail editing
+- editor screen: `mind-elixir` mind map canvas with import/export and local
+  draft persistence
+- node inspector: lightweight glass-style detail card for title, type,
+  estimated time, status, and description
+
+Development preview shortcuts:
+
+```text
+http://127.0.0.1:5173/?preview=intake
+http://127.0.0.1:5173/?preview=brief
+```
+
+These shortcuts use local fixture data so UI changes can be reviewed without
+calling the backend or LLM.
+
 ## Current State
 
 Shipped:
 
 1. Single project persistence via localStorage.
 2. Export / import JSON.
-3. React Flow editor: add, delete, edit nodes and edges; re-layout.
+3. Mind-map editor: add, delete, edit nodes through a `mind-elixir` canvas.
 4. Node status: `not_started`, `in_progress`, `done`.
 5. Basic node learning page with placeholder content.
 6. Raw-intent intake with dynamic questions.
@@ -170,34 +192,45 @@ Shipped:
 8. Dynamic plan brief with dynamic sections.
 9. Brief-aligned graph generation.
 10. DeepSeek transient network retry.
+11. Unified Plan Studio UI flow with consistent OpenKeri branding.
+12. Compact brief/intake preview modes for frontend iteration.
 
 Known gaps:
 
-- Brief page UI is only structurally compatible with the new brief; it still
-  needs a better confirmation experience.
-- Graph layout is still a compatibility layer over React Flow. The next UI pass
-  should present stages as route cards and show learn/project children inside
-  each stage rather than treating every child as a graph peer.
+- Mind-map editing is intentionally simple; complex cross-links and custom edge
+  editing are not exposed in the UI yet.
+- Graph layout uses `mind-elixir` tree layout; richer plan-specific layout
+  rules may still be needed for large plans.
 - Node learning pages still show generic placeholder content.
 - Public/free deployment needs call budgets, rate limits, and provider options.
 
 ## Next Priorities
 
-**Priority 1: Route Clarity**
+**Priority 1: Node Detail Quality**
+
+The visible map should stay simple. The next step is to make each node useful
+when opened:
+
+- concise role/learning objective per node
+- node-specific explanation outline
+- practice prompts, mini labs, and self-checks inside `learn`
+- project requirements and acceptance criteria inside `project`
+- clearer save/edit behavior for node details
+
+**Priority 2: Route Clarity**
 
 The plan graph should feel like an executable learning route, not a dense
 knowledge graph. Improve generation and layout for:
 
 - concise `goal/stage/learn/project` generation
-- stage route cards instead of graph-peer child clutter
-- learn node details with explanation, examples, mini labs, exercises,
-  resources, self-checks, and review prompts
+- better stage balance and readable child counts
+- optional review/project branches without overloading the visible map
 - project nodes with requirements and acceptance criteria
 
 The challenge is to keep the visible graph simple while preserving useful
 learning detail inside nodes.
 
-**Priority 2: Node-Level Learning**
+**Priority 3: Node-Level Learning**
 
 After route clarity improves, generate node-specific learning content:
 
@@ -207,7 +240,7 @@ After route clarity improves, generate node-specific learning content:
 - notes and reflection
 - next-step recommendation
 
-**Priority 3: Public Service Safety**
+**Priority 4: Public Service Safety**
 
 Before any public free deployment:
 
@@ -252,6 +285,8 @@ PYTHONPATH=src:. .venv/bin/python -m pytest \
   examples/learning_manager/plan_api.py \
   examples/learning_manager/plan_intake.py \
   examples/learning_manager/plan_graph_generator.py
+
+.venv/bin/python -m ruff format --check .
 
 cd examples/learning_manager/plan_editor && npm run build
 ```

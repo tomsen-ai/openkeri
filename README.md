@@ -16,7 +16,7 @@ raw intent
 -> dynamic intake questions
 -> rule-based completeness gate
 -> dynamic plan brief
--> editable plan graph
+-> editable mind-map plan
 -> node-level learning page
 ```
 
@@ -27,7 +27,7 @@ examples/learning_manager/
   plan_api.py              local HTTP API for intake and graph generation
   plan_intake.py           raw intent -> slots -> dynamic questions/brief
   plan_graph_generator.py  brief-aligned plan graph generation and validation
-  plan_editor/             React Flow Plan Studio frontend
+  plan_editor/             Mind map Plan Studio frontend
 ```
 
 ## Current Flow
@@ -38,7 +38,8 @@ examples/learning_manager/
 4. If needed, the model asks one contextual multiple-choice question.
 5. Once enough information is known, the model creates a dynamic plan brief.
 6. The user confirms the brief.
-7. The graph generator creates an editable learning route aligned to the brief.
+7. The graph generator creates an editable mind-map learning route aligned to
+   the brief.
 
 This is designed to keep the first screen free-form while avoiding hardcoded
 menus and fixed upfront forms.
@@ -71,6 +72,7 @@ http://127.0.0.1:5173/
 ```bash
 PYTHONPATH=src:. .venv/bin/python -m pytest
 .venv/bin/python -m ruff check .
+.venv/bin/python -m ruff format --check .
 cd examples/learning_manager/plan_editor && npm run build
 ```
 
