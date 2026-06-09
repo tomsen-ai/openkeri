@@ -1,0 +1,389 @@
+{
+  "id": "single-project",
+  "schemaVersion": 1,
+  "goal": "我想用 30 天准备算法面试，重点是能自己规划和复盘",
+  "title": "30天算法面试冲刺计划",
+  "summary": "本计划以刷题为主，辅以知识点总结，分为四个阶段：基础巩固、核心突破、动态规划入门、综合模拟与复盘。每天约25分钟，通过练习和复盘快速提升实战能力。",
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "goal",
+      "data": {
+        "title": "掌握算法面试核心",
+        "kind": "goal",
+        "description": "在30天内系统准备算法面试，掌握常见题型和解题策略，能够独立规划复习和复盘错题。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n2",
+      "type": "stage",
+      "data": {
+        "title": "基础巩固",
+        "kind": "stage",
+        "description": "掌握数组、链表、栈、队列、哈希表的基础操作和常见题型。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n3",
+      "type": "stage",
+      "data": {
+        "title": "核心突破",
+        "kind": "stage",
+        "description": "深入学习树、图、排序、搜索算法，掌握遍历、最短路径等核心技巧。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n4",
+      "type": "stage",
+      "data": {
+        "title": "动态规划入门",
+        "kind": "stage",
+        "description": "学习基础动态规划题型，如背包、最长子序列等。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n5",
+      "type": "stage",
+      "data": {
+        "title": "综合模拟与复盘",
+        "kind": "stage",
+        "description": "限时模拟面试，集中复盘错题，形成个人错题本。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n6",
+      "type": "learn",
+      "data": {
+        "title": "数组与链表基础",
+        "kind": "learn",
+        "description": "练习数组遍历、双指针、链表反转等基础题，每道题先独立思考15分钟，再看题解，记录思路和复杂度。",
+        "estimated_minutes": 60,
+        "group": "基础巩固",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n7",
+      "type": "learn",
+      "data": {
+        "title": "栈、队列与哈希表",
+        "kind": "learn",
+        "description": "掌握栈、队列的典型应用（如括号匹配、单调栈）和哈希表解决两数之和等问题。",
+        "estimated_minutes": 60,
+        "group": "基础巩固",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n8",
+      "type": "project",
+      "data": {
+        "title": "基础巩固项目",
+        "kind": "project",
+        "description": "完成5道综合题（如设计LRU缓存），要求写出复杂度分析并口头讲解思路。",
+        "estimated_minutes": 120,
+        "group": "基础巩固",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n9",
+      "type": "learn",
+      "data": {
+        "title": "二叉树与遍历",
+        "kind": "learn",
+        "description": "练习二叉树的前中后序遍历、层序遍历，以及常见操作（最大深度、路径和）。",
+        "estimated_minutes": 60,
+        "group": "核心突破",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n10",
+      "type": "learn",
+      "data": {
+        "title": "图与最短路径",
+        "kind": "learn",
+        "description": "学习图的表示（邻接表）、DFS/BFS遍历，以及Dijkstra最短路径算法。",
+        "estimated_minutes": 60,
+        "group": "核心突破",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n11",
+      "type": "learn",
+      "data": {
+        "title": "排序与搜索",
+        "kind": "learn",
+        "description": "实现二分查找、快速排序、归并排序，并分析时间/空间复杂度。",
+        "estimated_minutes": 60,
+        "group": "核心突破",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n12",
+      "type": "project",
+      "data": {
+        "title": "核心突破项目",
+        "kind": "project",
+        "description": "完成一道综合题（如二叉树的序列化与反序列化），要求写出完整代码并口头讲解。",
+        "estimated_minutes": 120,
+        "group": "核心突破",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n13",
+      "type": "learn",
+      "data": {
+        "title": "基础DP题型",
+        "kind": "learn",
+        "description": "学习斐波那契、爬楼梯、背包问题等基础DP，理解状态转移方程。",
+        "estimated_minutes": 60,
+        "group": "动态规划入门",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n14",
+      "type": "learn",
+      "data": {
+        "title": "字符串处理",
+        "kind": "learn",
+        "description": "练习字符串匹配、最长回文子串、编辑距离等常见题型。",
+        "estimated_minutes": 60,
+        "group": "动态规划入门",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n15",
+      "type": "project",
+      "data": {
+        "title": "DP与字符串项目",
+        "kind": "project",
+        "description": "完成一道中等难度的DP题（如最长递增子序列），要求写出复杂度分析并口头讲解。",
+        "estimated_minutes": 120,
+        "group": "动态规划入门",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n16",
+      "type": "project",
+      "data": {
+        "title": "模拟面试与复盘",
+        "kind": "project",
+        "description": "限时45分钟完成2道中等题，模拟面试环境，之后复盘错题，更新错题本。",
+        "estimated_minutes": 120,
+        "group": "综合模拟与复盘",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "graphEdges": [
+    {
+      "id": "e1",
+      "source": "n1",
+      "target": "n2",
+      "relation": "next",
+      "label": ""
+    },
+    {
+      "id": "e2",
+      "source": "n2",
+      "target": "n3",
+      "relation": "next",
+      "label": ""
+    },
+    {
+      "id": "e3",
+      "source": "n3",
+      "target": "n4",
+      "relation": "next",
+      "label": ""
+    },
+    {
+      "id": "e4",
+      "source": "n4",
+      "target": "n5",
+      "relation": "next",
+      "label": ""
+    },
+    {
+      "id": "e5",
+      "source": "n2",
+      "target": "n6",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e6",
+      "source": "n2",
+      "target": "n7",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e7",
+      "source": "n2",
+      "target": "n8",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e8",
+      "source": "n3",
+      "target": "n9",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e9",
+      "source": "n3",
+      "target": "n10",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e10",
+      "source": "n3",
+      "target": "n11",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e11",
+      "source": "n3",
+      "target": "n12",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e12",
+      "source": "n4",
+      "target": "n13",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e13",
+      "source": "n4",
+      "target": "n14",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e14",
+      "source": "n4",
+      "target": "n15",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e15",
+      "source": "n5",
+      "target": "n16",
+      "relation": "contains",
+      "label": ""
+    }
+  ],
+  "updatedAt": "2026-06-06T13:32:48.101Z"
+}

@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plan Route Preview</title>
+    <style>
+      :root {
+        color: #182016;
+        background: #0f1318;
+        font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 20% 0%, rgba(139, 232, 94, 0.13), transparent 28%),
+          linear-gradient(150deg, #0e1218, #171b22);
+      }
+
+      main {
+        min-width: 1420px;
+        min-height: 100vh;
+        padding: 32px;
+      }
+
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 28px;
+        margin: 0 auto 22px;
+        width: 1360px;
+        color: #f4fff0;
+      }
+
+      h1 {
+        margin: 0 0 7px;
+        font-size: 25px;
+        line-height: 1.2;
+      }
+
+      p {
+        margin: 0;
+        color: #9ba79e;
+        font-size: 14px;
+      }
+
+      .summary {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .summary span {
+        padding: 6px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        color: #dbe8d7;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .board {
+        position: relative;
+        width: 1360px;
+        height: 760px;
+        margin: 0 auto;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        background:
+          linear-gradient(rgba(28, 40, 26, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(28, 40, 26, 0.04) 1px, transparent 1px),
+          radial-gradient(circle at 50% 0%, rgba(139, 232, 94, 0.1), transparent 42%),
+          #f5f7f1;
+        background-size: 24px 24px, 24px 24px, auto, auto;
+        box-shadow: 0 28px 88px rgba(0, 0, 0, 0.32);
+      }
+
+      .goal {
+        position: absolute;
+        top: 42px;
+        left: 50%;
+        width: 360px;
+        min-height: 102px;
+        padding: 20px 24px;
+        border: 2px solid rgba(139, 232, 94, 0.72);
+        border-radius: 12px;
+        background: linear-gradient(160deg, #142015, #2c4429);
+        color: #fff;
+        transform: translateX(-50%);
+        box-shadow: 0 18px 42px rgba(20, 32, 21, 0.28);
+      }
+
+      .goal span,
+      .stage span,
+      .final span {
+        display: block;
+        margin-bottom: 8px;
+        color: #77a66a;
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .goal span {
+        color: #bfff9d;
+      }
+
+      .goal strong {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 21px;
+        line-height: 1.2;
+      }
+
+      .goal p {
+        color: rgba(255, 255, 255, 0.72);
+        line-height: 1.45;
+      }
+
+      .route {
+        position: absolute;
+        top: 214px;
+        right: 60px;
+        left: 60px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 28px;
+      }
+
+      .stage {
+        position: relative;
+        min-height: 350px;
+        padding: 18px;
+        border: 1px solid rgba(35, 54, 32, 0.12);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.76);
+        box-shadow:
+          0 16px 34px rgba(35, 54, 32, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.82);
+      }
+
+      .stage::after {
+        content: "";
+        position: absolute;
+        top: 62px;
+        right: -31px;
+        width: 34px;
+        height: 3px;
+        border-radius: 99px;
+        background: #8ac765;
+      }
+
+      .stage::before {
+        content: "";
+        position: absolute;
+        top: 57px;
+        right: -36px;
+        width: 0;
+        height: 0;
+        border-top: 7px solid transparent;
+        border-bottom: 7px solid transparent;
+        border-left: 10px solid #8ac765;
+      }
+
+      .stage:last-child::before,
+      .stage:last-child::after {
+        display: none;
+      }
+
+      .stage h2 {
+        margin: 0 0 6px;
+        color: #172016;
+        font-size: 20px;
+        line-height: 1.18;
+      }
+
+      .stage > p {
+        min-height: 42px;
+        color: #6d7868;
+        font-size: 13px;
+        line-height: 1.42;
+      }
+
+      .activities {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .activity {
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        min-height: 76px;
+        padding: 12px;
+        border: 1px solid rgba(31, 43, 30, 0.08);
+        border-radius: 10px;
+        background: #fbfcf8;
+      }
+
+      .badge {
+        display: grid;
+        place-items: center;
+        width: 46px;
+        height: 34px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .learn .badge {
+        background: #e8ddff;
+        color: #604099;
+      }
+
+      .practice .badge {
+        background: #dfeaff;
+        color: #355a9b;
+      }
+
+      .simulate .badge,
+      .check .badge {
+        background: #ffedaa;
+        color: #806012;
+      }
+
+      .activity strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #1f2a1d;
+        font-size: 15px;
+        line-height: 1.25;
+      }
+
+      .activity small {
+        display: block;
+        color: #6f7a6b;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .hidden-hints {
+        display: grid;
+        gap: 6px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(31, 43, 30, 0.08);
+      }
+
+      .hidden-hints b {
+        color: #66725f;
+        font-size: 11px;
+      }
+
+      .hidden-hints em {
+        color: #899483;
+        font-size: 12px;
+        font-style: normal;
+        line-height: 1.4;
+      }
+
+      .final {
+        position: absolute;
+        right: 60px;
+        bottom: 44px;
+        left: 60px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .final-card {
+        padding: 18px 20px;
+        border: 1px solid rgba(111, 81, 18, 0.14);
+        border-radius: 12px;
+        background: linear-gradient(160deg, #fff4c2, #ffe7a1);
+      }
+
+      .final-card strong {
+        display: block;
+        color: #241d0e;
+        font-size: 18px;
+      }
+
+      .final-card p {
+        margin-top: 7px;
+        color: #766236;
+        line-height: 1.45;
+      }
+
+      .note {
+        position: absolute;
+        bottom: 176px;
+        left: 60px;
+        width: 360px;
+        padding: 13px 15px;
+        border: 1px solid rgba(100, 137, 232, 0.18);
+        border-radius: 10px;
+        background: #edf3ff;
+        color: #52679a;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Plan Route Preview · 简化后的学习路线图</h1>
+          <p>默认只画“怎么走”。前置、资源、复盘先收进节点详情，避免满屏交叉线。</p>
+        </div>
+        <div class="summary">
+          <span>1 个目标</span>
+          <span>4 个阶段</span>
+          <span>每阶段 2 个活动</span>
+          <span>2 个最终检查</span>
+        </div>
+      </header>
+
+      <section class="board">
+        <article class="goal">
+          <span>GOAL</span>
+          <strong>30天提升工作会议英语口语</strong>
+          <p>能在会议中表达观点、做简单汇报，并回应同事问题。</p>
+        </article>
+
+        <div class="route">
+          <article class="stage">
+            <span>STAGE 1</span>
+            <h2>基础表达积累</h2>
+            <p>先建立会议常用表达，让后续练习有材料可用。</p>
+            <div class="activities">
+              <div class="activity learn">
+                <div class="badge">学</div>
+                <div>
+                  <strong>会议常用句型</strong>
+                  <small>开场、补充、澄清、追问、同意与不同意。</small>
+                </div>
+              </div>
+              <div class="activity practice">
+                <div class="badge">练</div>
+                <div>
+                  <strong>句型替换练习</strong>
+                  <small>把固定句型替换成自己的工作场景。</small>
+                </div>
+              </div>
+            </div>
+            <div class="hidden-hints">
+              <b>节点详情里显示</b>
+              <em>资源：会议表达清单；前置：无。</em>
+            </div>
+          </article>
+
+          <article class="stage">
+            <span>STAGE 2</span>
+            <h2>观点表达练习</h2>
+            <p>把想法组织成短而清楚的会议发言。</p>
+            <div class="activities">
+              <div class="activity learn">
+                <div class="badge">学</div>
+                <div>
+                  <strong>观点结构模板</strong>
+                  <small>观点、原因、例子、建议四步结构。</small>
+                </div>
+              </div>
+              <div class="activity practice">
+                <div class="badge">练</div>
+                <div>
+                  <strong>30秒观点表达</strong>
+                  <small>围绕真实会议议题做短表达。</small>
+                </div>
+              </div>
+            </div>
+            <div class="hidden-hints">
+              <b>节点详情里显示</b>
+              <em>需要：会议常用句型；产出：3 段可复用表达。</em>
+            </div>
+          </article>
+
+          <article class="stage">
+            <span>STAGE 3</span>
+            <h2>汇报结构训练</h2>
+            <p>练习把工作进展、风险和请求讲完整。</p>
+            <div class="activities">
+              <div class="activity learn">
+                <div class="badge">学</div>
+                <div>
+                  <strong>两分钟汇报结构</strong>
+                  <small>背景、进展、阻塞、下一步。</small>
+                </div>
+              </div>
+              <div class="activity practice">
+                <div class="badge">练</div>
+                <div>
+                  <strong>项目汇报练习</strong>
+                  <small>用当前工作内容做一次英文汇报。</small>
+                </div>
+              </div>
+            </div>
+            <div class="hidden-hints">
+              <b>节点详情里显示</b>
+              <em>需要：观点结构模板；产出：1 个汇报脚本。</em>
+            </div>
+          </article>
+
+          <article class="stage">
+            <span>STAGE 4</span>
+            <h2>综合实战演练</h2>
+            <p>把表达、汇报和回应放进一次完整会议模拟。</p>
+            <div class="activities">
+              <div class="activity simulate">
+                <div class="badge">模拟</div>
+                <div>
+                  <strong>完整会议模拟</strong>
+                  <small>包含观点表达、进展汇报和两轮追问。</small>
+                </div>
+              </div>
+              <div class="activity check">
+                <div class="badge">查</div>
+                <div>
+                  <strong>录音复盘</strong>
+                  <small>标记卡顿、句型缺口和回应问题。</small>
+                </div>
+              </div>
+            </div>
+            <div class="hidden-hints">
+              <b>节点详情里显示</b>
+              <em>复盘目标：会议常用句型、观点表达流畅度。</em>
+            </div>
+          </article>
+        </div>
+
+        <aside class="note">
+          这里故意不画“前置 / 支撑 / 复盘”的常驻线。它们存在数据里，但默认收进节点详情；用户先看懂路线，再点节点看为什么。
+        </aside>
+
+        <div class="final">
+          <article class="final-card">
+            <span>FINAL OUTPUT</span>
+            <strong>一次完整会议模拟</strong>
+            <p>能完成观点表达、简单汇报和同事追问回应。</p>
+          </article>
+          <article class="final-card">
+            <span>CHECKPOINT</span>
+            <strong>流畅度检查</strong>
+            <p>检查是否能稳定表达观点，并用复盘结果决定回看内容。</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

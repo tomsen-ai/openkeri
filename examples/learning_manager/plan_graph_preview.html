@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plan Graph Preview</title>
+    <style>
+      :root {
+        color: #172016;
+        background: #11151b;
+        font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 40% 0%, rgba(155, 242, 111, 0.16), transparent 30%),
+          linear-gradient(145deg, #0d1117, #151922);
+      }
+
+      main {
+        width: 100vw;
+        min-height: 100vh;
+        padding: 28px;
+        overflow: auto;
+      }
+
+      .shell {
+        width: 1640px;
+        margin: 0 auto;
+      }
+
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 18px;
+        color: #f4fff0;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 24px;
+        font-weight: 850;
+      }
+
+      p {
+        margin: 0;
+        color: #9ba8a0;
+        font-size: 14px;
+      }
+
+      .legend {
+        display: flex;
+        gap: 10px;
+        color: #dce8d8;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .legend span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend i {
+        display: block;
+        width: 28px;
+        height: 3px;
+        border-radius: 99px;
+      }
+
+      .main-line { background: #a6ef78; }
+      .dependency-line { background: #b8ccff; }
+      .resource-line { background: repeating-linear-gradient(90deg, #bcaeff 0 7px, transparent 7px 13px); }
+      .converge-line { background: #ffd95e; }
+      .review-line { background: repeating-linear-gradient(90deg, #82a4ff 0 8px, transparent 8px 15px); }
+
+      .canvas {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        background:
+          radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.08), transparent 28%),
+          #f4f6ef;
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.32);
+      }
+
+      svg {
+        display: block;
+        width: 1640px;
+        height: 980px;
+      }
+
+      .edge {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .edge.next,
+      .edge.contains {
+        stroke: #79b656;
+        stroke-width: 4;
+      }
+
+      .edge.prerequisite,
+      .edge.parallel {
+        stroke: #8ea5e6;
+        stroke-width: 3;
+      }
+
+      .edge.supports {
+        stroke: #9c8be8;
+        stroke-width: 3;
+        stroke-dasharray: 8 8;
+      }
+
+      .edge.converges {
+        stroke: #e0aa1f;
+        stroke-width: 4;
+      }
+
+      .edge.reviews {
+        stroke: #6489e8;
+        stroke-width: 3.5;
+        stroke-dasharray: 10 8;
+      }
+
+      .edge-label rect {
+        fill: rgba(255, 255, 255, 0.92);
+        stroke: rgba(29, 44, 27, 0.12);
+        rx: 10;
+      }
+
+      .edge-label text {
+        fill: #3c4b38;
+        font-size: 13px;
+        font-weight: 850;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+
+      .node rect {
+        stroke: rgba(30, 43, 28, 0.16);
+        stroke-width: 1.2;
+        rx: 10;
+        filter: drop-shadow(0 10px 18px rgba(25, 37, 23, 0.12));
+      }
+
+      .node.goal rect {
+        fill: #182718;
+        stroke: #8be95f;
+        stroke-width: 2;
+      }
+
+      .node.phase rect {
+        fill: #d9f3c9;
+      }
+
+      .node.concept rect {
+        fill: #e7dcff;
+      }
+
+      .node.practice rect {
+        fill: #dfeaff;
+      }
+
+      .node.resource rect {
+        fill: #efe7ff;
+        stroke-dasharray: 5 4;
+      }
+
+      .node.project rect,
+      .node.checkpoint rect {
+        fill: #ffedaa;
+      }
+
+      .node.review rect {
+        fill: #d8e4ff;
+      }
+
+      .node .kind {
+        fill: #3f7432;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .node.goal .kind {
+        fill: #bfff9e;
+      }
+
+      .node .title {
+        fill: #172016;
+        font-size: 18px;
+        font-weight: 850;
+      }
+
+      .node.goal .title {
+        fill: #ffffff;
+        font-size: 20px;
+      }
+
+      .node .meta {
+        fill: rgba(23, 32, 22, 0.62);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .node.goal .meta {
+        fill: rgba(255, 255, 255, 0.68);
+      }
+
+      .lane-label {
+        fill: rgba(25, 35, 25, 0.36);
+        font-size: 13px;
+        font-weight: 900;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="shell">
+        <header>
+          <div>
+            <h1>Plan Graph Preview · 30天工作会议英语口语</h1>
+            <p>中间是阶段主线，上方是资源支线，下方是知识/练习/产出，蓝色虚线表示复盘回看。</p>
+          </div>
+          <div class="legend" aria-label="edge legend">
+            <span><i class="main-line"></i>主线/包含</span>
+            <span><i class="dependency-line"></i>前置/并行</span>
+            <span><i class="resource-line"></i>资源</span>
+            <span><i class="converge-line"></i>汇合</span>
+            <span><i class="review-line"></i>复盘</span>
+          </div>
+        </header>
+
+        <section class="canvas">
+          <svg viewBox="0 0 1640 980" role="img" aria-label="非线性学习计划图示例">
+            <defs>
+              <marker id="arrow-main" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L10,5 L0,10 z" fill="#79b656"></path>
+              </marker>
+              <marker id="arrow-dependency" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L10,5 L0,10 z" fill="#8ea5e6"></path>
+              </marker>
+              <marker id="arrow-resource" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L10,5 L0,10 z" fill="#9c8be8"></path>
+              </marker>
+              <marker id="arrow-converge" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L10,5 L0,10 z" fill="#e0aa1f"></path>
+              </marker>
+              <marker id="arrow-review" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L10,5 L0,10 z" fill="#6489e8"></path>
+              </marker>
+            </defs>
+
+            <text class="lane-label" x="44" y="112">资源层</text>
+            <text class="lane-label" x="44" y="278">主线阶段</text>
+            <text class="lane-label" x="44" y="502">知识 / 练习层</text>
+            <text class="lane-label" x="44" y="760">产出 / 复盘层</text>
+
+            <!-- Main route -->
+            <path class="edge next" d="M226 276 C270 276 288 276 326 276" marker-end="url(#arrow-main)"></path>
+            <path class="edge next" d="M546 276 C590 276 608 276 646 276" marker-end="url(#arrow-main)"></path>
+            <path class="edge next" d="M866 276 C910 276 928 276 966 276" marker-end="url(#arrow-main)"></path>
+            <path class="edge next" d="M1186 276 C1230 276 1248 276 1286 276" marker-end="url(#arrow-main)"></path>
+
+            <!-- Contains edges -->
+            <path class="edge contains" d="M436 336 C436 386 430 394 430 438" marker-end="url(#arrow-main)"></path>
+            <path class="edge contains" d="M436 336 C436 514 430 522 430 562" marker-end="url(#arrow-main)"></path>
+            <path class="edge contains" d="M756 336 C756 386 752 394 752 438" marker-end="url(#arrow-main)"></path>
+            <path class="edge contains" d="M756 336 C756 514 752 522 752 562" marker-end="url(#arrow-main)"></path>
+            <path class="edge contains" d="M1076 336 C1076 386 1072 394 1072 438" marker-end="url(#arrow-main)"></path>
+            <path class="edge contains" d="M1076 336 C1076 514 1072 522 1072 562" marker-end="url(#arrow-main)"></path>
+            <path class="edge contains" d="M1396 336 C1396 560 1378 602 1334 690" marker-end="url(#arrow-main)"></path>
+            <path class="edge contains" d="M1396 336 C1396 572 1438 610 1438 690" marker-end="url(#arrow-main)"></path>
+
+            <!-- Resource and prerequisites -->
+            <path class="edge contains" d="M436 216 C436 166 436 154 436 132" marker-end="url(#arrow-main)"></path>
+            <path class="edge supports" d="M436 132 C436 238 408 330 408 438" marker-end="url(#arrow-resource)"></path>
+            <path class="edge prerequisite" d="M430 526 C430 540 430 548 430 562" marker-end="url(#arrow-dependency)"></path>
+            <path class="edge prerequisite" d="M752 526 C752 540 752 548 752 562" marker-end="url(#arrow-dependency)"></path>
+            <path class="edge prerequisite" d="M1072 526 C1072 540 1072 548 1072 562" marker-end="url(#arrow-dependency)"></path>
+            <path class="edge parallel" d="M540 616 C590 638 636 638 668 616" marker-end="url(#arrow-dependency)"></path>
+
+            <!-- Convergence -->
+            <path class="edge converges" d="M850 616 C960 664 1060 710 1190 742" marker-end="url(#arrow-converge)"></path>
+            <path class="edge converges" d="M1170 616 C1196 656 1212 688 1232 722" marker-end="url(#arrow-converge)"></path>
+            <path class="edge converges" d="M1310 798 C1348 812 1388 812 1412 798" marker-end="url(#arrow-converge)"></path>
+            <path class="edge converges" d="M1438 798 C1438 820 1438 840 1438 864" marker-end="url(#arrow-converge)"></path>
+
+            <!-- Review loop -->
+            <path class="edge reviews" d="M1334 864 C1160 930 740 930 460 662 C420 624 408 586 408 526" marker-end="url(#arrow-review)"></path>
+
+            <!-- Edge labels -->
+            <g class="edge-label"><rect x="256" y="250" width="48" height="24"></rect><text x="280" y="262">开始</text></g>
+            <g class="edge-label"><rect x="580" y="250" width="68" height="24"></rect><text x="614" y="262">下一阶段</text></g>
+            <g class="edge-label"><rect x="900" y="250" width="68" height="24"></rect><text x="934" y="262">下一阶段</text></g>
+            <g class="edge-label"><rect x="1220" y="250" width="68" height="24"></rect><text x="1254" y="262">下一阶段</text></g>
+            <g class="edge-label"><rect x="448" y="160" width="48" height="24"></rect><text x="472" y="172">资源</text></g>
+            <g class="edge-label"><rect x="370" y="330" width="48" height="24"></rect><text x="394" y="342">参考</text></g>
+            <g class="edge-label"><rect x="450" y="536" width="48" height="24"></rect><text x="474" y="548">前置</text></g>
+            <g class="edge-label"><rect x="772" y="536" width="48" height="24"></rect><text x="796" y="548">前置</text></g>
+            <g class="edge-label"><rect x="1092" y="536" width="48" height="24"></rect><text x="1116" y="548">前置</text></g>
+            <g class="edge-label"><rect x="586" y="612" width="68" height="24"></rect><text x="620" y="624">并行强化</text></g>
+            <g class="edge-label"><rect x="982" y="676" width="48" height="24"></rect><text x="1006" y="688">汇合</text></g>
+            <g class="edge-label"><rect x="1198" y="672" width="48" height="24"></rect><text x="1222" y="684">汇合</text></g>
+            <g class="edge-label"><rect x="870" y="904" width="48" height="24"></rect><text x="894" y="916">复盘</text></g>
+
+            <!-- Nodes -->
+            <g class="node goal" transform="translate(56 218)">
+              <rect width="170" height="116"></rect>
+              <text class="kind" x="18" y="28">目标 · 30天</text>
+              <text class="title" x="18" y="62">提升会议英语</text>
+              <text class="title" x="18" y="88">口语表达</text>
+            </g>
+
+            <g class="node phase" transform="translate(326 216)">
+              <rect width="220" height="120"></rect>
+              <text class="kind" x="18" y="30">阶段 1</text>
+              <text class="title" x="18" y="66">基础表达积累</text>
+              <text class="meta" x="18" y="96">句型、会议常用表达</text>
+            </g>
+
+            <g class="node phase" transform="translate(646 216)">
+              <rect width="220" height="120"></rect>
+              <text class="kind" x="18" y="30">阶段 2</text>
+              <text class="title" x="18" y="66">观点表达练习</text>
+              <text class="meta" x="18" y="96">观点、原因、建议</text>
+            </g>
+
+            <g class="node phase" transform="translate(966 216)">
+              <rect width="220" height="120"></rect>
+              <text class="kind" x="18" y="30">阶段 3</text>
+              <text class="title" x="18" y="66">汇报结构训练</text>
+              <text class="meta" x="18" y="96">进展、风险、请求</text>
+            </g>
+
+            <g class="node phase" transform="translate(1286 216)">
+              <rect width="220" height="120"></rect>
+              <text class="kind" x="18" y="30">阶段 4</text>
+              <text class="title" x="18" y="66">综合实战演练</text>
+              <text class="meta" x="18" y="96">模拟会议与检查</text>
+            </g>
+
+            <g class="node resource" transform="translate(328 48)">
+              <rect width="216" height="84"></rect>
+              <text class="kind" x="18" y="28">资源 · supports</text>
+              <text class="title" x="18" y="58">会议表达清单</text>
+            </g>
+
+            <g class="node concept" transform="translate(322 438)">
+              <rect width="216" height="88"></rect>
+              <text class="kind" x="18" y="28">知识点</text>
+              <text class="title" x="18" y="60">会议常用句型</text>
+            </g>
+
+            <g class="node practice" transform="translate(322 562)">
+              <rect width="216" height="88"></rect>
+              <text class="kind" x="18" y="28">练习</text>
+              <text class="title" x="18" y="60">句型替换练习</text>
+            </g>
+
+            <g class="node concept" transform="translate(644 438)">
+              <rect width="216" height="88"></rect>
+              <text class="kind" x="18" y="28">知识点</text>
+              <text class="title" x="18" y="60">观点结构模板</text>
+            </g>
+
+            <g class="node practice" transform="translate(644 562)">
+              <rect width="216" height="88"></rect>
+              <text class="kind" x="18" y="28">练习</text>
+              <text class="title" x="18" y="60">30秒观点表达</text>
+            </g>
+
+            <g class="node concept" transform="translate(964 438)">
+              <rect width="216" height="88"></rect>
+              <text class="kind" x="18" y="28">知识点</text>
+              <text class="title" x="18" y="60">两分钟汇报结构</text>
+            </g>
+
+            <g class="node practice" transform="translate(964 562)">
+              <rect width="216" height="88"></rect>
+              <text class="kind" x="18" y="28">练习</text>
+              <text class="title" x="18" y="60">项目汇报练习</text>
+            </g>
+
+            <g class="node project" transform="translate(1204 722)">
+              <rect width="216" height="88"></rect>
+              <text class="kind" x="18" y="28">项目 · converges</text>
+              <text class="title" x="18" y="60">完整会议模拟</text>
+            </g>
+
+            <g class="node review" transform="translate(1226 864)">
+              <rect width="216" height="88"></rect>
+              <text class="kind" x="18" y="28">复盘 · reviews</text>
+              <text class="title" x="18" y="60">录音复盘</text>
+            </g>
+
+            <g class="node checkpoint" transform="translate(1330 722)">
+              <rect width="216" height="88"></rect>
+              <text class="kind" x="18" y="28">检查点</text>
+              <text class="title" x="18" y="60">流畅度检查</text>
+            </g>
+          </svg>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

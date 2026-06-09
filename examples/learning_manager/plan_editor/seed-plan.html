@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loading Plan Studio Draft</title>
+  </head>
+  <body>
+    <script>
+      const STORAGE_KEY = "openkeri.planEditorDraft.v1";
+      fetch("/seed-plan-data.json")
+        .then((response) => {
+          if (!response.ok) throw new Error("Cannot load seed plan data");
+          return response.json();
+        })
+        .then((project) => {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+          window.location.replace("/");
+        })
+        .catch((error) => {
+          document.body.textContent = `加载计划失败：${error.message}`;
+        });
+    </script>
+  </body>
+</html>
