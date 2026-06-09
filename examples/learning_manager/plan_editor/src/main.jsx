@@ -183,6 +183,403 @@ const PREVIEW_INTAKE = {
   },
 };
 
+const PREVIEW_LEARNING_POINT_PROJECT = {
+  id: "learning-point-preview",
+  schemaVersion: 1,
+  goal: "30 天准备算法面试，先手工体验数组和链表节点",
+  title: "30天算法面试冲刺计划",
+  summary: "预览 n6 / Arrays and Linked Lists 的第一个 learning point：Two pointers。",
+  nodes: [
+    {
+      id: "n1",
+      type: "goal",
+      data: {
+        title: "掌握算法面试核心题型",
+        kind: "goal",
+        description: "在30天内建立常见算法题型的识别、编码和复盘能力。",
+        estimated_minutes: 5,
+        group: "",
+        status: "in_progress",
+        learningNotes: "",
+      },
+      position: { x: 0, y: 0 },
+    },
+    {
+      id: "n2",
+      type: "stage",
+      data: {
+        title: "Foundation",
+        kind: "stage",
+        description: "先训练线性结构、哈希、栈队列等基础题型。",
+        estimated_minutes: 5,
+        group: "",
+        status: "in_progress",
+        learningNotes: "",
+      },
+      position: { x: 0, y: 0 },
+    },
+    {
+      id: "n6",
+      type: "learn",
+      data: {
+        title: "Arrays and Linked Lists",
+        kind: "learn",
+        description: "用 learning point 的方式训练数组、字符串和链表题：每个点只包含 lesson、practice、qa。",
+        estimated_minutes: 60,
+        group: "Foundation",
+        status: "in_progress",
+        learningNotes: "",
+      },
+      position: { x: 0, y: 0 },
+    },
+  ],
+  graphEdges: [
+    { id: "e1", source: "n1", target: "n2", relation: "next", label: "" },
+    { id: "e2", source: "n2", target: "n6", relation: "contains", label: "" },
+  ],
+  updatedAt: "2026-06-07T00:00:00.000Z",
+};
+
+const NODE_LEARNING_PLAN = {
+  nodeId: "n6",
+  title: "Arrays & Linked Lists",
+  subtitle: "Linear Structure Pattern Training",
+  stage: "Foundation",
+  goal: "30-day algorithm interview prep",
+  completionCriteria: [
+    "完成 Two Pointers 的 lesson slides",
+    "完成 2 道双指针 practice，并写出移动理由",
+    "记录至少 2 条 mistake notes 或边界条件",
+  ],
+  learningPoints: [
+    {
+      id: "two-pointers",
+      title: "Two Pointers",
+      subtitle: "左右指针 / 两端收缩",
+      status: "current",
+      purpose:
+        "看到有序数组、回文、两端收缩类题目时，能判断是否适合双指针，并解释一次 left/right 移动为什么能排除候选。",
+      lesson: {
+        slides: [
+          {
+            id: "intro",
+            title: "Lesson 1 · 认识双指针",
+            subtitle: "为什么需要两个指针",
+            layout: "concept",
+            heading: "核心思想",
+            body: "通过两个指针从不同位置出发，根据条件移动指针，逐步缩小搜索空间或完成一次线性扫描。",
+            bullets: [
+              "left/right 可以从两端出发，也可以从同一端以不同速度前进",
+              "每一轮先判断当前状态，再移动一个或两个指针",
+              "关键不是记模板，而是说清楚移动后排除了什么候选",
+            ],
+          },
+          {
+            id: "when",
+            title: "Lesson 2 · 什么时候使用双指针?",
+            subtitle: "识别信号 + 核心想法",
+            layout: "concept_with_example",
+            heading: "识别信号",
+            body: "当题目可以通过移动边界来排除一批候选时，双指针通常比枚举所有组合更直接。",
+            bullets: [
+              "输入有序，题目要找一对数或比较两端",
+              "回文、对称检查、两端逐步靠近",
+              "每次移动一个边界都能排除一批不可能候选",
+            ],
+            example: {
+              title: "示例：判断回文字符串",
+              caption: "从两端向中间移动，比较对应字符，直到相遇。",
+              diagram: {
+                cells: ["h", "e", "l", "l", "o", "l", "e", "h"],
+                arrows: ["up", "right", "", "", "", "", "left", "up"],
+                labels: ["left", "", "", "", "", "", "", "right"],
+              },
+              code: {
+                language: "JavaScript",
+                body: `function isPalindrome(s) {
+  let left = 0, right = s.length - 1;
+  while (left < right) {
+    if (s[left] !== s[right]) return false;
+    left++;
+    right--;
+  }
+  return true;
+}`,
+              },
+            },
+          },
+          {
+            id: "rule",
+            title: "Lesson 3 · 移动 left / right 的规则",
+            subtitle: "排除候选的判断",
+            layout: "rule_summary",
+            heading: "移动规则要绑定 invariant",
+            body: "不要只说“太小移动 left”。要补上：为什么固定 right 时，left 左边的候选已经不可能成为答案。",
+            rules: [
+              {
+                title: "Two Sum II",
+                detail: "sum < target 时移动 left，因为数组有序，left 左边的数只会让 sum 更小。",
+              },
+              {
+                title: "Palindrome",
+                detail: "两端相等时同时移动；不相等时可以立刻判 false，因为这对字符必须匹配。",
+              },
+              {
+                title: "Loop condition",
+                detail: "需要两个不同元素时通常用 left < right，避免同一个位置被使用两次。",
+              },
+            ],
+          },
+          {
+            id: "palindrome",
+            title: "Lesson 4 · 回文判断",
+            subtitle: "对称比较",
+            layout: "concept_with_example",
+            heading: "先过滤，再比较",
+            body: "Valid Palindrome 的难点不在移动本身，而在每次比较前跳过无关字符并保持指针合法。",
+            bullets: [
+              "先跳过非字母数字字符",
+              "比较时统一大小写",
+              "每一轮结束后让 left/right 继续向中间靠近",
+            ],
+            example: {
+              title: "示例：跳过符号后比较",
+              caption: "只把有效字符纳入比较，标点和空格不改变 invariant。",
+              diagram: {
+                cells: ["a", ",", " ", "m", "a", "n", "a", "!"],
+                arrows: ["up", "right", "right", "", "", "", "left", "up"],
+                labels: ["left", "", "", "", "", "", "right", ""],
+              },
+              code: {
+                language: "JavaScript",
+                body: `function isAlphaNum(ch) {
+  return /[a-z0-9]/i.test(ch);
+}`,
+              },
+            },
+          },
+          {
+            id: "two-sum",
+            title: "Lesson 5 · Two Sum II",
+            subtitle: "利用有序性",
+            layout: "rule_summary",
+            heading: "用有序性解释每次移动",
+            body: "Two Sum II 的核心是把 O(n²) 的 pair search 压成一次两端收缩。",
+            rules: [
+              {
+                title: "sum === target",
+                detail: "当前 pair 命中，按题目要求返回 1-based index。",
+              },
+              {
+                title: "sum < target",
+                detail: "固定 right 时，left 左边的数更小，所以移动 left。",
+              },
+              {
+                title: "sum > target",
+                detail: "固定 left 时，right 右边的数更大，所以移动 right。",
+              },
+            ],
+          },
+          {
+            id: "review",
+            title: "Lesson 6 · 复盘 invariant",
+            subtitle: "归纳判断模板",
+            layout: "checkpoint",
+            heading: "检查你是否真的掌握",
+            body: "做题前先口头回答三个问题，再开始写代码。",
+            checklist: [
+              "题目里的序列、有序性或对称性是什么？",
+              "当前 left/right 代表的搜索范围是什么？",
+              "移动一个指针后，哪些候选被排除，为什么？",
+            ],
+            takeaway: "如果说不出排除理由，先不要急着套双指针模板。",
+          },
+        ],
+      },
+      practice: {
+        problems: [
+          {
+            id: "valid-palindrome",
+            title: "Valid Palindrome",
+            difficulty: "easy",
+            focus: "跳过无关字符后做两端比较",
+            statement:
+              "给定一个字符串，忽略大小写和非字母数字字符后，判断它是否是回文。",
+            examples: [
+              {
+                input: '"A man, a plan, a canal: Panama"',
+                output: "true",
+                explanation: '过滤后为 "amanaplanacanalpanama"。',
+              },
+              {
+                input: '"race a car"',
+                output: "false",
+                explanation: "过滤后两端比较会出现不匹配。",
+              },
+            ],
+            thinkingFields: [
+              {
+                id: "patternChoice",
+                label: "pattern choice",
+                placeholder: "例如：双指针，因为要从两端比较有效字符",
+              },
+              {
+                id: "movementReason",
+                label: "pointer movement reason",
+                multiline: true,
+                placeholder: "说明跳过字符、比较字符后 left/right 为什么这样移动",
+              },
+              {
+                id: "boundaryCase",
+                label: "boundary cases",
+                placeholder: "例如：空字符串、只有标点、大小写混合",
+              },
+            ],
+            starterCode: `function isPalindrome(s) {
+  let left = 0;
+  let right = s.length - 1;
+
+  // write your solution
+}`,
+            reviewRubric: [
+              {
+                id: "pattern",
+                pattern: "双指针|two\\s*pointers?|left|right",
+                ok: "已经把解法和 left/right 指针联系起来。",
+                missing: "先在 pattern choice 写为什么是双指针。",
+              },
+              {
+                id: "movement",
+                pattern: "回文|palindrome|跳过|skip|比较|compare",
+                ok: "移动理由和回文判断信号有连接。",
+                missing: "说明跳过字符和比较后，left/right 为什么继续移动。",
+              },
+              {
+                id: "boundary",
+                pattern: "left\\s*<\\s*right|空|empty|single|单|标点|大小写",
+                ok: "边界意识有体现。",
+                missing: "补一个边界 case：空输入、只有标点或大小写混合。",
+              },
+            ],
+          },
+          {
+            id: "two-sum-ii",
+            title: "Two Sum II - Input Array Is Sorted",
+            difficulty: "medium",
+            focus: "利用有序性解释 left/right 移动",
+            statement:
+              "给定升序数组 numbers 和 target，返回两个数的 1-based 下标，使它们的和等于 target。",
+            examples: [
+              {
+                input: "numbers = [2,7,11,15], target = 9",
+                output: "[1,2]",
+                explanation: "2 + 7 = 9，返回 1-based 下标。",
+              },
+            ],
+            thinkingFields: [
+              {
+                id: "patternChoice",
+                label: "pattern choice",
+                placeholder: "例如：双指针，因为数组有序且要找一对数",
+              },
+              {
+                id: "movementReason",
+                label: "pointer movement reason",
+                multiline: true,
+                placeholder: "分别解释 sum < target 和 sum > target 时移动哪边",
+              },
+              {
+                id: "boundaryCase",
+                label: "boundary cases",
+                placeholder: "例如：left < right、1-based index、一定有答案",
+              },
+            ],
+            starterCode: `function twoSum(numbers, target) {
+  let left = 0;
+  let right = numbers.length - 1;
+
+  // write your solution
+}`,
+            reviewRubric: [
+              {
+                id: "pattern",
+                pattern: "双指针|two\\s*pointers?|left|right",
+                ok: "已经把解法和 left/right 指针联系起来。",
+                missing: "先在 pattern choice 写为什么是双指针。",
+              },
+              {
+                id: "movement",
+                pattern: "有序|sorted|sum|太小|太大|target",
+                ok: "移动理由和有序数组信号有连接。",
+                missing: "说明 sum 太小/太大时移动哪边，以及排除了哪些候选。",
+              },
+              {
+                id: "indexing",
+                pattern: "1-based|1\\s*based|下标|index|left\\s*<\\s*right",
+                ok: "下标和循环边界有体现。",
+                missing: "补上 1-based index 和 left < right 的边界说明。",
+              },
+            ],
+          },
+        ],
+      },
+      qa: {
+        suggestedQuestions: [
+          "为什么 sum < target 时移动 left？",
+          "什么时候用 left < right，什么时候用 left <= right？",
+          "这题为什么不用哈希表？",
+          "双指针和滑动窗口怎么区分？",
+        ],
+      },
+    },
+    {
+      id: "sliding-window",
+      title: "Sliding Window",
+      subtitle: "连续区间 / 状态维护",
+      status: "not_started",
+      lesson: { slides: [] },
+      practice: { problems: [] },
+      qa: { suggestedQuestions: [] },
+    },
+    {
+      id: "slow-write",
+      title: "Slow Write Pointer",
+      subtitle: "原地写入 / 去重压缩",
+      status: "not_started",
+      lesson: { slides: [] },
+      practice: { problems: [] },
+      qa: { suggestedQuestions: [] },
+    },
+    {
+      id: "dummy-head",
+      title: "Dummy Head and Merge Tail",
+      subtitle: "链表合并 / 哨兵节点",
+      status: "not_started",
+      lesson: { slides: [] },
+      practice: { problems: [] },
+      qa: { suggestedQuestions: [] },
+    },
+    {
+      id: "fast-slow",
+      title: "Fast / Slow Pointer",
+      subtitle: "快慢指针 / 环与中点",
+      status: "not_started",
+      lesson: { slides: [] },
+      practice: { problems: [] },
+      qa: { suggestedQuestions: [] },
+    },
+    {
+      id: "pointer-reversal",
+      title: "Pointer Reversal",
+      subtitle: "链表反转 / 局部重连",
+      status: "not_started",
+      lesson: { slides: [] },
+      practice: { problems: [] },
+      qa: { suggestedQuestions: [] },
+    },
+  ],
+};
+
 function SparkleIcon({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -559,23 +956,44 @@ function App() {
   const previewMode = new URLSearchParams(window.location.search).get("preview");
   const shouldPreviewBrief = previewMode === "brief";
   const shouldPreviewIntake = previewMode === "intake";
+  const shouldPreviewLearningPoint = previewMode === "learning-point";
   const savedDraft = loadDraft();
-  const restoredDraft = savedDraft ? restoreFlowDraftFromStorage(savedDraft) : null;
+  const restoredDraft = shouldPreviewLearningPoint
+    ? restoreFlowDraftFromStorage(PREVIEW_LEARNING_POINT_PROJECT)
+    : savedDraft
+      ? restoreFlowDraftFromStorage(savedDraft)
+      : null;
   const hasRestoredDraft = Boolean(restoredDraft?.nodes?.length);
   const importInputRef = useRef(null);
   const [screen, setScreen] = useState(
-    shouldPreviewBrief ? "brief" : shouldPreviewIntake ? "intake" : hasRestoredDraft ? "editor" : "start",
+    shouldPreviewBrief
+      ? "brief"
+      : shouldPreviewIntake || shouldPreviewLearningPoint
+        ? shouldPreviewIntake
+          ? "intake"
+          : "editor"
+        : hasRestoredDraft
+          ? "editor"
+          : "start",
   );
   const [prompt, setPrompt] = useState(
     shouldPreviewBrief
       ? "30天算法面试冲刺"
       : shouldPreviewIntake
         ? "两周入门 Python"
-        : savedDraft?.goal || EMPTY_FORM.goal,
+        : shouldPreviewLearningPoint
+          ? PREVIEW_LEARNING_POINT_PROJECT.goal
+          : savedDraft?.goal || EMPTY_FORM.goal,
   );
-  const [title, setTitle] = useState(savedDraft?.title || "计划草稿");
+  const [title, setTitle] = useState(
+    shouldPreviewLearningPoint
+      ? PREVIEW_LEARNING_POINT_PROJECT.title
+      : savedDraft?.title || "计划草稿",
+  );
   const [summary, setSummary] = useState(
-    savedDraft?.summary || "输入目标后生成一个可编辑的计划图。",
+    shouldPreviewLearningPoint
+      ? PREVIEW_LEARNING_POINT_PROJECT.summary
+      : savedDraft?.summary || "输入目标后生成一个可编辑的计划图。",
   );
   const [nodes, setNodes] = useState(restoredDraft?.nodes || []);
   const [graphEdges, setGraphEdges] = useState(restoredDraft?.graphEdges || []);
@@ -591,8 +1009,12 @@ function App() {
   const [loadingLabel, setLoadingLabel] = useState("");
   const [loadingStartedAt, setLoadingStartedAt] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [selectedNodeId, setSelectedNodeId] = useState("");
-  const [studyNodeId, setStudyNodeId] = useState("");
+  const [selectedNodeId, setSelectedNodeId] = useState(
+    shouldPreviewLearningPoint ? "n6" : "",
+  );
+  const [studyNodeId, setStudyNodeId] = useState(
+    shouldPreviewLearningPoint ? "n6" : "",
+  );
   const [zoomLevel, setZoomLevel] = useState(1);
   const mindElixirRef = useRef(null);
   const promptRef = useRef(null);
@@ -879,6 +1301,22 @@ function App() {
                   : field === "estimated_minutes"
                     ? Number(value) || 0
                     : value,
+            },
+          }
+        : node,
+    );
+    setNodes(nextNodes);
+    persistDraft(title, summary, nextNodes, graphEdges);
+  }
+
+  function updateStudyNodeLearningNotes(nodeId, learningNotes) {
+    const nextNodes = nodes.map((node) =>
+      node.id === nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              learningNotes,
             },
           }
         : node,
@@ -1482,57 +1920,11 @@ function App() {
       ) : null}
 
       {studyNode ? (
-        <section className="study-page">
-          <div className="study-shell">
-            <header className="study-header">
-              <button type="button" onClick={() => setStudyNodeId("")}>返回思维导图</button>
-              <div>
-                <span>{nodeKindLabel(studyNode.data.kind)} · {nodeStatusLabel(studyNode.data.status)}</span>
-                <h1>{studyNode.data.title}</h1>
-              </div>
-            </header>
-            <div className="study-grid">
-              <article>
-                <span>学习目标</span>
-                <p>{studyNode.data.description || `理解 ${studyNode.data.title} 的核心概念和典型应用。`}</p>
-              </article>
-              <article>
-                <span>核心概念</span>
-                <ul>
-                  <li>先说清这个知识点解决什么问题。</li>
-                  <li>整理关键定义、常见操作和边界条件。</li>
-                  <li>用一个小例子确认自己真的理解。</li>
-                </ul>
-              </article>
-              <article>
-                <span>学习步骤</span>
-                <ol>
-                  <li>阅读并复述概念。</li>
-                  <li>手写一个最小例子。</li>
-                  <li>完成 1-2 道相关练习。</li>
-                  <li>记录卡住点和复盘结论。</li>
-                </ol>
-              </article>
-              <article>
-                <span>练习 / 自测</span>
-                <ul>
-                  <li>不用资料解释这个知识点。</li>
-                  <li>说出一个适合使用它的场景。</li>
-                  <li>找出一个容易错的细节。</li>
-                </ul>
-              </article>
-            </div>
-            <label className="study-notes">
-              学习笔记
-              <textarea
-                rows={7}
-                value={studyNode.data.learningNotes || ""}
-                onChange={(event) => updateStudyNode("learningNotes", event.target.value)}
-                placeholder="记录今天学到了什么、哪里还不清楚、下一步要练什么。"
-              />
-            </label>
-          </div>
-        </section>
+        <NodeLearningWorkspace
+          studyNode={studyNode}
+          onClose={() => setStudyNodeId("")}
+          onLearningNotesChange={(learningNotes) => updateStudyNodeLearningNotes(studyNode.id, learningNotes)}
+        />
       ) : null}
 
       <footer className="mm-bottombar">
@@ -1542,16 +1934,1160 @@ function App() {
       </footer>
     </main>
   );
+}
 
-  function updateStudyNode(field, value) {
-    const nextNodes = nodes.map((node) =>
-      node.id === studyNodeId
-        ? { ...node, data: { ...node.data, [field]: value } }
-        : node,
-    );
-    setNodes(nextNodes);
-    persistDraft(title, summary, nextNodes, graphEdges);
+function NodeLearningWorkspace({ studyNode, onClose, onLearningNotesChange }) {
+  const planData = useMemo(() => getNodeLearningPlan(studyNode), [studyNode]);
+  const initialLearningPoint = getInitialLearningPoint(planData);
+  const [currentLearningPointId, setCurrentLearningPointId] = useState(initialLearningPoint?.id || "");
+  const [mode, setMode] = useState("lesson");
+  const [currentSlideId, setCurrentSlideId] = useState(getInitialSlideId(initialLearningPoint));
+  const [currentProblemId, setCurrentProblemId] = useState(getInitialProblemId(initialLearningPoint));
+  const [planOpen, setPlanOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState("plan");
+  const [qaInput, setQaInput] = useState("");
+  const [qaAnswer, setQaAnswer] = useState("");
+  const [notesByLearningPoint, setNotesByLearningPoint] = useState(() =>
+    parseLearningPointNotes(studyNode?.data?.learningNotes, initialLearningPoint?.id),
+  );
+  const [practiceDraftsByProblem, setPracticeDraftsByProblem] = useState({});
+  const [feedbackByProblem, setFeedbackByProblem] = useState({});
+
+  const currentLearningPoint = getLearningPointById(planData, currentLearningPointId) || initialLearningPoint;
+  const slides = currentLearningPoint?.lesson?.slides || [];
+  const problems = currentLearningPoint?.practice?.problems || [];
+  const currentSlideIndex = Math.max(0, slides.findIndex((slide) => slide.id === currentSlideId));
+  const currentSlide = slides[currentSlideIndex] || null;
+  const selectedProblem = problems.find((problem) => problem.id === currentProblemId) || problems[0] || null;
+  const currentPlanItemId = getCurrentPlanItemId(mode, currentLearningPoint, currentSlide, selectedProblem);
+  const planRows = useMemo(
+    () =>
+      buildNodePlanRows(planData, {
+        currentLearningPointId: currentLearningPoint?.id,
+        mode,
+        currentSlideId: currentSlide?.id,
+        currentProblemId: selectedProblem?.id,
+      }),
+    [planData, currentLearningPoint?.id, mode, currentSlide?.id, selectedProblem?.id],
+  );
+  const currentPracticeDraft = getPracticeDraft(selectedProblem, practiceDraftsByProblem);
+  const currentFeedback = selectedProblem ? feedbackByProblem[selectedProblem.id] : null;
+  const currentNotes = currentLearningPoint ? notesByLearningPoint[currentLearningPoint.id] || "" : "";
+
+  useEffect(() => {
+    const nextInitial = getInitialLearningPoint(planData);
+    if (!planData.learningPoints.some((point) => point.id === currentLearningPointId)) {
+      setCurrentLearningPointId(nextInitial?.id || "");
+      setCurrentSlideId(getInitialSlideId(nextInitial));
+      setCurrentProblemId(getInitialProblemId(nextInitial));
+    }
+  }, [planData, currentLearningPointId]);
+
+  useEffect(() => {
+    const point = getLearningPointById(planData, currentLearningPointId);
+    if (!point) return;
+    const nextSlideId = getInitialSlideId(point);
+    const nextProblemId = getInitialProblemId(point);
+    if (nextSlideId && !point.lesson.slides.some((slide) => slide.id === currentSlideId)) {
+      setCurrentSlideId(nextSlideId);
+    }
+    if (!nextSlideId && currentSlideId) setCurrentSlideId("");
+    if (nextProblemId && !point.practice.problems.some((problem) => problem.id === currentProblemId)) {
+      setCurrentProblemId(nextProblemId);
+    }
+    if (!nextProblemId && currentProblemId) setCurrentProblemId("");
+  }, [planData, currentLearningPointId, currentSlideId, currentProblemId]);
+
+  useEffect(() => {
+    setNotesByLearningPoint(parseLearningPointNotes(studyNode?.data?.learningNotes, initialLearningPoint?.id));
+  }, [studyNode?.id, initialLearningPoint?.id, studyNode?.data?.learningNotes]);
+
+  function goPrev() {
+    if (!slides.length) return;
+    const nextIndex = Math.max(0, currentSlideIndex - 1);
+    setCurrentSlideId(slides[nextIndex].id);
   }
+
+  function goNext() {
+    if (!slides.length) return;
+    const nextIndex = Math.min(slides.length - 1, currentSlideIndex + 1);
+    setCurrentSlideId(slides[nextIndex].id);
+  }
+
+  function startPractice(problemId = selectedProblem?.id) {
+    const targetProblem = problems.find((problem) => problem.id === problemId) || problems[0];
+    if (!targetProblem) return;
+    setCurrentProblemId(targetProblem.id);
+    setMode("practice");
+  }
+
+  function backToLesson() {
+    setMode("lesson");
+  }
+
+  function selectPlanItem(item) {
+    setPlanOpen(false);
+    const point = getLearningPointById(planData, item.learningPointId);
+    if (!point) return;
+    setCurrentLearningPointId(point.id);
+    if (item.kind === "practice") {
+      setCurrentProblemId(item.problemId || getInitialProblemId(point));
+      setMode("practice");
+      return;
+    }
+    if (item.kind === "lesson") {
+      setCurrentSlideId(item.slideId || getInitialSlideId(point));
+      setMode("lesson");
+      return;
+    }
+    const firstSlideId = getInitialSlideId(point);
+    const firstProblemId = getInitialProblemId(point);
+    setCurrentSlideId(firstSlideId);
+    setCurrentProblemId(firstProblemId);
+    setMode(firstSlideId ? "lesson" : firstProblemId ? "practice" : "lesson");
+  }
+
+  function updatePracticeDraft(field, value) {
+    if (!selectedProblem) return;
+    setPracticeDraftsByProblem((drafts) => ({
+      ...drafts,
+      [selectedProblem.id]: {
+        ...getPracticeDraft(selectedProblem, drafts),
+        [field]: value,
+      },
+    }));
+    setFeedbackByProblem((feedbacks) => ({ ...feedbacks, [selectedProblem.id]: null }));
+  }
+
+  function submitPractice() {
+    if (!selectedProblem) return;
+    const draft = getPracticeDraft(selectedProblem, practiceDraftsByProblem);
+    const combined = [
+      ...selectedProblem.thinkingFields.map((field) => draft[field.id] || ""),
+      draft.code || "",
+    ]
+      .join("\n")
+      .toLowerCase();
+    const missing = [];
+    const ok = [];
+
+    selectedProblem.reviewRubric.forEach((rule) => {
+      const re = new RegExp(rule.pattern, "i");
+      if (re.test(combined)) ok.push(rule.ok);
+      else missing.push(rule.missing);
+    });
+
+    if ((draft.code || "").trim().length >= 40 && (draft.code || "").trim() !== (selectedProblem.starterCode || "").trim()) {
+      ok.push("代码长度足够 review。");
+    } else {
+      missing.push("代码还太短，先写完整解法。");
+    }
+
+    setFeedbackByProblem((feedbacks) => ({
+      ...feedbacks,
+      [selectedProblem.id]: {
+        status: missing.length ? "needs-work" : "ready",
+        title: missing.length ? "还缺几个 practice 证据" : "练习可以提交 review",
+        items: [...ok, ...missing],
+      },
+    }));
+  }
+
+  function updateCurrentNotes(value) {
+    if (!currentLearningPoint) return;
+    setNotesByLearningPoint((notes) => {
+      const next = { ...notes, [currentLearningPoint.id]: value };
+      onLearningNotesChange?.(serializeLearningPointNotes(next));
+      return next;
+    });
+  }
+
+  function askQa(question) {
+    const q = (question ?? qaInput).trim();
+    if (!q || !currentLearningPoint) return;
+    setQaInput(q);
+    setQaAnswer(answerLearningPointQa(currentLearningPoint, q));
+  }
+
+  return (
+    <section className="nl-workspace" role="dialog" aria-label="Node learning workspace">
+      <div className="start-bg" aria-hidden="true">
+        <span className="start-bg-blur start-bg-blur--tl" />
+        <span className="start-bg-blur start-bg-blur--br" />
+        <span className="start-bg-blur start-bg-blur--bl" />
+        <span className="start-bg-dots" />
+      </div>
+      <header className="nl-page-head">
+        <OpenKeriBrand onClick={onClose} />
+        <LessonHeader
+          title={
+            mode === "practice"
+              ? `Practice · ${selectedProblem?.title || currentLearningPoint?.title || "Learning point"}`
+              : currentSlide?.title || "Lesson"
+          }
+          planOpen={planOpen}
+          onTogglePlan={() => setPlanOpen((v) => !v)}
+        />
+      </header>
+      <div className="nl-stage">
+        <div className="nl-stage-inner">
+          {planOpen ? (
+            <NodePlanDropdown
+              planData={planData}
+              rows={planRows}
+              onClose={() => setPlanOpen(false)}
+              onSelectItem={selectPlanItem}
+              currentItemId={currentPlanItemId}
+            />
+          ) : null}
+
+          <div className="nl-slide-frame">
+            {mode === "lesson" ? (
+              <LessonRenderer
+                learningPoint={currentLearningPoint}
+                slide={currentSlide}
+                slideIndex={currentSlideIndex}
+                totalSlides={slides.length}
+                onPrev={goPrev}
+                onNext={goNext}
+                onStartPractice={() => startPractice()}
+                canPrev={slides.length > 0 && currentSlideIndex > 0}
+                canNext={slides.length > 0 && currentSlideIndex < slides.length - 1}
+                canStartPractice={problems.length > 0}
+              />
+            ) : (
+              <PracticeRenderer
+                learningPoint={currentLearningPoint}
+                problems={problems}
+                problemId={selectedProblem?.id || ""}
+                selectedProblem={selectedProblem}
+                onSelectProblem={setCurrentProblemId}
+                draft={currentPracticeDraft}
+                onUpdate={updatePracticeDraft}
+                onSubmit={submitPractice}
+                feedback={currentFeedback}
+                onBack={backToLesson}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      <KeriFloating
+        open={drawerOpen}
+        onOpenTab={(tab) => {
+          setDrawerTab(tab);
+          setDrawerOpen(true);
+        }}
+      />
+
+      {drawerOpen ? (
+        <KeriDrawer
+          planData={planData}
+          planRows={planRows}
+          currentLearningPoint={currentLearningPoint}
+          currentItemId={currentPlanItemId}
+          tab={drawerTab}
+          onChangeTab={setDrawerTab}
+          onClose={() => setDrawerOpen(false)}
+          notes={currentNotes}
+          onNotesChange={updateCurrentNotes}
+          qaInput={qaInput}
+          onQaInput={setQaInput}
+          qaAnswer={qaAnswer}
+          onAskQa={askQa}
+          onSelectPlanItem={(item) => {
+            setDrawerOpen(false);
+            selectPlanItem(item);
+          }}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function getNodeLearningPlan(studyNode) {
+  if (!studyNode || shouldUseLinearStructurePlan(studyNode)) return NODE_LEARNING_PLAN;
+  const title = studyNode.data?.title || "Learning node";
+  return {
+    nodeId: studyNode.id,
+    title,
+    subtitle: studyNode.data?.group || "Managed learning workspace",
+    stage: studyNode.data?.group || "Plan node",
+    goal: "Learning plan node",
+    completionCriteria: [
+      "明确这个节点的 learning point",
+      "补齐 lesson slides 和 practice problems",
+      "保留当前节点的 notes 和 Q&A 上下文",
+    ],
+    learningPoints: [
+      {
+        id: "workspace-setup",
+        title,
+        subtitle: "Node workspace fallback",
+        status: "current",
+        lesson: {
+          slides: [
+            {
+              id: "overview",
+              title: "Lesson 1 · Node overview",
+              subtitle: "Fallback lesson data",
+              layout: "concept",
+              heading: title,
+              body: studyNode.data?.description || "这个节点还没有专属的本地 learning plan 数据。",
+              bullets: [
+                "外层 plan graph 只保留路线",
+                "节点内部后续按 learning point 组织",
+                "当前 fallback 不会复用 Two Pointers 内容",
+              ],
+            },
+          ],
+        },
+        practice: { problems: [] },
+        qa: {
+          suggestedQuestions: [
+            "这个节点应该拆成哪些 learning point？",
+            "这个节点完成后应该能做什么？",
+          ],
+        },
+      },
+    ],
+  };
+}
+
+function shouldUseLinearStructurePlan(studyNode) {
+  if (studyNode.id === NODE_LEARNING_PLAN.nodeId) return true;
+  const title = `${studyNode.data?.title || ""} ${studyNode.data?.description || ""}`.toLowerCase();
+  return (
+    /arrays?\s*(and|&)\s*linked\s*lists?/.test(title) ||
+    (/数组/.test(title) && /链表/.test(title)) ||
+    (/双指针/.test(title) && /链表/.test(title))
+  );
+}
+
+function getInitialLearningPoint(planData) {
+  return planData.learningPoints.find((point) => point.status === "current") || planData.learningPoints[0] || null;
+}
+
+function getLearningPointById(planData, learningPointId) {
+  return planData.learningPoints.find((point) => point.id === learningPointId) || null;
+}
+
+function getInitialSlideId(learningPoint) {
+  return learningPoint?.lesson?.slides?.[0]?.id || "";
+}
+
+function getInitialProblemId(learningPoint) {
+  return learningPoint?.practice?.problems?.[0]?.id || "";
+}
+
+function getCurrentPlanItemId(mode, learningPoint, slide, problem) {
+  if (!learningPoint) return "";
+  if (mode === "practice" && problem) return `practice:${learningPoint.id}:${problem.id}`;
+  if (slide) return `lesson:${learningPoint.id}:${slide.id}`;
+  return `lp:${learningPoint.id}`;
+}
+
+function buildNodePlanRows(planData, state) {
+  return planData.learningPoints.flatMap((point) => {
+    const pointStatus = point.id === state.currentLearningPointId ? "current" : point.status || "not_started";
+    const slides = point.lesson?.slides || [];
+    const problems = point.practice?.problems || [];
+    const currentSlideIndex = slides.findIndex((slide) => slide.id === state.currentSlideId);
+    const rows = [
+      {
+        type: "group",
+        id: `lp:${point.id}`,
+        learningPointId: point.id,
+        title: point.title,
+        subtitle: point.subtitle,
+        status: pointStatus,
+      },
+    ];
+
+    slides.forEach((slide, index) => {
+      const isCurrent = point.id === state.currentLearningPointId && state.mode === "lesson" && slide.id === state.currentSlideId;
+      const status =
+        isCurrent
+          ? "current"
+          : point.id === state.currentLearningPointId && (state.mode === "practice" || index < currentSlideIndex)
+            ? "done"
+            : point.status === "done"
+              ? "done"
+              : "not_started";
+      rows.push({
+        type: "item",
+        id: `lesson:${point.id}:${slide.id}`,
+        kind: "lesson",
+        learningPointId: point.id,
+        slideId: slide.id,
+        title: slide.title,
+        status,
+      });
+    });
+
+    problems.forEach((problem) => {
+      const isCurrent = point.id === state.currentLearningPointId && state.mode === "practice" && problem.id === state.currentProblemId;
+      rows.push({
+        type: "item",
+        id: `practice:${point.id}:${problem.id}`,
+        kind: "practice",
+        learningPointId: point.id,
+        problemId: problem.id,
+        title: `Practice · ${problem.title}`,
+        status: isCurrent ? "current" : point.status === "done" ? "done" : "not_started",
+      });
+    });
+
+    return rows;
+  });
+}
+
+function getPracticeDraft(problem, draftsByProblem) {
+  if (!problem) return {};
+  const fields = Object.fromEntries(problem.thinkingFields.map((field) => [field.id, ""]));
+  return {
+    ...fields,
+    code: problem.starterCode || "",
+    ...(draftsByProblem[problem.id] || {}),
+  };
+}
+
+function parseLearningPointNotes(rawNotes, defaultLearningPointId) {
+  if (!rawNotes) return {};
+  try {
+    const parsed = JSON.parse(rawNotes);
+    if (parsed?.schema === "nodeLearningNotes.v1" && parsed.byLearningPoint && typeof parsed.byLearningPoint === "object") {
+      return parsed.byLearningPoint;
+    }
+  } catch {
+    // Legacy notes were stored as a plain string.
+  }
+  return defaultLearningPointId ? { [defaultLearningPointId]: rawNotes } : {};
+}
+
+function serializeLearningPointNotes(notesByLearningPoint) {
+  return JSON.stringify({
+    schema: "nodeLearningNotes.v1",
+    byLearningPoint: notesByLearningPoint,
+  });
+}
+
+function LessonHeader({ title, planOpen, onTogglePlan }) {
+  return (
+    <div className="nl-lesson-header">
+      <button
+        type="button"
+        className={`nl-lesson-title ${planOpen ? "open" : ""}`}
+        onClick={onTogglePlan}
+        aria-expanded={planOpen}
+      >
+        <span className="nl-lesson-tag" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="14" rx="2" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        </span>
+        <strong>{title || "Lesson"}</strong>
+        <svg className="nl-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function NodePlanDropdown({ planData, rows, onClose, onSelectItem, currentItemId }) {
+  const statusLabel = { current: "在做", done: "已学", not_started: "未学" };
+  return (
+    <>
+      <div className="nl-plan-scrim" onClick={onClose} />
+      <div className="nl-plan-dropdown" role="menu">
+        <header className="nl-plan-head">
+          <div className="nl-plan-head-text">
+            <strong>{planData.title}</strong>
+            <span>{planData.subtitle}</span>
+          </div>
+          <button type="button" className="nl-plan-close" onClick={onClose} aria-label="关闭">×</button>
+        </header>
+
+        <ol className="nl-plan-timeline">
+          {rows.map((row) => {
+            const isCurrent = row.id === currentItemId;
+            const status = isCurrent ? "current" : row.status;
+            if (row.type === "group") {
+              return (
+                <li key={row.id} className={`nl-tl-row group status-${status} ${isCurrent ? "is-current" : ""}`}>
+                  <span className="nl-tl-dot group" aria-hidden="true" />
+                  <div className="nl-tl-text">
+                    <span className="nl-tl-title">{row.title}</span>
+                    <span className="nl-tl-status">{statusLabel[status]}</span>
+                  </div>
+                </li>
+              );
+            }
+            return (
+              <li key={row.id} className={`nl-tl-row item status-${status} ${isCurrent ? "is-current" : ""}`}>
+                <span className="nl-tl-dot" aria-hidden="true" />
+                <button type="button" className="nl-tl-btn" onClick={() => onSelectItem(row)}>
+                  <span className={`nl-tl-kind kind-${row.kind}`}>{row.kind === "lesson" ? "L" : "P"}</span>
+                  <span className="nl-tl-title">{row.title.replace(/^(Lesson|Practice)\s*[·:]\s*/, "")}</span>
+                  <span className="nl-tl-status">{statusLabel[status]}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </>
+  );
+}
+
+function StatusPill({ status, compact }) {
+  const label = { current: "正在学", done: "已完成", not_started: "未开始" }[status] || status;
+  return <span className={`nl-status-pill status-${status} ${compact ? "compact" : ""}`}>{label}</span>;
+}
+
+function LessonRenderer({
+  learningPoint,
+  slide,
+  slideIndex,
+  totalSlides,
+  onPrev,
+  onNext,
+  onStartPractice,
+  canPrev,
+  canNext,
+  canStartPractice,
+}) {
+  return (
+    <article className="nl-slide">
+      {slide ? (
+        <div className="nl-slide-body">{renderLessonSlideContent(slide)}</div>
+      ) : (
+        <div className="nl-empty-state">
+          <strong>{learningPoint?.title || "Learning point"}</strong>
+          <span>这个 learning point 还没有 lesson slides。</span>
+        </div>
+      )}
+
+      <footer className="nl-slide-dock">
+        <div className="nl-dock-bar">
+          <span className="nl-dock-progress">{totalSlides ? `${slideIndex + 1} / ${totalSlides}` : "0 / 0"}</span>
+          <span className="nl-dock-sep" />
+          <button type="button" className="nl-dock-btn" onClick={onPrev} disabled={!canPrev} aria-label="上一页">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <button type="button" className="nl-dock-btn play" onClick={onStartPractice} disabled={!canStartPractice} aria-label="开始练习">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="6 4 20 12 6 20 6 4" />
+            </svg>
+          </button>
+          <button type="button" className="nl-dock-btn" onClick={onNext} disabled={!canNext} aria-label="下一页">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
+      </footer>
+    </article>
+  );
+}
+
+function renderLessonSlideContent(slide) {
+  if (slide.layout === "concept_with_example") {
+    return (
+      <>
+        <ConceptSection slide={slide} />
+        <section className="nl-slide-section nl-slide-example">
+          <ExampleBlock example={slide.example} />
+          <CodeBlock code={slide.example?.code} />
+        </section>
+      </>
+    );
+  }
+  if (slide.layout === "rule_summary") {
+    return (
+      <>
+        <ConceptSection slide={slide} compact />
+        <section className="nl-rule-list">
+          {(slide.rules || []).map((rule) => (
+            <div className="nl-rule-card" key={rule.title}>
+              <strong>{rule.title}</strong>
+              <p>{rule.detail}</p>
+            </div>
+          ))}
+        </section>
+      </>
+    );
+  }
+  if (slide.layout === "checkpoint") {
+    return (
+      <>
+        <ConceptSection slide={slide} />
+        <section className="nl-checkpoint-list">
+          {(slide.checklist || []).map((item, index) => (
+            <div className="nl-checkpoint-item" key={item}>
+              <span>{index + 1}</span>
+              <p>{item}</p>
+            </div>
+          ))}
+        </section>
+        {slide.takeaway ? <p className="nl-takeaway">{slide.takeaway}</p> : null}
+      </>
+    );
+  }
+  return <ConceptSection slide={slide} />;
+}
+
+function ConceptSection({ slide, compact = false }) {
+  return (
+    <section className="nl-slide-section">
+      <header className={`nl-section-head ${compact ? "compact" : ""}`}>
+        <span className="nl-section-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18h6" />
+            <path d="M10 22h4" />
+            <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2v.3h6V17c0-.7.4-1.5 1-2A7 7 0 0 0 12 2z" />
+          </svg>
+        </span>
+        <div>
+          {compact ? <h3>{slide.heading}</h3> : <h2>{slide.heading}</h2>}
+          <p>{slide.body}</p>
+        </div>
+      </header>
+      {slide.bullets?.length ? (
+        <ul className="nl-bullets">
+          {slide.bullets.map((item) => <li key={item}>{item}</li>)}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+function ExampleBlock({ example }) {
+  if (!example) return <div className="nl-example-block" />;
+  return (
+    <div className="nl-example-block">
+      <div className="nl-example-head">
+        <i className="nl-example-bar" />
+        <strong>{example.title}</strong>
+      </div>
+      {example.diagram ? <StringDiagram diagram={example.diagram} /> : null}
+      {example.caption ? <p className="nl-example-caption">{example.caption}</p> : null}
+    </div>
+  );
+}
+
+function CodeBlock({ code }) {
+  if (!code?.body) return <div className="nl-code-panel empty" />;
+  return (
+    <div className="nl-code-panel">
+      <header>
+        <span>{code.language || "Code"}</span>
+        <button type="button" className="nl-copy-btn" onClick={() => navigator.clipboard?.writeText(code.body)}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          复制
+        </button>
+      </header>
+      <pre><code dangerouslySetInnerHTML={{ __html: highlightJs(code.body) }} /></pre>
+    </div>
+  );
+}
+
+function StringDiagram({ diagram }) {
+  const cells = diagram?.cells || [];
+  const arrows = diagram?.arrows || [];
+  const labels = diagram?.labels || [];
+  const gridStyle = { gridTemplateColumns: `repeat(${Math.max(cells.length, 1)}, minmax(0, 1fr))` };
+  return (
+    <div className="nl-diagram">
+      <div className="nl-diagram-row" style={gridStyle}>
+        {cells.map((ch, i) => (
+          <span key={`${ch}-${i}`} className="nl-cell">{ch}</span>
+        ))}
+      </div>
+      <div className="nl-diagram-row arrows" style={gridStyle}>
+        {cells.map((_, i) => {
+          const dir = arrows[i] || "";
+          return (
+            <span key={i} className={`nl-arrow ${dir}`} aria-hidden="true">
+              {dir === "up" ? "↑" : dir === "right" ? "→" : dir === "left" ? "←" : ""}
+            </span>
+          );
+        })}
+      </div>
+      <div className="nl-diagram-row labels" style={gridStyle}>
+        {cells.map((_, i) => (
+          <span key={i} className="nl-pointer-label">{labels[i] || ""}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function highlightJs(code) {
+  const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const tokens = [
+    { re: /\b(function|let|const|var|while|if|else|return|true|false|null)\b/g, cls: "tok-kw" },
+    { re: /\b(\d+)\b/g, cls: "tok-num" },
+    { re: /"[^"]*"|'[^']*'/g, cls: "tok-str" },
+  ];
+  let html = escape(code);
+  tokens.forEach((t) => {
+    html = html.replace(t.re, (m) => `__${t.cls}__${m}__END__`);
+  });
+  html = html
+    .replace(/__tok-kw__(.+?)__END__/g, '<span class="tok-kw">$1</span>')
+    .replace(/__tok-num__(.+?)__END__/g, '<span class="tok-num">$1</span>')
+    .replace(/__tok-str__(.+?)__END__/g, '<span class="tok-str">$1</span>')
+    .replace(/\b(isPalindrome|isAlphaNum|twoSum)\b/g, '<span class="tok-fn">$1</span>')
+    .replace(/\b(left|right|target|sum)\b/g, '<span class="tok-var">$1</span>');
+  return html;
+}
+
+function PracticeRenderer({
+  learningPoint,
+  problems,
+  problemId,
+  selectedProblem,
+  onSelectProblem,
+  draft,
+  onUpdate,
+  onSubmit,
+  feedback,
+  onBack,
+}) {
+  return (
+    <article className="nl-practice">
+      <header className="nl-practice-head">
+        <button type="button" className="nl-secondary-btn ghost" onClick={onBack}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back to lesson
+        </button>
+        <strong>Practice · {learningPoint?.title || "Learning point"}</strong>
+      </header>
+
+      {selectedProblem ? (
+        <div className="nl-practice-grid">
+          <aside className="nl-problem-list">
+            <span className="nl-side-label">Problems</span>
+            {problems.map((problem) => {
+              const active = problem.id === problemId;
+              return (
+                <button
+                  type="button"
+                  key={problem.id}
+                  className={`nl-problem-item ${active ? "active" : ""}`}
+                  onClick={() => onSelectProblem(problem.id)}
+                >
+                  <strong>{problem.title}</strong>
+                  <span className={`nl-diff diff-${problem.difficulty}`}>{problem.difficulty}</span>
+                </button>
+              );
+            })}
+          </aside>
+
+          <section className="nl-problem-statement">
+            <span className="nl-side-label">Problem</span>
+            <h3>{selectedProblem.title}</h3>
+            <p>{selectedProblem.statement || selectedProblem.focus}</p>
+            {selectedProblem.examples?.length ? (
+              <div className="nl-example-list">
+                {selectedProblem.examples.map((example, index) => (
+                  <div className="nl-practice-example" key={`${selectedProblem.id}-ex-${index}`}>
+                    <strong>Example {index + 1}</strong>
+                    <span>Input: {example.input}</span>
+                    <span>Output: {example.output}</span>
+                    {example.explanation ? <p>{example.explanation}</p> : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div className="nl-pre-fields">
+              {selectedProblem.thinkingFields.map((field) => (
+                <label key={field.id}>
+                  <span>{field.label}</span>
+                  {field.multiline ? (
+                    <textarea
+                      rows={3}
+                      value={draft[field.id] || ""}
+                      onChange={(e) => onUpdate(field.id, e.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  ) : (
+                    <input
+                      value={draft[field.id] || ""}
+                      onChange={(e) => onUpdate(field.id, e.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                </label>
+              ))}
+            </div>
+          </section>
+
+          <section className="nl-editor-column">
+            <span className="nl-side-label">Editor</span>
+            <textarea
+              className="nl-editor"
+              value={draft.code || ""}
+              onChange={(e) => onUpdate("code", e.target.value)}
+              placeholder="// 写你的解法\n"
+              spellCheck="false"
+            />
+            <button type="button" className="nl-primary-btn nl-submit" onClick={onSubmit}>
+              Submit
+            </button>
+            {feedback ? (
+              <div className={`nl-feedback ${feedback.status}`}>
+                <strong>{feedback.title}</strong>
+                <ul>
+                  {feedback.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
+        </div>
+      ) : (
+        <div className="nl-empty-state">
+          <strong>{learningPoint?.title || "Learning point"}</strong>
+          <span>这个 learning point 还没有 practice problems。</span>
+        </div>
+      )}
+    </article>
+  );
+}
+
+const KERI_TIPS = [
+  "卡住了？问问我 ✨",
+  "需要小提示吗？",
+  "试试点 Plan 看进度",
+  "想做笔记？我帮你存",
+  "对哪一步还没把握？",
+  "想要个例子？",
+];
+
+function KeriFloating({ open, onOpenTab }) {
+  const getViewportSize = () => {
+    const positiveMin = (...values) => Math.min(...values.filter((value) => value > 0));
+    return {
+      width: positiveMin(window.visualViewport?.width || 0, window.innerWidth, window.outerWidth),
+      height: positiveMin(window.visualViewport?.height || 0, window.innerHeight, window.outerHeight),
+    };
+  };
+  const [tipIndex, setTipIndex] = useState(0);
+  const [typed, setTyped] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [viewportSize, setViewportSize] = useState(getViewportSize);
+
+  useEffect(() => {
+    if (open) return;
+    const tip = KERI_TIPS[tipIndex];
+    setTyped("");
+    let i = 0;
+    const typer = setInterval(() => {
+      i += 1;
+      setTyped(tip.slice(0, i));
+      if (i >= tip.length) clearInterval(typer);
+    }, 60);
+    const next = setTimeout(() => {
+      setTipIndex((idx) => (idx + 1) % KERI_TIPS.length);
+    }, 4200);
+    return () => {
+      clearInterval(typer);
+      clearTimeout(next);
+    };
+  }, [tipIndex, open]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDocClick() { setMenuOpen(false); }
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const updateViewportSize = () => {
+      setViewportSize(getViewportSize());
+    };
+    updateViewportSize();
+    viewport?.addEventListener("resize", updateViewportSize);
+    window.addEventListener("resize", updateViewportSize);
+    return () => {
+      viewport?.removeEventListener("resize", updateViewportSize);
+      window.removeEventListener("resize", updateViewportSize);
+    };
+  }, []);
+
+  if (open) return null;
+
+  const shortcuts = [
+    { key: "ask", label: "Ask", glyph: "?" },
+    { key: "plan", label: "Plan", glyph: "≡" },
+    { key: "notes", label: "Notes", glyph: "✎" },
+  ];
+
+  return (
+    <div
+      className={`nl-keri-anchor ${menuOpen ? "menu-open" : ""}`}
+      style={{
+        "--nl-vw": `${Math.round(viewportSize.width)}px`,
+        "--nl-vh": `${Math.round(viewportSize.height)}px`,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {!menuOpen ? (
+        <div className="nl-keri-bubble" aria-live="polite">
+          {typed}
+          <span className="nl-keri-caret" aria-hidden="true" />
+        </div>
+      ) : null}
+
+      <div className="nl-keri-fan" role="menu">
+        {shortcuts.map((s, i) => (
+          <button
+            type="button"
+            key={s.key}
+            className="nl-keri-chip"
+            style={{ "--i": i }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(false);
+              onOpenTab(s.key);
+            }}
+            aria-label={s.label}
+          >
+            <span className="nl-keri-chip-glyph" aria-hidden="true">{s.glyph}</span>
+            <span className="nl-keri-chip-label">{s.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        className="nl-keri-btn"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-label="打开 Keri"
+        aria-expanded={menuOpen}
+      >
+        <OpenKeriLogo size={34} />
+      </button>
+    </div>
+  );
+}
+
+function KeriDrawer({
+  planData,
+  planRows,
+  currentLearningPoint,
+  currentItemId,
+  tab,
+  onChangeTab,
+  onClose,
+  notes,
+  onNotesChange,
+  qaInput,
+  onQaInput,
+  qaAnswer,
+  onAskQa,
+  onSelectPlanItem,
+}) {
+  return (
+    <>
+      <div className="nl-drawer-scrim" onClick={onClose} />
+      <aside className="nl-drawer" role="complementary">
+        <header className="nl-drawer-head">
+          <div className="nl-drawer-title">
+            <span className="nl-keri-btn-mini" aria-hidden="true">K</span>
+            <strong>Keri</strong>
+          </div>
+          <button type="button" onClick={onClose} aria-label="关闭" className="nl-icon-btn">×</button>
+        </header>
+
+        <div className="nl-drawer-tabs" role="tablist">
+          {[
+            ["plan", "Plan"],
+            ["ask", "Ask"],
+            ["notes", "Notes"],
+          ].map(([key, label]) => (
+            <button
+              type="button"
+              key={key}
+              className={tab === key ? "active" : ""}
+              onClick={() => onChangeTab(key)}
+              role="tab"
+              aria-selected={tab === key}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="nl-drawer-body">
+          {tab === "plan" ? (
+            <DrawerPlanTab
+              planData={planData}
+              planRows={planRows}
+              currentItemId={currentItemId}
+              onSelectPlanItem={onSelectPlanItem}
+            />
+          ) : null}
+
+          {tab === "ask" ? (
+            <DrawerAskTab
+              learningPoint={currentLearningPoint}
+              qaInput={qaInput}
+              onQaInput={onQaInput}
+              qaAnswer={qaAnswer}
+              onAskQa={onAskQa}
+            />
+          ) : null}
+
+          {tab === "notes" ? (
+            <DrawerNotesTab learningPoint={currentLearningPoint} notes={notes} onNotesChange={onNotesChange} />
+          ) : null}
+        </div>
+      </aside>
+    </>
+  );
+}
+
+function DrawerPlanTab({ planData, planRows, currentItemId, onSelectPlanItem }) {
+  const firstItemByLearningPoint = planRows.reduce((acc, row) => {
+    if (row.type === "item" && !acc[row.learningPointId]) acc[row.learningPointId] = row;
+    return acc;
+  }, {});
+  return (
+    <div className="nl-drawer-plan">
+      <div className="nl-drawer-section">
+        <strong>{planData.title}</strong>
+        <span>{planData.subtitle}</span>
+      </div>
+      <div className="nl-drawer-section">
+        <span className="nl-side-label">完成判定</span>
+        <ul className="nl-criteria">
+          {planData.completionCriteria.map((criterion) => (
+            <li key={criterion}><i className="nl-dot" /> {criterion}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="nl-drawer-section">
+        <span className="nl-side-label">Learning points</span>
+        <ul className="nl-drawer-group-list">
+          {planData.learningPoints.map((point) => {
+            const firstItem = firstItemByLearningPoint[point.id] || {
+              type: "group",
+              id: `lp:${point.id}`,
+              learningPointId: point.id,
+            };
+            const status = point.id === currentItemId?.split(":")[1] || firstItem.id === currentItemId
+              ? "current"
+              : point.status || "not_started";
+            return (
+              <li key={point.id} className={`status-${status}`}>
+              <button
+                type="button"
+                onClick={() => onSelectPlanItem(firstItem)}
+              >
+                <strong>{point.title}</strong>
+                <StatusPill status={status} compact />
+              </button>
+            </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function DrawerAskTab({ learningPoint, qaInput, onQaInput, qaAnswer, onAskQa }) {
+  const suggestedQuestions = learningPoint?.qa?.suggestedQuestions || [];
+  return (
+    <div className="nl-drawer-ask">
+      <div className="nl-drawer-section">
+        <strong>Ask about {learningPoint?.title || "Learning point"}</strong>
+        <span>提问会保留在当前 learning point。</span>
+      </div>
+      {suggestedQuestions.length ? (
+        <div className="nl-drawer-section">
+          <span className="nl-side-label">Suggested</span>
+          <div className="nl-suggested-q">
+            {suggestedQuestions.map((q) => (
+              <button type="button" key={q} onClick={() => onAskQa(q)}>{q}</button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {qaAnswer ? (
+        <div className="nl-drawer-answer">
+          <span>answer</span>
+          <p>{qaAnswer}</p>
+        </div>
+      ) : null}
+      <div className="nl-drawer-ask-input">
+        <textarea
+          rows={2}
+          value={qaInput}
+          onChange={(e) => onQaInput(e.target.value)}
+          placeholder="问 Keri 一个关于当前 learning point 的问题…"
+        />
+        <button type="button" className="nl-primary-btn" onClick={() => onAskQa()}>
+          发送
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DrawerNotesTab({ learningPoint, notes, onNotesChange }) {
+  return (
+    <div className="nl-drawer-notes">
+      <div className="nl-drawer-section">
+        <strong>{learningPoint?.title || "Learning point"} notes</strong>
+        <span>记录这个 learning point 里要避免的具体错误。</span>
+      </div>
+      <textarea
+        value={notes}
+        onChange={(e) => onNotesChange(e.target.value)}
+        placeholder="记录一个你要避免的错误，例如：没有解释 left/right 移动理由。"
+      />
+    </div>
+  );
+}
+
+function answerLearningPointQa(learningPoint, question) {
+  if (learningPoint?.id === "two-pointers") return answerTwoPointerQa(question);
+  return `先围绕 ${learningPoint?.title || "当前 learning point"} 做判断：它要解决的题目信号是什么，核心 invariant 是什么，完成后要能独立解释哪一步。`;
+}
+
+function answerTwoPointerQa(question) {
+  const normalized = question.toLowerCase();
+  if (/sum|target|太小|left|right|移动/.test(normalized)) {
+    return "Two Sum II 里数组有序。当前 sum < target 时，固定 right 不变，left 左边的数只会更小，所以这些候选都不可能达到 target，可以移动 left。sum > target 时同理移动 right。";
+  }
+  if (/left\s*<\s*right|<=|while|条件|相遇/.test(normalized)) {
+    return "如果题目需要两个不同位置的元素，通常用 left < right，避免同一个元素被使用两次。left <= right 更常见于二分查找或允许单点被处理的扫描。";
+  }
+  if (/hash|哈希|不用/.test(normalized)) {
+    return "哈希表也能做普通 Two Sum，但 Two Sum II 的输入已经有序。双指针能用 O(1) 额外空间，并且移动指针的理由来自有序性，所以更贴合这个 learning point。";
+  }
+  if (/window|滑动|窗口/.test(normalized)) {
+    return "双指针这里是两端收缩，目标是排除候选 pair。滑动窗口通常维护一个连续区间的状态，比如窗口内不能重复、窗口和满足条件。关键区别是有没有一个持续维护的窗口 invariant。";
+  }
+  return "先回到这个 learning point 的判断：题目是否有有序、两端比较、pair search 或回文信号？如果有，再问 left/right 每次移动能排除哪些候选。";
 }
 
 async function postJson(path, body) {

@@ -15,16 +15,363 @@ a learning plan and knowledge-route workspace:
 
 ```text
 raw intent
--> slot-based dynamic intake
--> dynamic plan brief
--> brief-aligned editable mind map
--> node-level learning
+-> LLM slots
+-> Python completeness gate
+-> dynamic question
+-> plan brief
+-> user-confirmed brief
+-> editable mind map
+-> node-level learning workspace
 ```
 
 The current UI direction intentionally keeps the visible route simple:
-`goal/stage/learn/project` nodes rendered as an editable mind map. The next
-major product work is node detail quality and node-level learning content,
-rather than adding many graph-level relationship types.
+`goal/stage/learn/project` nodes rendered as an editable mind map, with graph
+edge relations limited to `next` and `contains`. The next major product work is
+node detail quality and node-level learning content, rather than adding many
+graph-level relationship types.
+
+### Node-Level Learning Direction
+
+The current node-level learning design should stay inside the Learning Manager
+track. Do not create a separate product line for it.
+
+The design target is:
+
+```text
+Plan Graph
+  outer route: goal / stage / learn / project
+
+Node Learning Plan
+  inner plan for one learn or project node
+
+Activity Content
+  concrete lesson/practice content or Q&A support generated on demand
+```
+
+The outer mind map should stay coarse. It should show the learning route, not
+every teaching step. A node such as "Arrays and Linked Lists" is intentionally a
+capability block. Its internal plan can break the work down into lessons,
+practice interactions, Q&A support, and completion evidence.
+
+Key rules:
+
+- The plan graph is the route.
+- A node is not a static article. It is a managed learning workspace.
+- Node learning design should start from a hand-authored learning experience,
+  not from tool abstractions.
+- A `NodeLearningPlan` is generated once and persisted.
+- Activity content is lazy generated and persisted.
+- Prior memory can affect later activity content.
+- The node plan should not be silently rewritten by the agent.
+- Q&A is a node-level assistant capability, not a replacement for practice.
+
+### Manual-First Node Design
+
+The next design step should not be to implement tools immediately. Tool design
+depends on the shape of the learning experience. The first pass should manually
+author one complete node learning experience in this blueprint, review it with
+the product experience in mind, and only then use it to derive fixtures,
+schemas, tools, prompts, and UI.
+
+Recommended first node:
+
+```text
+source node: n6 / Arrays and Linked Lists
+working title: Linear Structure Pattern Training
+stage: Foundation
+goal: 30-day algorithm interview prep
+```
+
+This node should assume the learner already has basic programming knowledge and
+knows the names of arrays, strings, and linked lists. It should not default to a
+data-structures textbook explanation. It should train interview problem
+handling:
+
+```text
+recognize the problem pattern
+choose the right template
+write stable code
+review boundary and pointer mistakes
+```
+
+The first manual node should be organized by concrete learning points, not by a
+new taxonomy of modules. Each learning point may only use these teaching
+actions:
+
+```text
+lesson
+practice
+qa
+```
+
+`practice` maps to the formal `coding_practice` activity type later in the
+implementation. `qa` is still a contextual node capability, not a replacement
+for practice.
+
+Do not introduce extra teaching action names such as drill, lab, worked-example
+activity, template lab, or review-extraction activity. If the experience needs
+examples, checks, feedback, or mistake capture, those details must live inside
+`lesson`, `practice`, or `qa`.
+
+The first manual node should start from these learning points:
+
+| Learning point | lesson | practice | qa |
+| --- | --- | --- | --- |
+| Two pointers | Explain sorted-array and palindrome signals, left/right movement, and why one pointer move can eliminate candidates. | Practice with `Valid Palindrome` and/or `Two Sum II`. | Answer why `left` or `right` moves, whether `left < right` is required, and when a hash table is or is not preferable. |
+| Sliding window | Explain contiguous substring/subarray signals, window boundaries, and hash state such as last-seen index or frequency. | Practice with `Longest Substring Without Repeating Characters`. | Answer why `left` must not move backward, what the window invariant is, and what the hash map stores. |
+| Slow write pointer | Explain read/write pointers, in-place array modification, and the meaning of the valid prefix. | Practice with `Move Zeroes` and/or `Remove Duplicates from Sorted Array`. | Answer what `nums[:write]` means, when to write, and when to preserve relative order. |
+| Dummy head and merge tail | Explain why a dummy head removes head-change special cases, why `dummy.next` is returned, and how a tail pointer builds a result list. | Practice with `Merge Two Sorted Lists` and the dummy-head part of `Remove Nth Node From End of List`. | Answer when dummy head is necessary, where `prev` or `tail` starts, and why returning `head` can be wrong. |
+| Fast/slow pointer | Explain fixed gaps or speed differences, with the nth-from-end case as the primary MVP target. | Practice with `Remove Nth Node From End of List`. | Answer how many steps `fast` moves first, what gap is maintained, and whether the loop condition should be `fast` or `fast.next`. |
+| Pointer reversal | Explain the linked-list reversal order: save `next`, rewire `curr.next`, then advance `prev` and `curr`. | Practice with `Reverse Linked List`. | Answer why `next` must be saved first and whether the final return value is `prev` or `curr`. |
+
+The node should still avoid a large problem dump. The small practice pool is:
+
+```text
+Two Sum II or Valid Palindrome
+  target: basic two-pointer movement
+
+Longest Substring Without Repeating Characters
+  target: sliding window + hash table
+
+Move Zeroes or Remove Duplicates from Sorted Array
+  target: in-place array modification
+```
+
+Linked-list practice should emphasize drawing pointer state, deciding whether a
+dummy head is needed, naming boundary cases, and reviewing pointer update
+order:
+
+```text
+Merge Two Sorted Lists
+  target: dummy head and merge pointer
+
+Remove Nth Node From End of List
+  target: dummy head + fast/slow pointers
+
+Reverse Linked List
+  target: next-pointer preservation order
+```
+
+The node should not be marked complete just because content was viewed. The
+learner should produce a review artifact:
+
+```text
+1. My linear-structure pattern recognition table
+2. My two-pointer template
+3. My sliding-window template
+4. My linked-list dummy-head template
+5. My linked-list reversal pointer order
+6. Two mistakes I made or need to watch
+7. Problems I should revisit
+```
+
+Completion criteria:
+
+- complete at least four practice problems
+- include at least one array/string medium problem
+- include at least one linked-list medium problem
+- explain the pattern choice for each completed problem
+- record at least two personal mistake notes
+
+This manual flow reveals the first tool needs:
+
+```text
+generate_training_lesson
+select_or_generate_practice_problems
+review_solution_or_code
+extract_mistakes
+update_node_memory
+summarize_node_review
+answer_contextual_question
+```
+
+These tool names are not final. They are observations from the manual flow.
+Only after the manual node feels learnable should implementation define stable
+tool names and schemas.
+
+### Node Memory And Activities
+
+Node learning needs separate memory layers:
+
+```text
+GoalMemory
+  plan-level progress, recurring weaknesses, global recommendation
+
+StageMemory
+  stage-level progress, stage gaps, readiness for project/next stage
+
+NodeMemory
+  node-level progress, mistakes, strengths, gaps, review notes
+
+ActivityEvent
+  structured event produced by one interaction
+```
+
+`ActivityEvent` should be a structured record, not raw chat history. For
+example, a coding-practice review can record the submitted work summary, agent
+feedback summary, and a memory patch such as `missing_dummy_head` or
+`pointer_update_order`.
+
+For the first algorithm MVP, keep formal activity types small:
+
+```text
+lesson
+coding_practice
+```
+
+Q&A should be available inside the node workspace as contextual support:
+
+```text
+qa
+```
+
+Q&A must use current goal, stage, node, activity, node memory, and relevant
+stage/goal memory. It should answer questions about the current learning work,
+not replace the activity flow.
+
+### Node Plan Lifecycle
+
+Node plans and generated activity content should be stable:
+
+```text
+First node open:
+  no NodeLearningPlan exists
+  -> generate NodeLearningPlan
+  -> persist it
+
+Later node open:
+  NodeLearningPlan exists
+  -> load it
+  -> load NodeMemory
+  -> do not regenerate the plan
+
+Activity open:
+  no ActivityContent exists
+  -> generate content with memory context
+  -> persist it
+
+Later activity open:
+  ActivityContent exists
+  -> load it
+  -> do not regenerate content
+```
+
+Regeneration should require an explicit user action. The agent may suggest a
+future adjustment, but the MVP should not silently rewrite the user's plan.
+
+### Node Learning Renderer Plan
+
+The current frontend direction is to make node learning data-driven without
+making the UI configurable by generated content.
+
+The renderer should be fixed:
+
+```text
+NodeLearningWorkspace(plan_data)
+  LessonRenderer(lesson_data)
+  PracticeRenderer(practice_data)
+  QaDrawer(qa_data)
+```
+
+Generated or fixture data may fill content, but must not introduce new teaching
+actions or custom layouts. Data can define:
+
+- node metadata
+- learning points
+- lesson slides
+- practice problems
+- Q&A suggested questions
+- completion criteria
+
+Data must not define:
+
+- new teaching action types
+- custom UI components
+- page layout
+- button behavior
+
+For the first pass, keep the data as a local JavaScript object in the Plan
+Studio frontend. Do not move it to a JSON fixture, Pydantic schema, API, or LLM
+output format until the `Two Pointers` learning point feels usable.
+
+Current implementation snapshot as of 2026-06-09:
+
+- `examples/learning_manager/plan_editor/src/main.jsx` contains a local
+  `NODE_LEARNING_PLAN` for `n6 / Arrays & Linked Lists`.
+- The active working title remains `Linear Structure Pattern Training`.
+- The first filled learning point is `Two Pointers`.
+- The remaining learning points are present as route items but do not yet have
+  full lesson/practice content.
+- `NodeLearningWorkspace` now derives its UI from the local structured data.
+- `LessonRenderer`, `PracticeRenderer`, and the Keri drawer are fixed renderers;
+  generated data still must not define custom UI.
+- `LessonHeader` is now a top-row control next to the `OpenKeri · Plan Studio`
+  brand, not a full-width card inside the lesson.
+- The node learning shell now follows the Plan Studio generation page visual
+  system: light background, brand in the top row, centered work card, and
+  responsive spacing.
+- The right-bottom Keri launcher uses the OpenKeri brand mark rather than the
+  temporary `mascot.png` image.
+- Notes are stored per learning point and written back through
+  `studyNode.data.learningNotes`, then persisted with the existing local draft.
+- Practice drafts and feedback are still frontend state only.
+- A local resolver maps the current fixed renderer to real plan nodes whose id
+  is `n6` or whose title/description matches `Arrays & Linked Lists`,
+  `数组 + 链表`, or `双指针 + 链表`; other nodes use the fallback node workspace.
+
+The lesson renderer should follow a simple OpenMAIC-like slide lecture model,
+but without adopting OpenMAIC's full multi-agent classroom complexity:
+
+```text
+lesson = slide deck
+slide = one teaching scene
+```
+
+Initial lesson slide layouts should stay small:
+
+```text
+concept
+concept_with_example
+rule_summary
+checkpoint
+```
+
+The practice renderer should be a fixed LeetCode-like workspace:
+
+```text
+problem list
+problem statement
+required thinking fields
+code editor area
+submit/review feedback
+```
+
+The Q&A renderer should remain inside the Keri drawer and use the current node,
+learning point, lesson slide or practice problem, notes, and memory context. It
+should not become a third main-screen flow.
+
+The first implementation order for node-level learning is now:
+
+1. Done: refactor the `Two Pointers` prototype into a fixed renderer plus local
+   structured data.
+2. Done: use that renderer to make the first learning point navigable:
+   lesson slides, practice set, Q&A drawer, notes, and plan dropdown.
+3. In progress: review the rendered `Two Pointers` experience before adding more learning
+   points.
+4. Hand-author and review the complete "Linear Structure Pattern Training" node
+   learning design.
+5. Convert that approved manual design into a fixture.
+6. Derive the first schema fields from the fixture, not from generic agent
+   abstractions.
+7. Define Pydantic schemas for `NodeLearningPlan`, `NodeActivity`,
+   `ActivityContent`, `NodeMemory`, and `ActivityEvent`.
+8. Add a local persistence layer for node plans and node memory.
+9. Implement node plan generation for algorithm `learn` nodes.
+10. Implement lazy activity content generation for `lesson`.
+11. Implement lazy activity content generation for `coding_practice`.
+12. Add basic node memory display and manual notes.
+13. Add coding submission review and structured memory patches.
+14. Add contextual node Q&A.
 
 It is not a marketing document. It is an engineering reference for future
 implementation work. New modules should fit back into this blueprint or cause
