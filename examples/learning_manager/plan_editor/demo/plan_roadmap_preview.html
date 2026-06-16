@@ -109,8 +109,14 @@
       /* 选中某章:计划下方左右两栏 —— 左本章简介卡,右学习屏 */
       .workspace { flex: 1 1 auto; min-height: 0; display: none; gap: 16px; padding: 10px 24px 16px; }
       body.learning .workspace { display: flex; }
-      .detail-wrap { flex: 0 0 380px; min-width: 0; display: flex; }
-      .detail { display: flex; width: 100%; max-height: 100%; border: 1px solid rgba(255,255,255,0.72); border-radius: 18px;
+      .detail-wrap { flex: 0 0 380px; min-width: 0; display: flex; transition: flex-basis 0.24s cubic-bezier(0.22,0.8,0.3,1); }
+      .workspace.intro-collapsed .detail-wrap { flex-basis: 44px; }
+      .workspace.intro-collapsed .d-body { display: none; }
+      .workspace.intro-collapsed .d-toggle { transform: rotate(180deg); }
+      .d-toggle { position: absolute; top: 10px; right: 10px; z-index: 3; display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink-soft); cursor: pointer; transition: transform 0.2s; }
+      .d-toggle:hover { color: var(--ink); border-color: var(--outline); }
+      .d-toggle .material-symbols-outlined { font-size: 18px; }
+      .detail { position: relative; display: flex; width: 100%; max-height: 100%; border: 1px solid rgba(255,255,255,0.72); border-radius: 18px;
         background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(248,250,252,0.52)), radial-gradient(120% 100% at 12% 0%, rgba(99,102,241,0.10), transparent 42%);
         box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(15,23,42,0.03), 0 28px 60px -14px rgba(15,23,42,0.30), 0 10px 24px -8px rgba(15,23,42,0.14);
         backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3); overflow: hidden; }
@@ -120,8 +126,8 @@
       .d-tab { display: flex; align-items: center; gap: 9px; padding: 10px 13px; border-radius: 9px; color: var(--ink-soft); font-family: var(--f-mono); font-size: 12.5px; font-weight: 500; cursor: default; }
       .d-tab .material-symbols-outlined { font-size: 18px; }
       .d-tab.active { background: var(--primary-soft); color: var(--primary-deep); }
-      .d-body { flex: 1; min-height: 0; padding: 24px 30px 0; display: flex; flex-direction: column; position: relative; }
-      .d-scroll { flex: 1; overflow: auto; padding-bottom: 6px; }
+      .d-body { flex: 1; min-height: 0; padding: 16px 20px 0; display: flex; flex-direction: column; position: relative; }
+      .d-scroll { flex: 1; overflow: auto; padding-bottom: 4px; }
       .d-foot { flex: 0 0 auto; padding: 14px 0 18px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; }
       .d-foot button { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 24px; border: 0; border-radius: 10px; background: var(--primary); color: #fff; font-family: var(--f-display); font-size: 14.5px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 18px rgba(99,102,241,0.28); transition: background 0.14s, transform 0.14s; }
       .d-foot button:hover { background: var(--primary-deep); transform: translateY(-1px); }
@@ -144,20 +150,20 @@
       .lz-head .lz-back { margin-left: 8px; }
       .lz-stage { flex: 1; min-height: 0; position: relative; background: var(--surface); }
       .learnzone iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--surface); }
-      .lz-soon { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--card); color: var(--ink-mute); font-family: var(--f-display); font-size: 14px; }
+      .lz-soon { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--card); color: var(--ink-mute); font-family: var(--f-display); font-size: 14px; }
       .lz-soon .material-symbols-outlined { font-size: 34px; color: var(--outline); }
-      .d-head { flex: 0 0 auto; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
-      .d-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: var(--primary-deep); font-family: var(--f-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
-      .d-eyebrow .material-symbols-outlined { font-size: 16px; }
-      .d-title { margin: 9px 0 0; font-family: var(--f-display); font-size: 24px; font-weight: 700; letter-spacing: -0.4px; }
-      .d-scroll { padding-top: 18px; }
+      .d-head { flex: 0 0 auto; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+      .d-eyebrow { display: inline-flex; align-items: center; gap: 5px; color: var(--primary-deep); font-family: var(--f-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+      .d-eyebrow .material-symbols-outlined { font-size: 15px; }
+      .d-title { margin: 5px 0 0; font-family: var(--f-display); font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+      .d-scroll { padding-top: 12px; }
       .d-sec { max-width: 820px; }
-      .d-sec + .d-sec { margin-top: 22px; }
-      .d-sec .hd { display: flex; align-items: center; gap: 11px; margin-bottom: 10px; }
-      .d-sec .hd .material-symbols-outlined { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--primary-soft); color: var(--primary-deep); font-size: 19px; }
-      .d-sec h3 { margin: 0; font-family: var(--f-display); font-size: 18px; font-weight: 600; }
-      .d-sec p { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.72; }
-      .d-sec p + p { margin-top: 9px; }
+      .d-sec + .d-sec { margin-top: 13px; }
+      .d-sec .hd { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+      .d-sec .hd .material-symbols-outlined { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: var(--primary-soft); color: var(--primary-deep); font-size: 16px; }
+      .d-sec h3 { margin: 0; font-family: var(--f-display); font-size: 13.5px; font-weight: 600; }
+      .d-sec p { margin: 0; color: var(--ink-soft); font-size: 12.5px; line-height: 1.55; }
+      .d-sec p + p { margin-top: 6px; }
       .d-points { align-self: start; padding: 18px; border: 1px solid rgba(255,255,255,0.7); border-radius: 14px; background: rgba(255,255,255,0.5); box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset, 0 8px 18px rgba(15,23,42,0.06); backdrop-filter: blur(6px); }
       .d-points .hd { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
       .d-points .hd .material-symbols-outlined { color: var(--primary); font-size: 21px; }
@@ -245,8 +251,6 @@
         </div>
       </div>
     </div>
-
-    <div class="hint">中间最多 6 格,左右滑动看其余 · 悬停连线/节点 + 插入 · 悬停节点 × 删除 · 双击标题改名</div>
 
     <script>
       const ms = (n) => `<span class="material-symbols-outlined">${n}</span>`;
@@ -374,11 +378,6 @@
       // 哪些章已接入学习区(目前只有第一章);完成进度存在 localStorage
       const CHAPTER_URL = { "内核引导": "chapters/ch1.html" };
       const isDone = (title) => { try { return localStorage.getItem("openkeri.progress." + title) === "done"; } catch (e) { return false; } };
-      function footBtn(title) {
-        const url = CHAPTER_URL[title];
-        if (!url) return `<button class="soon" disabled>本章内容制作中 ${ms("lock")}</button>`;
-        return `<button onclick="goFull()">${ms("fullscreen")} 全屏学习</button>`;
-      }
       function goFull() {
         const lz = document.getElementById("learnzone");
         if (document.fullscreenElement) document.exitFullscreen();
@@ -386,18 +385,20 @@
       }
       window.goFull = goFull;
       document.getElementById("lzFull").onclick = goFull;
+      // 本章简介卡:点击收起/展开(收起后右侧学习屏自动占满)
+      function toggleIntro() { document.getElementById("workspace").classList.toggle("intro-collapsed"); }
+      window.toggleIntro = toggleIntro;
       // 在右侧学习屏载入本章播放器;没有内容显示「制作中」
       function loadPlayer(title) {
         const url = CHAPTER_URL[title] || "";
         const frame = document.getElementById("lzFrame");
         const soon = document.getElementById("lzSoon");
-        const full = document.getElementById("lzFull");
         document.getElementById("lzTitle").textContent = title + " · 学习区";
         if (url) {
           if (frame.getAttribute("src") !== url) frame.setAttribute("src", url);
-          frame.style.display = ""; soon.hidden = true; full.style.display = "";
+          frame.style.display = ""; soon.style.display = "none";
         } else {
-          frame.removeAttribute("src"); frame.style.display = "none"; soon.hidden = false; full.style.display = "none";
+          frame.removeAttribute("src"); frame.style.display = "none"; soon.style.display = "flex";
         }
       }
       document.getElementById("lzBack").onclick = () => closeDetail();
@@ -411,6 +412,7 @@
         const o = OUTLINES[s.title] || { goal: s.task || "（本章大纲待补充）", why: [], role: [] };
         const paras = (arr) => arr.map((t) => `<p>${t}</p>`).join("");
         detail.innerHTML = `
+          <button class="d-toggle" onclick="toggleIntro()" title="收起 / 展开本章简介">${ms("chevron_left")}</button>
           <div class="d-body">
             <div class="d-head">
               <div class="d-eyebrow">${ms("menu_book")} 第 ${i + 1} 章 · 本章简介</div>
@@ -421,7 +423,6 @@
               ${o.why.length ? `<div class="d-sec"><div class="hd">${ms("lightbulb")}<h3>为什么从这里开始</h3></div>${paras(o.why)}</div>` : ""}
               ${o.role.length ? `<div class="d-sec"><div class="hd">${ms("hub")}<h3>在整个项目中的作用</h3></div>${paras(o.role)}</div>` : ""}
             </div>
-            <div class="d-foot">${footBtn(s.title)}</div>
           </div>`;
         detail.classList.add("open");
         loadPlayer(s.title);
