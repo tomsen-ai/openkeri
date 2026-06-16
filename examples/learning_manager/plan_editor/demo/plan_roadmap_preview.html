@@ -130,6 +130,8 @@
       body.learning .detail-wrap { display: none; }
       body.learning .learnzone { display: flex; }
       body.learning .plan .title { display: none; }
+      /* 学习模式标题隐藏,路线区收紧,把竖向空间让给下方学习区 */
+      body.learning .plan { height: var(--plan-learn-h, 206px); }
       .lz-head { flex: 0 0 auto; display: flex; align-items: center; gap: 9px; padding: 8px 18px; background: var(--card); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--ink-soft); }
       .lz-head .lz-title { font-family: var(--f-display); font-size: 13px; font-weight: 600; color: var(--ink); }
       .lz-head .lz-back { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 13px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink-soft); font-family: var(--f-display); font-size: 12.5px; font-weight: 600; cursor: pointer; }
@@ -162,6 +164,26 @@
 
       .hint { position: fixed; left: 40px; bottom: 16px; color: var(--ink-mute); font-family: var(--f-mono); font-size: 11px; }
       .err { padding: 60px; text-align: center; color: #b91c1c; font-weight: 700; }
+      /* ---- 屏幕高度自适应:同分辨率不同缩放档 / 不同比例都能完整显示 ----
+         只缩高度与字号,不动时间线圆圈/连线的像素对齐,避免错位。 */
+      @media (max-height: 860px) {
+        :root { --plan-h: 264px; --plan-learn-h: 198px; }
+        .appbar { flex-basis: 56px; }
+        .title h1 { font-size: 25px; }
+      }
+      @media (max-height: 760px) {
+        :root { --plan-h: 250px; --plan-learn-h: 190px; }
+        .appbar { flex-basis: 52px; }
+        .title { padding-top: 10px; }
+        .title h1 { font-size: 22px; }
+        .title p { font-size: 12.5px; }
+        .lz-head { padding-top: 6px; padding-bottom: 6px; }
+      }
+      @media (max-height: 670px) {
+        :root { --plan-h: 240px; --plan-learn-h: 184px; }
+        .appbar { flex-basis: 48px; }
+        .title h1 { font-size: 20px; margin: 4px 0; }
+      }
     </style>
   </head>
   <body>
