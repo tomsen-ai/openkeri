@@ -84,10 +84,10 @@
         color: var(--ink-soft); font-family: var(--f-mono); font-size: 14px; font-weight: 700; box-shadow: 0 0 0 5px var(--surface); cursor: pointer; transition: border-color 0.14s, color 0.14s, transform 0.14s; }
       .slot:not(.end):hover .circle { border-color: var(--primary); color: var(--primary-deep); transform: translateY(-2px); }
       .slot.sel .circle { border-color: var(--primary); color: var(--primary-deep); box-shadow: 0 0 0 5px var(--surface), 0 0 0 8px rgba(99,102,241,0.16); }
-      .slot.mvp .circle { width: 56px; height: 56px; border-width: 3px; border-color: var(--primary); color: var(--primary-deep); font-family: var(--f-display); animation: pulse 2.1s infinite; }
+      .slot.sel .circle { width: 56px; height: 56px; border-width: 3px; border-color: var(--primary); color: var(--primary-deep); font-family: var(--f-display); animation: pulse 2.1s infinite; }
       @keyframes pulse { 0% { box-shadow: 0 0 0 5px var(--surface), 0 0 0 5px rgba(99,102,241,0.5); } 70% { box-shadow: 0 0 0 5px var(--surface), 0 0 0 14px rgba(99,102,241,0); } 100% { box-shadow: 0 0 0 5px var(--surface), 0 0 0 5px rgba(99,102,241,0); } }
 
-      .mvp-badge { position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 3px 8px; border-radius: 6px; background: var(--primary); color: #fff; font-family: var(--f-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.05em; }
+      .cur-badge { position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 3px 8px; border-radius: 6px; background: var(--primary); color: #fff; font-family: var(--f-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.05em; }
       .del { position: absolute; top: -7px; right: -7px; width: 19px; height: 19px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); color: var(--ink-mute); display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 7; box-shadow: 0 2px 6px rgba(15,23,42,0.12); }
       .del .material-symbols-outlined { font-size: 13px; }
       .slot:hover .del { display: flex; }
@@ -267,7 +267,7 @@
         let data;
         try { const r = await fetch("seed-plan-data.json"); if (!r.ok) throw 0; data = await r.json(); }
         catch (e) { timeline.innerHTML = `<div class="err">读不到 seed-plan-data.json — 请用开发服务器打开:<br/>http://127.0.0.1:5173/demo/plan_roadmap_preview.html</div>`; return; }
-        parse(data); paint(); const m = stages.findIndex((s) => s.mvp); if (m >= 0) openDetail(m);
+        parse(data); paint(); const first = stages.findIndex((s) => !isDone(s.title)); openDetail(first >= 0 ? first : 0);
       }
 
       function parse(data) {
@@ -294,15 +294,14 @@
       function paint() {
         document.getElementById("statSteps").textContent = stages.length + " steps";
         document.getElementById("statTime").textContent = stages.reduce((s, x) => s + x.hours, 0) + "h";
-        const mvpIdx = stages.findIndex((s) => s.mvp);
         let html = "";
         stages.forEach((s, i) => {
-          const segDim = !(mvpIdx >= 0 && i + 1 <= mvpIdx);
-          html += `<div class="slot ${s.mvp ? "mvp" : ""}" data-i="${i}">
+          const segDim = !(selIdx >= 0 && i <= selIdx);
+          html += `<div class="slot" data-i="${i}">
               <div class="seg ${segDim ? "dim" : ""}"></div>
               <div class="zone"><div class="circ-wrap">
                 <button class="del" data-del="${i}">${ms("close")}</button>
-                ${s.mvp ? `<div class="mvp-badge">★ MVP</div>` : ""}
+                ${i === selIdx ? `<div class="cur-badge">当前</div>` : ""}
                 <div class="circle ${isDone(s.title) ? "done" : ""}" data-sel="${i}">${isDone(s.title) ? ms("check") : String(i + 1).padStart(2, "0")}</div>
               </div></div>
               <div class="lbl"><div class="t" data-edit="${i}">${s.title}</div><div class="h">${s.hours}h</div></div>
@@ -365,9 +364,8 @@
       window.addEventListener("message", (e) => { if (e.data === "openkeri:chapter-done") window.exitChapter(); });
       function toggleDetail(i) { if (selIdx === i && detail.classList.contains("open")) closeDetail(); else openDetail(i); }
       function openDetail(i) {
-        timeline.querySelectorAll(".slot.sel").forEach((n) => n.classList.remove("sel"));
-        timeline.querySelector(`.slot[data-i="${i}"]`)?.classList.add("sel");
         selIdx = i;
+        paint();
         const s = stages[i];
         const o = OUTLINES[s.title] || { goal: s.task || "（本章大纲待补充）", why: [], role: [] };
         const paras = (arr) => arr.map((t) => `<p>${t}</p>`).join("");
@@ -386,7 +384,7 @@
           </div>`;
         detail.classList.add("open");
       }
-      function closeDetail() { detail.classList.remove("open"); selIdx = -1; timeline.querySelectorAll(".slot.sel").forEach((n) => n.classList.remove("sel")); }
+      function closeDetail() { detail.classList.remove("open"); selIdx = -1; paint(); }
       window.closeDetail = closeDetail;
 
       // 可拖动分屏（Cursor 式）+ 收起把手
