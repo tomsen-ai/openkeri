@@ -106,8 +106,11 @@
       .end .lbl .t { color: var(--ink-soft); font-weight: 700; }
 
       /* ——— glass detail card ——— */
-      .detail-wrap { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; align-items: flex-start; padding: 8px 40px 30px; }
-      .detail { display: none; width: min(1060px, 100%); max-height: 100%; border: 1px solid rgba(255,255,255,0.72); border-radius: 20px;
+      /* 选中某章:计划下方左右两栏 —— 左本章简介卡,右学习屏 */
+      .workspace { flex: 1 1 auto; min-height: 0; display: none; gap: 16px; padding: 10px 24px 16px; }
+      body.learning .workspace { display: flex; }
+      .detail-wrap { flex: 0 0 380px; min-width: 0; display: flex; }
+      .detail { display: flex; width: 100%; max-height: 100%; border: 1px solid rgba(255,255,255,0.72); border-radius: 18px;
         background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(248,250,252,0.52)), radial-gradient(120% 100% at 12% 0%, rgba(99,102,241,0.10), transparent 42%);
         box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(15,23,42,0.03), 0 28px 60px -14px rgba(15,23,42,0.30), 0 10px 24px -8px rgba(15,23,42,0.14);
         backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3); overflow: hidden; }
@@ -126,9 +129,7 @@
       .d-foot button.soon:hover { background: #e2e8f0; transform: none; }
       .circle.done { box-shadow: 0 0 0 2px #16a34a inset, 0 8px 18px rgba(22,163,74,0.22); color: #16a34a; }
       /* 学习区:同页嵌入,计划区收成细条让位(浅色,跟计划区同一套) */
-      .learnzone { display: none; flex: 1 1 auto; min-height: 0; flex-direction: column; background: var(--surface); }
-      body.learning .detail-wrap { display: none; }
-      body.learning .learnzone { display: flex; }
+      .learnzone { display: flex; flex: 1 1 auto; min-width: 0; min-height: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--card); box-shadow: 0 16px 44px -18px rgba(15,23,42,0.30); }
       body.learning .plan .title { display: none; }
       /* 学习模式标题隐藏,路线区收紧,把竖向空间让给下方学习区 */
       body.learning .plan { height: var(--plan-learn-h, 206px); }
@@ -137,7 +138,14 @@
       .lz-head .lz-back { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 13px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink-soft); font-family: var(--f-display); font-size: 12.5px; font-weight: 600; cursor: pointer; }
       .lz-head .lz-back:hover { color: var(--ink); border-color: var(--outline); }
       .lz-head .lz-back .material-symbols-outlined { font-size: 16px; }
-      .learnzone iframe { flex: 1; width: 100%; border: 0; background: var(--surface); }
+      .lz-head .lz-full { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 13px; margin-left: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink-soft); font-family: var(--f-display); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+      .lz-head .lz-full:hover { color: var(--ink); border-color: var(--outline); }
+      .lz-head .lz-full .material-symbols-outlined { font-size: 16px; }
+      .lz-head .lz-back { margin-left: 8px; }
+      .lz-stage { flex: 1; min-height: 0; position: relative; background: var(--surface); }
+      .learnzone iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--surface); }
+      .lz-soon { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--card); color: var(--ink-mute); font-family: var(--f-display); font-size: 14px; }
+      .lz-soon .material-symbols-outlined { font-size: 34px; color: var(--outline); }
       .d-head { flex: 0 0 auto; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
       .d-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: var(--primary-deep); font-family: var(--f-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
       .d-eyebrow .material-symbols-outlined { font-size: 16px; }
@@ -222,15 +230,20 @@
     </div>
     <div class="splitter" id="splitter"></div>
 
-    <div class="detail-wrap"><div class="detail" id="detail"></div></div>
-    <div class="learnzone" id="learnzone">
-      <div class="lz-head">
-        <span class="material-symbols-outlined" style="font-size:18px;color:#818cf8">school</span>
-        <span class="lz-title" id="lzTitle">学习区</span>
-        <button class="lz-back" id="lzBack"><span class="material-symbols-outlined">expand_less</span> 收起,回计划</button>
+    <div class="workspace" id="workspace">
+      <div class="detail-wrap"><div class="detail" id="detail"></div></div>
+      <div class="learnzone" id="learnzone">
+        <div class="lz-head">
+          <span class="material-symbols-outlined" style="font-size:18px;color:#818cf8">school</span>
+          <span class="lz-title" id="lzTitle">学习区</span>
+          <button class="lz-full" id="lzFull"><span class="material-symbols-outlined">fullscreen</span> 全屏</button>
+          <button class="lz-back" id="lzBack"><span class="material-symbols-outlined">expand_less</span> 收起,回计划</button>
+        </div>
+        <div class="lz-stage">
+          <iframe id="lzFrame" title="学习区"></iframe>
+          <div class="lz-soon" id="lzSoon" hidden><span class="material-symbols-outlined">lock</span>本章内容制作中</div>
+        </div>
       </div>
-      <iframe id="lzFrame" title="学习区"></iframe>
-    </div>
     </div>
 
     <div class="hint">中间最多 6 格,左右滑动看其余 · 悬停连线/节点 + 插入 · 悬停节点 × 删除 · 双击标题改名</div>
@@ -289,7 +302,9 @@
         let data;
         try { const r = await fetch("seed-plan-data.json"); if (!r.ok) throw 0; data = await r.json(); }
         catch (e) { timeline.innerHTML = `<div class="err">读不到 seed-plan-data.json — 请用开发服务器打开:<br/>http://127.0.0.1:5173/demo/plan_roadmap_preview.html</div>`; return; }
-        parse(data); paint(); const first = stages.findIndex((s) => !isDone(s.title)); openDetail(first >= 0 ? first : 0);
+        parse(data); paint();
+        const withContent = stages.findIndex((s) => CHAPTER_URL[s.title]);
+        openDetail(withContent >= 0 ? withContent : 0);
       }
 
       function parse(data) {
@@ -345,7 +360,7 @@
       }
       function removeAt(idx) {
         stages.splice(idx, 1);
-        if (selIdx === idx) { selIdx = -1; detail.classList.remove("open"); } else if (selIdx > idx) selIdx--;
+        if (selIdx === idx) { closeDetail(); return; } else if (selIdx > idx) selIdx--;
         paint();
       }
       function startEdit(el, idx) {
@@ -362,31 +377,35 @@
       function footBtn(title) {
         const url = CHAPTER_URL[title];
         if (!url) return `<button class="soon" disabled>本章内容制作中 ${ms("lock")}</button>`;
-        return isDone(title)
-          ? `<button onclick="enterChapter('${url}','${title}')">已完成 · 再学一遍 ${ms("replay")}</button>`
-          : `<button onclick="enterChapter('${url}','${title}')">进入本章 ${ms("arrow_forward")}</button>`;
+        return `<button onclick="goFull()">${ms("fullscreen")} 全屏学习</button>`;
       }
-      // 同页嵌入学习区:计划区收成细条,学习区(iframe)在下方展开
-      let savedPlanH = null;
-      window.enterChapter = (url, title) => {
+      function goFull() {
+        const lz = document.getElementById("learnzone");
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (lz.requestFullscreen) lz.requestFullscreen();
+      }
+      window.goFull = goFull;
+      document.getElementById("lzFull").onclick = goFull;
+      // 在右侧学习屏载入本章播放器;没有内容显示「制作中」
+      function loadPlayer(title) {
+        const url = CHAPTER_URL[title] || "";
+        const frame = document.getElementById("lzFrame");
+        const soon = document.getElementById("lzSoon");
+        const full = document.getElementById("lzFull");
         document.getElementById("lzTitle").textContent = title + " · 学习区";
-        document.getElementById("lzFrame").src = url;
-        savedPlanH = getComputedStyle(document.documentElement).getPropertyValue("--plan-h");
-        document.documentElement.style.setProperty("--plan-h", "150px");
-        document.body.classList.remove("collapsed");
-        document.body.classList.add("learning");
-      };
-      window.exitChapter = () => {
-        document.body.classList.remove("learning");
-        if (savedPlanH) document.documentElement.style.setProperty("--plan-h", savedPlanH);
-        document.getElementById("lzFrame").src = "";
-        paint(); if (selIdx >= 0) openDetail(selIdx);
-      };
-      document.getElementById("lzBack").onclick = () => window.exitChapter();
-      window.addEventListener("message", (e) => { if (e.data === "openkeri:chapter-done") window.exitChapter(); });
-      function toggleDetail(i) { if (selIdx === i && detail.classList.contains("open")) closeDetail(); else openDetail(i); }
+        if (url) {
+          if (frame.getAttribute("src") !== url) frame.setAttribute("src", url);
+          frame.style.display = ""; soon.hidden = true; full.style.display = "";
+        } else {
+          frame.removeAttribute("src"); frame.style.display = "none"; soon.hidden = false; full.style.display = "none";
+        }
+      }
+      document.getElementById("lzBack").onclick = () => closeDetail();
+      window.addEventListener("message", (e) => { if (e.data === "openkeri:chapter-done") paint(); });
+      function toggleDetail(i) { if (selIdx === i && document.body.classList.contains("learning")) closeDetail(); else openDetail(i); }
       function openDetail(i) {
         selIdx = i;
+        document.body.classList.add("learning");
         paint();
         const s = stages[i];
         const o = OUTLINES[s.title] || { goal: s.task || "（本章大纲待补充）", why: [], role: [] };
@@ -405,8 +424,14 @@
             <div class="d-foot">${footBtn(s.title)}</div>
           </div>`;
         detail.classList.add("open");
+        loadPlayer(s.title);
       }
-      function closeDetail() { detail.classList.remove("open"); selIdx = -1; paint(); }
+      function closeDetail() {
+        document.body.classList.remove("learning");
+        document.getElementById("lzFrame").removeAttribute("src");
+        selIdx = -1;
+        paint();
+      }
       window.closeDetail = closeDetail;
 
       // 可拖动分屏（Cursor 式）+ 收起把手
