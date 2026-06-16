@@ -331,7 +331,7 @@
         else if (bi < B.length - 1) next();
         else finish();
       }
-      function finish() { try { localStorage.setItem("openkeri.progress.内核引导", "done"); } catch (e) {} if (window.parent !== window) window.parent.postMessage("openkeri:chapter-done", "*"); else location.href = "/"; }
+      function finish() { try { localStorage.setItem("openkeri.progress.内核引导", "done"); } catch (e) {} if (window.parent !== window) window.parent.postMessage("openkeri:chapter-done", "*"); else location.href = "../plan_roadmap_preview.html"; }
 
       function render() { renderBoard(); $("dots").innerHTML = B.map((_, k) => `<i class="${k === bi ? "on" : seen.has(k) ? "seen" : ""}"></i>`).join(""); si = 0; updateNav(); playSeg(); }
       function updateCont() {
@@ -357,7 +357,7 @@
 
       function openDo() { const b = B[bi]; clearTimeout(autoTimer); gen++; if ("speechSynthesis" in window) speechSynthesis.cancel();
         $("doWall").textContent = b.wall; $("doTitle").textContent = b.title; $("doSub").textContent = b.sub;
-        const want = "/sandbox.html" + (b.file ? "?file=" + encodeURIComponent(b.file) : "");
+        const want = "../sandbox/sandbox.html" + (b.file ? "?file=" + encodeURIComponent(b.file) : "");
         if ($("doFrame").getAttribute("src") !== want) $("doFrame").setAttribute("src", want);
         $("doov").classList.add("show"); }
       $("doDone").onclick = () => { done.add(bi); seen.add(bi); $("doov").classList.remove("show"); if (bi < B.length - 1) { bi++; render(); } else updateNav(); };

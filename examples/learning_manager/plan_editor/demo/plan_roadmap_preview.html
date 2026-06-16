@@ -265,8 +265,8 @@
 
       async function load() {
         let data;
-        try { const r = await fetch("/seed-plan-data.json"); if (!r.ok) throw 0; data = await r.json(); }
-        catch (e) { timeline.innerHTML = `<div class="err">读不到 seed-plan-data.json — 请用开发服务器打开:<br/>http://127.0.0.1:5173/plan_roadmap_preview.html</div>`; return; }
+        try { const r = await fetch("seed-plan-data.json"); if (!r.ok) throw 0; data = await r.json(); }
+        catch (e) { timeline.innerHTML = `<div class="err">读不到 seed-plan-data.json — 请用开发服务器打开:<br/>http://127.0.0.1:5173/demo/plan_roadmap_preview.html</div>`; return; }
         parse(data); paint(); const m = stages.findIndex((s) => s.mvp); if (m >= 0) openDetail(m);
       }
 
@@ -336,7 +336,7 @@
       }
 
       // 哪些章已接入学习区(目前只有第一章);完成进度存在 localStorage
-      const CHAPTER_URL = { "内核引导": "ch1.html" };
+      const CHAPTER_URL = { "内核引导": "chapters/ch1.html" };
       const isDone = (title) => { try { return localStorage.getItem("openkeri.progress." + title) === "done"; } catch (e) { return false; } };
       function footBtn(title) {
         const url = CHAPTER_URL[title];

@@ -8,7 +8,7 @@
   <body>
     <script>
       const STORAGE_KEY = "openkeri.planEditorDraft.v1";
-      fetch("/seed-plan-data.json")
+      fetch("seed-plan-data.json")
         .then((response) => {
           if (!response.ok) throw new Error("Cannot load seed plan data");
           return response.json();
