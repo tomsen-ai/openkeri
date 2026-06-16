@@ -4,10 +4,12 @@ This is the active openkeri product direction.
 
 Plan Studio is a single-project learning plan and knowledge-route workspace. It
 starts from a free-form learning intent, negotiates only the information that is
-actually missing, produces a plan brief, and then generates an editable mind map.
+actually missing, produces a plan brief, and then generates an editable mind map
+with a node-level course workspace inside the canvas.
 
-It is not a content tutor yet. Node-level learning content is the next major
-area after route clarity and node detail editing are stable.
+It is not a generic content tutor. The next major area is the course pipeline:
+turning a node into a structured lesson/practice/qa experience that can be
+reused and expanded.
 
 ## Product Flow
 
@@ -18,11 +20,15 @@ Start: raw intent
   -> Brief: fixed core + dynamic sections
   -> Editor: editable mind-map plan canvas
        -> node status, add/delete/edit, import/export
-       -> node learning page (placeholder content)
+       -> node learning workspace (lesson / practice / qa)
 ```
 
 The active frontend is `plan_editor/`. The legacy static frontend and CLI demo
 still exist for reference, but active work should target the mind-map editor.
+
+The MVP course sample is now **Operating Systems basics**, starting with a node
+like `Processes and Threads`. The earlier algorithm-oriented node is still
+useful as a renderer reference, but it is no longer the product's first sample.
 
 ## Current Architecture
 
@@ -156,6 +162,23 @@ content belongs inside `learn`; resources, review prompts, and acceptance
 criteria belong inside `learn` or `project`; checkpoints are represented as
 project acceptance criteria rather than separate default graph nodes.
 
+## Course Pipeline
+
+The node-level course pipeline should stay simple enough to expand later:
+
+```text
+node
+-> learning points
+-> lesson spec
+-> lesson slides
+-> practice pack
+-> qa prompts
+-> review notes / memory
+```
+
+The first implementation should make one OS node usable end-to-end before
+generalizing the schema or generator.
+
 ## Plan Studio UI
 
 The current frontend is a browser-based plan studio:
@@ -206,16 +229,16 @@ Known gaps:
 
 ## Next Priorities
 
-**Priority 1: Node Detail Quality**
+**Priority 1: Course Pipeline**
 
-The visible map should stay simple. The next step is to make each node useful
-when opened:
+The visible map should stay simple. The next step is to make each node usable as
+a course entry point:
 
-- concise role/learning objective per node
-- node-specific explanation outline
-- practice prompts, mini labs, and self-checks inside `learn`
-- project requirements and acceptance criteria inside `project`
-- clearer save/edit behavior for node details
+- hand-authored learning points for the first OS node
+- lesson slides with one clear teaching scene per slide
+- practice packs with thinking fields and review criteria
+- qa prompts that stay inside the node workspace
+- notes and completion evidence written back to the node
 
 **Priority 2: Route Clarity**
 

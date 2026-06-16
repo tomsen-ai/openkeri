@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>文字时刻 · 四种 + 标题规矩</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <style>
+      :root { --indigo:#818cf8; --indigo-deep:#4338ca; --amber:#fbbf24; --green:#34d399; --red:#fb7185; }
+      * { box-sizing:border-box; }
+      body { margin:0; min-height:100vh; padding:42px 20px 60px;
+        background:radial-gradient(1000px 600px at 50% -10%, #20264a 0%, #11142a 55%, #0a0c1a 100%);
+        font-family:"Hanken Grotesk",sans-serif; color:#e7eaf3; }
+      .wrap { width:min(760px,100%); margin:0 auto; display:flex; flex-direction:column; gap:30px; }
+      .pageh { text-align:center; margin-bottom:4px; }
+      .pageh h2 { font-family:"Sora",sans-serif; font-weight:700; font-size:20px; margin:0; }
+      .pageh p { color:#8b93b8; font-size:13px; margin:6px 0 0; }
+
+      .moment .label { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+      .moment .label .chip { font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:700; color:#c7d2fe; background:rgba(99,102,241,.16); border:1px solid rgba(129,140,248,.35); padding:3px 9px; border-radius:7px; }
+      .moment .label .rule { font-size:12.5px; color:#9aa2c8; }
+      .moment .label .rule b { color:#c7d2fe; font-weight:600; }
+
+      .board { position:relative; height:300px; border-radius:16px; overflow:hidden; padding:34px 40px;
+        background:linear-gradient(160deg, rgba(30,35,64,.6), rgba(16,19,38,.6));
+        border:1px solid rgba(255,255,255,.08); box-shadow:0 24px 60px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05); }
+      .board .bg { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px); background-size:26px 26px; pointer-events:none; }
+
+      /* ① 开场拍 */
+      .opener { display:flex; flex-direction:column; justify-content:center; }
+      .op-kicker { display:inline-flex; align-items:center; gap:10px; font-family:"JetBrains Mono",monospace; font-size:12px; letter-spacing:2px; color:#a5b4fc; text-transform:uppercase; }
+      .op-kicker .num { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; background:linear-gradient(150deg,#6366f1,#4338ca); color:#fff; font-weight:700; font-size:14px; box-shadow:0 6px 16px rgba(67,56,202,.5); }
+      .op-title { font-family:"Sora",sans-serif; font-weight:800; font-size:52px; line-height:1.04; margin:18px 0 0; letter-spacing:-1px; }
+      .op-sub { font-size:18px; color:#aeb6d8; margin-top:6px; }
+      .op-rule { width:64px; height:3px; border-radius:2px; background:linear-gradient(90deg,#818cf8,transparent); margin:18px 0; }
+      .op-lede { font-size:14px; color:#8b93b8; max-width:460px; line-height:1.6; }
+
+      /* ② 段内拍(无标题) */
+      .inner { display:flex; flex-direction:column; }
+      .inner .topnote { position:absolute; top:14px; left:40px; font-family:"JetBrains Mono",monospace; font-size:11px; color:#566087; }
+      .inner-fig { flex:1; display:flex; align-items:center; justify-content:center; gap:0; }
+      .msvg { width:min(470px,86%); height:auto; }
+      .mini { display:flex; align-items:center; gap:14px; }
+      .mini .b { padding:12px 18px; border-radius:11px; font-family:"Sora";font-weight:600; font-size:14px; box-shadow:0 8px 20px rgba(0,0,0,.35); }
+      .mini .b1 { background:linear-gradient(160deg,#3a2a12,#2a1f0e); color:#fcd34d; border:1px solid #7a5a1f; }
+      .mini .b2 { background:linear-gradient(160deg,#2c2c66,#222150); color:#c7d2fe; border:1px solid #5b5bd6; }
+      .mini .ar { color:#6b7394; font-size:20px; }
+      .inner .narr { display:flex; align-items:center; gap:11px; padding-top:16px; border-top:1px solid rgba(255,255,255,.08); }
+      .inner .narr .av { flex:0 0 auto; display:grid; place-items:center; width:28px; height:28px; border-radius:50%; background:linear-gradient(150deg,#818cf8,#4338ca); color:#fff; font-family:"Sora"; font-weight:700; font-size:12px; }
+      .inner .narr span.t { font-size:14.5px; color:#cdd3e6; }
+
+      /* ③ 撞墙场景 */
+      .scene { display:grid; place-items:center; text-align:center; }
+      .scene .glow { position:absolute; width:340px; height:200px; border-radius:50%; background:radial-gradient(closest-side, rgba(251,113,133,.22), transparent); }
+      .sc-ic { font-size:60px; position:relative; }
+      .sc-big { position:relative; font-family:"Sora",sans-serif; font-weight:700; font-size:30px; margin-top:10px; letter-spacing:-.5px; }
+      .sc-sub { position:relative; font-size:16px; color:#f1a8b3; margin-top:12px; }
+
+      /* ④ 收束金句 */
+      .take { display:grid; place-items:center; text-align:center; }
+      .take .glow { position:absolute; width:380px; height:200px; border-radius:50%; background:radial-gradient(closest-side, rgba(52,211,153,.16), transparent); }
+      .tk-check { position:relative; display:grid; place-items:center; width:46px; height:46px; border-radius:50%; background:rgba(52,211,153,.15); border:1px solid rgba(52,211,153,.5); color:#6ee7b7; font-size:24px; margin-bottom:14px; }
+      .tk-line { position:relative; font-family:"Sora",sans-serif; font-weight:600; font-size:26px; line-height:1.45; letter-spacing:-.3px; }
+      .tk-line b { color:#a5b4fc; }
+      .tk-foot { position:relative; font-size:14.5px; color:#8b93b8; margin-top:14px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="pageh"><h2>文字时刻 · 四种</h2><p>什么时候顶标题、什么时候光秃秃才对 —— 一眼对比</p></div>
+
+      <div class="moment">
+        <div class="label"><span class="chip">① 开场拍</span><span class="rule">每个<b>关卡/概念的首拍</b>才有 —— 标题 + kicker 标志"新一段开始"</span></div>
+        <div class="board opener">
+          <div class="bg"></div>
+          <div class="op-kicker"><span class="num">01</span> 第一关 · STAGE</div>
+          <div class="op-title">启动</div>
+          <div class="op-sub">代码凭啥能被跑到?</div>
+          <div class="op-rule"></div>
+          <div class="op-lede">开机那一刻,先跑的根本不是你的代码。这一关,把控制权一路接到你手里。</div>
+        </div>
+      </div>
+
+      <div class="moment">
+        <div class="label"><span class="chip">② 段内拍</span><span class="rule"><b>不顶标题</b> —— 关卡内部的图 / 代码 / 动手拍,内容直接占主场,旁白往下带</span></div>
+        <div class="board inner">
+          <div class="bg"></div>
+          <div class="topnote">（顶部留白:没有标题）</div>
+          <div class="inner-fig">
+            <svg class="msvg" viewBox="0 0 480 150">
+              <defs>
+                <linearGradient id="gAm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2a12"/><stop offset="1" stop-color="#2a1f0e"/></linearGradient>
+                <linearGradient id="gIn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b3a7e"/><stop offset="1" stop-color="#2c2c66"/></linearGradient>
+                <filter id="msoft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.45"/></filter>
+                <filter id="mglow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                <pattern id="mcells" width="17" height="12" patternUnits="userSpaceOnUse"><path d="M17 0 H0 V12" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"/></pattern>
+                <marker id="mar" markerWidth="11" markerHeight="11" refX="7" refY="4" orient="auto"><path d="M1 1 L8 4 L1 7" fill="none" stroke="#818cf8" stroke-width="1.6"/></marker>
+              </defs>
+              <g filter="url(#msoft)">
+                <rect x="40" y="44" width="180" height="64" rx="14" fill="url(#gAm)" stroke="#7a5a1f"/>
+                <rect x="40" y="44" width="180" height="64" rx="14" fill="url(#mcells)"/>
+                <rect x="40" y="44" width="180" height="3" rx="1.5" fill="rgba(255,255,255,.12)"/>
+                <text x="130" y="80" text-anchor="middle" font-family="Sora" font-size="16" font-weight="700" fill="#fcd34d">固件 OpenSBI</text>
+                <text x="130" y="98" text-anchor="middle" font-family="Hanken Grotesk" font-size="11" fill="#d9b873">比你先醒</text>
+              </g>
+              <line x1="226" y1="76" x2="256" y2="76" stroke="#818cf8" stroke-width="2" marker-end="url(#mar)" filter="url(#mglow)"/>
+              <g filter="url(#msoft)">
+                <rect x="262" y="44" width="178" height="64" rx="14" fill="url(#gIn)" stroke="#5b5bd6"/>
+                <rect x="262" y="44" width="178" height="64" rx="14" fill="url(#mcells)"/>
+                <rect x="262" y="44" width="178" height="3" rx="1.5" fill="rgba(255,255,255,.16)"/>
+                <text x="351" y="80" text-anchor="middle" font-family="Sora" font-size="16" font-weight="700" fill="#c7d2fe">你的 boot</text>
+                <text x="351" y="98" text-anchor="middle" font-family="Hanken Grotesk" font-size="11" fill="#9aa2d8">接力棒到手</text>
+              </g>
+            </svg>
+          </div>
+          <div class="narr"><span class="av">K</span><span class="t">它做完准备,跳到约定地址 0x80200000,把接力棒交给你的 boot。</span></div>
+        </div>
+      </div>
+
+      <div class="moment">
+        <div class="label"><span class="chip">③ 撞墙场景</span><span class="rule">独立时刻,<b>不绑标题</b> —— 大图标 + 一句冲击 + 一句追问,专门制造痛点</span></div>
+        <div class="board scene">
+          <div class="bg"></div><div class="glow"></div>
+          <div class="sc-ic">💥</div>
+          <div class="sc-big">你写个 C 函数 —— 直接崩了</div>
+          <div class="sc-sub">明明语法没错,为什么?</div>
+        </div>
+      </div>
+
+      <div class="moment">
+        <div class="label"><span class="chip">④ 收束金句</span><span class="rule">一拍/一章末尾的结论,<b>排版加重</b> —— 把刚走过的路收成一句</span></div>
+        <div class="board take">
+          <div class="bg"></div><div class="glow"></div>
+          <div class="tk-check">✓</div>
+          <div class="tk-line">它一点都不是魔法 ——<br>你补齐了 <b>启动</b> · <b>内存</b> · <b>输出</b> 三样。</div>
+          <div class="tk-foot">这就是从零造一个操作系统,真正的意思。</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

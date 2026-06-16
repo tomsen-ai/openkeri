@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenKeri 沙箱</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <style>
+      .mi { font-family:"Material Symbols Outlined"; font-variation-settings:"FILL" 0,"wght" 400; line-height:1; vertical-align:middle; font-size:17px; }
+      /* —— 忠实照 VS Code / Cursor Dark Modern 的真实细节:中性炭灰、薄线、紧凑 —— */
+      :root {
+        --editor:#1e1e1e; --chrome:#181818; --panel:#1a1a1a; --tabs:#181818; --tab-active:#1e1e1e;
+        --border:#2b2b2b; --border2:#333; --text:#cccccc; --dim:#8a8a8a; --faint:#6b6b6b;
+        --hover:#2a2d2e; --active:#37373d; --accent:#3794ff; --btn:#0e639c; --btn-h:#1177bb;
+        --amber:#e2b341; --green:#4ec9b0; --uifont:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+        --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+      }
+      * { box-sizing:border-box; }
+      html,body { margin:0; height:100%; }
+      body { height:100vh; display:flex; flex-direction:column; color:var(--text); overflow:hidden; background:var(--editor);
+        font-family:var(--uifont); font-size:13px; -webkit-font-smoothing:antialiased; }
+
+      /* 标题栏 */
+      .titlebar { flex:0 0 auto; display:flex; align-items:center; gap:10px; height:35px; padding:0 10px; background:var(--chrome); border-bottom:1px solid var(--border); }
+      .brand { display:flex; align-items:center; gap:7px; } .brand .lg { color:#9aa6ff; } .brand b { font-weight:600; font-size:12.5px; color:#d4d4d4; }
+      .titlebar .crumb { font-family:var(--mono); font-size:11.5px; color:var(--dim); }
+      .titlebar .spacer { margin-left:auto; }
+      .run { display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 11px; border:0; border-radius:4px; cursor:pointer;
+        background:var(--btn); color:#fff; font-family:var(--uifont); font-size:12px; font-weight:500; }
+      .run:hover{background:var(--btn-h)} .run:disabled{background:#2d2d2d;color:#6b6b6b;cursor:not-allowed}
+
+      .body { flex:1; min-height:0; display:flex; }
+      /* 资源管理器 */
+      .side { flex:0 0 240px; background:var(--chrome); border-right:1px solid var(--border); display:flex; flex-direction:column; }
+      .side .h { padding:10px 18px 6px; font-size:11px; letter-spacing:.4px; color:var(--dim); text-transform:uppercase; font-weight:400; }
+      .side .root { padding:3px 14px; font-size:11px; font-weight:700; letter-spacing:.5px; color:#bbb; text-transform:uppercase; }
+      .side .list { flex:1; overflow:auto; padding-bottom:10px; }
+      .row { display:flex; align-items:center; gap:6px; height:22px; padding:0 14px; cursor:pointer; font-size:13px; color:#cccccc; white-space:nowrap; }
+      .row:hover { background:var(--hover); }
+      .row.on { background:var(--active); }
+      .row.bin { color:var(--faint); cursor:default; } .row.bin:hover { background:none; }
+      .tw { width:12px; font-size:9px; color:var(--dim); transition:transform .12s; } .tw.col { transform:rotate(-90deg); }
+      .ic { width:16px; text-align:center; font-family:var(--mono); font-size:10px; font-weight:700; flex:0 0 auto; }
+      .ic.c{color:#519aba}.ic.ld{color:#b07ce8}.ic.sh{color:#89d185}.ic.folder{color:#c09553}.ic.x{color:#888}
+      .kids.hide { display:none; }
+
+      /* 编辑器区 */
+      .main { flex:1; min-width:0; display:flex; flex-direction:column; }
+      .tabbar { flex:0 0 auto; display:flex; align-items:stretch; height:35px; background:var(--tabs); border-bottom:1px solid var(--border); }
+      .tab { display:flex; align-items:center; gap:7px; padding:0 13px; background:var(--tab-active); border-right:1px solid var(--border); font-size:12.5px; color:#d4d4d4; position:relative; }
+      .tab::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background:var(--accent); }
+      .tab .ic { font-size:9px; }
+      #editor { flex:1; min-height:0; background:var(--editor); }
+      .target-line { background:rgba(226,179,65,.10) !important; }
+      .target-glyph::before { content:"edit"; font-family:"Material Symbols Outlined"; color:var(--amber); font-size:15px; }
+
+      /* 终端面板 */
+      .out { flex:0 0 33%; display:flex; flex-direction:column; background:var(--panel); border-top:1px solid var(--border); }
+      .out .oh { flex:0 0 auto; display:flex; align-items:center; height:34px; padding:0 16px; border-bottom:1px solid var(--border); }
+      .out .oh .pt { font-size:11px; letter-spacing:.4px; text-transform:uppercase; color:#d4d4d4; border-bottom:1px solid var(--accent); height:34px; display:flex; align-items:center; }
+      .out .oh .clr { margin-left:auto; font-size:11px; color:var(--dim); cursor:pointer; } .out .oh .clr:hover { color:#ccc; }
+      .out pre { flex:1; min-height:0; margin:0; overflow:auto; padding:9px 16px; font-family:var(--mono); font-size:12.5px; line-height:1.55; white-space:pre-wrap; color:#cccccc; }
+      .l-dim{color:#6b6b6b}.l-ok{color:#4ec9b0;font-weight:600}.l-warn{color:#e2b341}.l-err{color:#f48771;font-weight:600}
+      .placeholder{color:var(--faint)}
+
+      /* 底部状态栏 */
+      .statusbar { flex:0 0 auto; display:flex; align-items:center; gap:14px; height:22px; padding:0 12px; background:var(--chrome); border-top:1px solid var(--border); font-size:11.5px; color:var(--dim); }
+      .statusbar .s { display:flex; align-items:center; gap:6px; }
+      .spin { width:10px; height:10px; border:1.6px solid rgba(255,255,255,.25); border-top-color:#ccc; border-radius:50%; animation:sp .7s linear infinite; } @keyframes sp { to { transform:rotate(360deg); } }
+
+      /* 悬浮 Keri */
+      .keri { position:fixed; right:18px; bottom:34px; z-index:50; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+      .kbtn { display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 14px 0 6px; border:1px solid var(--border2); border-radius:999px; cursor:pointer; background:#252526; box-shadow:0 8px 22px rgba(0,0,0,.45); }
+      .kbtn .av { display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:linear-gradient(150deg,#7c83ff,#4f46e5); color:#fff; font-weight:700; font-size:13px; font-family:var(--uifont); box-shadow:0 0 0 3px rgba(124,131,255,0); transition:box-shadow .4s; }
+      .kbtn .lab { font-size:12.5px; font-weight:600; color:#d4d4d4; } .kbtn .lab small { display:block; font-size:10px; font-weight:400; color:var(--dim); }
+      .keri.has-task .kbtn .av { animation:pulse 1.9s ease-in-out infinite; } @keyframes pulse { 50% { box-shadow:0 0 0 5px rgba(124,131,255,.2); } }
+      .kpanel { width:320px; border-radius:10px; overflow:hidden; background:#252526; border:1px solid var(--border2); box-shadow:0 20px 50px rgba(0,0,0,.55); display:none; }
+      .keri.open .kpanel { display:block; }
+      .kh { display:flex; align-items:center; gap:8px; padding:11px 13px; border-bottom:1px solid var(--border); }
+      .kh .av { display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:linear-gradient(150deg,#7c83ff,#4f46e5); color:#fff; font-weight:700; font-size:11px; }
+      .kh b { font-size:13px; } .kh .x { margin-left:auto; width:24px; height:24px; border:0; border-radius:5px; background:transparent; color:var(--dim); font-size:16px; cursor:pointer; } .kh .x:hover { background:#ffffff10; }
+      .kbody { padding:13px; }
+      .kbody .wall { font-family:var(--mono); font-size:10px; font-weight:700; color:var(--amber); background:rgba(226,179,65,.14); border:1px solid rgba(226,179,65,.35); padding:2px 8px; border-radius:5px; }
+      .kbody h4 { margin:9px 0 0; font-size:14px; font-weight:600; color:#e4e4e4; }
+      .kbody p { margin:8px 0 0; font-size:12.5px; line-height:1.6; color:#bcbcbc; }
+      .kbody .acts { display:flex; gap:7px; margin-top:12px; }
+      .kbody .acts button { height:28px; padding:0 11px; border-radius:5px; font-family:var(--uifont); font-size:12px; font-weight:500; cursor:pointer; }
+      .kbody .goto { border:1px solid rgba(226,179,65,.4); background:rgba(226,179,65,.08); color:var(--amber); }
+      .kbody .hintb { border:1px solid var(--border2); background:#2d2d2d; color:#c5c5c5; }
+      .kbody .hint { margin-top:11px; padding:10px 12px; border-left:2px solid var(--accent); background:#2a2d2e; border-radius:0 5px 5px 0; font-size:12.5px; color:#cfcfcf; line-height:1.55; display:none; } .kbody .hint.show { display:block; } .kbody .hint code { color:#ce9178; }
+      .kbody .idle { font-size:12.5px; color:var(--dim); line-height:1.6; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  </head>
+  <body>
+    <div class="titlebar">
+      <div class="brand">
+        <svg class="lg" width="18" height="18" viewBox="0 0 64 64" fill="none"><path d="M50.7 18.5A23.8 23.8 0 1 0 51 45.8" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"/><path d="M23 44V24M23 32.5l17.5-13M23 32.5l17.5 13" stroke="currentColor" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="24" r="5" fill="currentColor"/><circle cx="23" cy="44" r="5" fill="currentColor"/><circle cx="42.5" cy="18.5" r="5" fill="currentColor"/><circle cx="42.5" cy="45.5" r="5" fill="currentColor"/></svg>
+        <b>OpenKeri</b>
+      </div>
+      <span class="crumb" id="dir">…</span>
+      <div class="spacer"></div>
+      <button class="run" id="run"><span class="mi">play_arrow</span> 运行</button>
+    </div>
+
+    <div class="body">
+      <div class="side">
+        <div class="h">资源管理器</div>
+        <div class="root" id="root">…</div>
+        <div class="list" id="files"></div>
+      </div>
+      <div class="main">
+        <div class="tabbar"><div class="tab" id="tab"><span class="ic c" id="tabic">C</span><span id="tabname">—</span></div></div>
+        <div id="editor"></div>
+        <div class="out">
+          <div class="oh"><span class="pt">终端</span><span class="clr" id="clr">清空</span></div>
+          <pre id="output"><span class="placeholder">点「运行」,这里出现真 clang + qemu 的实时输出。</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="s" id="status"></span>
+      <span class="s" style="margin-left:auto" id="filemeta"></span>
+    </div>
+
+    <div class="keri" id="keri">
+      <div class="kpanel" id="kpanel">
+        <div class="kh"><span class="av">K</span><b>Keri</b><button class="x" id="kx">×</button></div>
+        <div class="kbody" id="kbody"></div>
+      </div>
+      <button class="kbtn" id="kbtn"><span class="av">K</span><span class="lab">Keri<small id="klab">在这,随时叫我</small></span></button>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const baseName = (f) => f.split("/").pop();
+      const icCls = (f) => f.endsWith(".c") || f.endsWith(".h") ? "c" : f.endsWith(".ld") ? "ld" : f.endsWith(".sh") ? "sh" : "x";
+      const icTxt = (f) => f.endsWith(".c") || f.endsWith(".h") ? "C" : f.endsWith(".ld") ? "LD" : f.endsWith(".sh") ? "$" : "•";
+      const langOf = (f) => f.endsWith(".c") || f.endsWith(".h") ? "c" : f.endsWith(".sh") ? "shell" : "plaintext";
+
+      const GUIDE = {
+        "boot.c": { title: "支起内核栈:把 sp 指到栈顶", match: "承重墙",
+          desc: `第一行 C 跑起来之前,栈还没支起来。在编辑器里高亮(标了 edit 图标)那一行,把 <b style="color:#dcdcaa">sp</b> 指到 kernel.ld 预留的栈顶(占位符 <b style="color:#dcdcaa">%[stack_top]</b>)。`,
+          hints: [`汇编里"把 B 搬进 A"用 <code>mv A, B</code>。`,
+                  `目标是 <code>sp</code>,源是占位符 <code>%[stack_top]</code>。`,
+                  `完整:<code>"mv sp, %[stack_top]\\n"</code> —— 自己敲。`] },
+        "main.c": { title: "把 Hello 一个个喊出去", match: "承重墙",
+          desc: `字符串已经备好了。在编辑器里高亮那一行,循环里把每个字符 <code>s[i]</code> 用 <code>putchar</code> 打出去 —— 它要调用函数,正好用上你刚支起来的栈。`,
+          hints: [`循环已经在遍历 <code>s[i]</code>,你只要把当前字符打出去。`,
+                  `用 <code>putchar(...)</code>。`,
+                  `完整:<code>putchar(s[i]);</code> —— 自己敲。`] },
+      };
+
+      let editor, curFile = null, decos = [], hi = 0, targetLine = 0;
+
+      function colorize(raw) {
+        return raw.split("\n").map((line) => {
+          const e = esc(line);
+          if (/^\+/.test(line)) return `<span class="l-dim">${e}</span>`;
+          if (/^[\s_\/|\\().'`-]+$/.test(line) && line.trim()) return `<span class="l-dim">${e}</span>`;
+          if (/^(Platform|Boot HART|Domain\d|Firmware|Runtime|Standard|Experimental|virtio-blk:|\s+\/|OpenSBI)/.test(line)) return `<span class="l-dim">${e}</span>`;
+          if (/terminating on signal|运行已停止|domain/i.test(line)) return `<span class="l-dim">${e}</span>`;
+          if (/error:|PANIC|失败/i.test(line)) return `<span class="l-err">${e}</span>`;
+          if (/warning:|越界/i.test(line)) return `<span class="l-warn">${e}</span>`;
+          if (/>>>|Hello|ABAB|发现文件|已落盘|✓/.test(line)) return `<span class="l-ok">${e}</span>`;
+          return e;
+        }).join("\n");
+      }
+
+      require.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs" } });
+      require(["vs/editor/editor.main"], async () => {
+        editor = monaco.editor.create($("editor"), { value: "", language: "c", theme: "vs-dark", fontSize: 13,
+          fontFamily: "JetBrains Mono, monospace", minimap: { enabled: false }, glyphMargin: true,
+          automaticLayout: true, scrollBeyondLastLine: false, padding: { top: 8 }, renderLineHighlight: "line" });
+        editor.onDidChangeCursorPosition((e) => $("filemeta").textContent = `行 ${e.position.lineNumber}, 列 ${e.position.column}`);
+        await loadTree();
+      });
+
+      async function loadTree() {
+        const r = await (await fetch("/api/tree")).json();
+        $("dir").textContent = r.root + "/"; $("root").textContent = r.root;
+        $("files").innerHTML = renderTree(r.tree, 0); wireTree();
+        const want = new URLSearchParams(location.search).get("file");
+        const all = []; (function flat(ns){ ns.forEach((n) => n.type === "dir" ? flat(n.children) : all.push(n.path)); })(r.tree);
+        const open = (want && all.includes(want)) ? want : findFirstC(r.tree);
+        if (open) openFile(open);
+      }
+      function findFirstC(nodes) { for (const n of nodes) { if (n.type === "file" && /\.(c|h)$/.test(n.name)) return n.path; if (n.type === "dir") { const f = findFirstC(n.children); if (f) return f; } } return null; }
+      function renderTree(nodes, depth) {
+        return nodes.map((n) => {
+          const pad = 12 + depth * 12;
+          if (n.type === "dir")
+            return `<div class="row dir" data-p="${n.path}" style="padding-left:${pad}px"><span class="tw">▾</span><span class="ic folder">▸</span>${n.name}</div><div class="kids" data-of="${n.path}">${renderTree(n.children, depth + 1)}</div>`;
+          return `<div class="row file ${n.text ? "" : "bin"}" data-f="${n.text ? n.path : ""}" style="padding-left:${pad + 14}px"><span class="ic ${icCls(n.name)}">${icTxt(n.name)}</span>${n.name}</div>`;
+        }).join("");
+      }
+      function wireTree() {
+        $("files").querySelectorAll(".row.dir").forEach((el) => el.onclick = () => {
+          const kids = $("files").querySelector(`.kids[data-of="${el.dataset.p}"]`); kids.classList.toggle("hide"); el.querySelector(".tw").classList.toggle("col");
+        });
+        $("files").querySelectorAll(".row.file").forEach((el) => { if (el.dataset.f) el.onclick = () => openFile(el.dataset.f); });
+      }
+
+      async function openFile(f) {
+        const txt = await (await fetch("/api/file?path=" + encodeURIComponent(f))).text();
+        curFile = f; const bn = baseName(f);
+        $("files").querySelectorAll(".row.file").forEach((el) => el.classList.toggle("on", el.dataset.f === f));
+        $("tabname").textContent = bn; $("tabic").className = "ic " + icCls(bn); $("tabic").textContent = icTxt(bn);
+        monaco.editor.setModelLanguage(editor.getModel(), langOf(bn));
+        editor.setValue(txt);
+        applyGuide(bn);
+      }
+
+      function applyGuide(file) {
+        const g = GUIDE[file]; hi = 0; targetLine = 0;
+        decos = editor.deltaDecorations(decos, []);
+        if (!g) { $("keri").classList.remove("has-task"); $("klab").textContent = "在这,随时叫我"; renderKeri(null); return; }
+        const model = editor.getModel();
+        for (let i = 1; i <= model.getLineCount(); i++) if (model.getLineContent(i).includes(g.match)) { targetLine = i; break; }
+        if (targetLine) { decos = editor.deltaDecorations([], [{ range: new monaco.Range(targetLine, 1, targetLine, 1), options: { isWholeLine: true, className: "target-line", glyphMarginClassName: "target-glyph" } }]);
+          setTimeout(() => editor.revealLineInCenter(targetLine), 60); }
+        $("keri").classList.add("has-task"); $("klab").textContent = "有一处要你写 →"; renderKeri(g); $("keri").classList.add("open");
+      }
+
+      function renderKeri(g) {
+        if (!g) { $("kbody").innerHTML = `<div class="idle">这一页没有要你动手的地方,往下看讲解就好。卡住了点我。</div>`; return; }
+        $("kbody").innerHTML =
+          `<span class="wall">承重墙 · 你来写</span><h4>${g.title}</h4><p>${g.desc}</p>
+           <div class="acts"><button class="goto" id="kgoto">跳到那一行</button><button class="hintb" id="khint">💡 提示</button></div>
+           <div class="hint" id="khintbox"></div>`;
+        $("kgoto").onclick = () => { if (targetLine) { editor.revealLineInCenter(targetLine); editor.setPosition({ lineNumber: targetLine, column: 1 }); editor.focus(); } };
+        $("khint").onclick = () => { const h = $("khintbox"); h.classList.add("show"); h.innerHTML = "💡 " + g.hints[Math.min(hi, g.hints.length - 1)]; hi++; if (hi >= g.hints.length) $("khint").textContent = "💡 看完了"; };
+      }
+
+      $("kbtn").onclick = () => $("keri").classList.toggle("open");
+      $("kx").onclick = () => $("keri").classList.remove("open");
+      $("clr").onclick = () => ($("output").innerHTML = '<span class="placeholder">已清空。</span>');
+      $("run").onclick = async () => {
+        if (!curFile) return;
+        $("run").disabled = true; $("status").innerHTML = '<span class="spin"></span> 保存中…';
+        await fetch("/api/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: curFile, content: editor.getValue() }) });
+        $("status").innerHTML = '<span class="spin"></span> 运行中…'; $("output").innerHTML = ""; let raw = "";
+        const res = await fetch("/api/run", { method: "POST" });
+        const reader = res.body.getReader(); const dec = new TextDecoder();
+        while (true) { const { value, done } = await reader.read(); if (done) break;
+          raw += dec.decode(value, { stream: true }); $("output").innerHTML = colorize(raw); $("output").scrollTop = $("output").scrollHeight; }
+        $("status").innerHTML = /Hello|ABAB|>>>/.test(raw) ? '<span class="mi" style="color:#4ec9b0;font-size:15px">check</span> 跑完了' : "跑完了"; $("run").disabled = false;
+      };
+    </script>
+  </body>
+</html>

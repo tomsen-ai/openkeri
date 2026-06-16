@@ -1,17 +1,17 @@
 {
   "id": "single-project",
   "schemaVersion": 1,
-  "goal": "我想用 30 天准备算法面试，重点是能自己规划和复盘",
-  "title": "30天算法面试冲刺计划",
-  "summary": "本计划以刷题为主，辅以知识点总结，分为四个阶段：基础巩固、核心突破、动态规划入门、综合模拟与复盘。每天约25分钟，通过练习和复盘快速提升实战能力。",
+  "goal": "我想学操作系统",
+  "title": "从零做出一个操作系统",
+  "summary": "把「学操作系统」变成一个动手项目:从裸机引导开始,一步步实现内核引导、内存与 printf、陷阱处理、进程与上下文切换、虚拟内存、系统调用、文件系统,直到一个能敲命令的 shell。每一步都有跑得通的结果。",
   "nodes": [
     {
       "id": "n1",
       "type": "goal",
       "data": {
-        "title": "掌握算法面试核心",
+        "title": "做出一个能跑命令的操作系统",
         "kind": "goal",
-        "description": "在30天内系统准备算法面试，掌握常见题型和解题策略，能够独立规划复习和复盘错题。",
+        "description": "从零开始,一步步亲手写出一个能在自己 shell 里敲命令的操作系统。每一步动手实现一个内核子系统,做通时都有看得见的结果。",
         "estimated_minutes": 5,
         "group": "",
         "status": "not_started",
@@ -26,9 +26,9 @@
       "id": "n2",
       "type": "stage",
       "data": {
-        "title": "基础巩固",
+        "title": "内核引导",
         "kind": "stage",
-        "description": "掌握数组、链表、栈、队列、哈希表的基础操作和常见题型。",
+        "description": "动手写出第一行能在裸机上跑起来的内核代码,并让它往屏幕打字。",
         "estimated_minutes": 5,
         "group": "",
         "status": "not_started",
@@ -41,13 +41,13 @@
     },
     {
       "id": "n3",
-      "type": "stage",
+      "type": "learn",
       "data": {
-        "title": "核心突破",
-        "kind": "stage",
-        "description": "深入学习树、图、排序、搜索算法，掌握遍历、最短路径等核心技巧。",
-        "estimated_minutes": 5,
-        "group": "",
+        "title": "裸机启动与入口",
+        "kind": "learn",
+        "description": "OpenSBI 先跑,把控制权交到 0x80200000 —— 你的内核入口。",
+        "estimated_minutes": 45,
+        "group": "内核引导",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -58,13 +58,13 @@
     },
     {
       "id": "n4",
-      "type": "stage",
+      "type": "learn",
       "data": {
-        "title": "动态规划入门",
-        "kind": "stage",
-        "description": "学习基础动态规划题型，如背包、最长子序列等。",
-        "estimated_minutes": 5,
-        "group": "",
+        "title": "支起内核栈",
+        "kind": "learn",
+        "description": "第一行 C 执行前没有栈,boot() 用 naked + 设 sp 先把栈支起来。",
+        "estimated_minutes": 45,
+        "group": "内核引导",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -75,11 +75,45 @@
     },
     {
       "id": "n5",
+      "type": "learn",
+      "data": {
+        "title": "经 ecall 输出",
+        "kind": "learn",
+        "description": "-nostdlib 下 putchar 得自己写,经 SBI ecall 让固件打印。",
+        "estimated_minutes": 45,
+        "group": "内核引导",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n6",
+      "type": "project",
+      "data": {
+        "title": "跑出 Hello",
+        "kind": "project",
+        "description": "做通标志:屏幕打出 Hello from my kernel!",
+        "estimated_minutes": 90,
+        "group": "内核引导",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n7",
       "type": "stage",
       "data": {
-        "title": "综合模拟与复盘",
+        "title": "内存分配与 printf",
         "kind": "stage",
-        "description": "限时模拟面试，集中复盘错题，形成个人错题本。",
+        "description": "给内核装上 printf、panic 和一个最简内存分配器 —— 这些标准库给不了,得自己造。",
         "estimated_minutes": 5,
         "group": "",
         "status": "not_started",
@@ -91,48 +125,14 @@
       }
     },
     {
-      "id": "n6",
-      "type": "learn",
-      "data": {
-        "title": "数组与链表基础",
-        "kind": "learn",
-        "description": "练习数组遍历、双指针、链表反转等基础题，每道题先独立思考15分钟，再看题解，记录思路和复杂度。",
-        "estimated_minutes": 60,
-        "group": "基础巩固",
-        "status": "not_started",
-        "learningNotes": ""
-      },
-      "position": {
-        "x": 0,
-        "y": 0
-      }
-    },
-    {
-      "id": "n7",
-      "type": "learn",
-      "data": {
-        "title": "栈、队列与哈希表",
-        "kind": "learn",
-        "description": "掌握栈、队列的典型应用（如括号匹配、单调栈）和哈希表解决两数之和等问题。",
-        "estimated_minutes": 60,
-        "group": "基础巩固",
-        "status": "not_started",
-        "learningNotes": ""
-      },
-      "position": {
-        "x": 0,
-        "y": 0
-      }
-    },
-    {
       "id": "n8",
-      "type": "project",
+      "type": "learn",
       "data": {
-        "title": "基础巩固项目",
-        "kind": "project",
-        "description": "完成5道综合题（如设计LRU缓存），要求写出复杂度分析并口头讲解思路。",
-        "estimated_minutes": 120,
-        "group": "基础巩固",
+        "title": "最简内存分配",
+        "kind": "learn",
+        "description": "挪指针式 alloc_pages,连续分配可见地址按页前移。",
+        "estimated_minutes": 45,
+        "group": "内存分配与 printf",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -145,11 +145,11 @@
       "id": "n9",
       "type": "learn",
       "data": {
-        "title": "二叉树与遍历",
+        "title": "自己拼 printf",
         "kind": "learn",
-        "description": "练习二叉树的前中后序遍历、层序遍历，以及常见操作（最大深度、路径和）。",
-        "estimated_minutes": 60,
-        "group": "核心突破",
+        "description": "用 putchar 拼出 %d / %x / %s,内核没有标准库可用。",
+        "estimated_minutes": 45,
+        "group": "内存分配与 printf",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -162,11 +162,11 @@
       "id": "n10",
       "type": "learn",
       "data": {
-        "title": "图与最短路径",
+        "title": "panic 宏",
         "kind": "learn",
-        "description": "学习图的表示（邻接表）、DFS/BFS遍历，以及Dijkstra最短路径算法。",
-        "estimated_minutes": 60,
-        "group": "核心突破",
+        "description": "崩溃时打印现场,内核的警报器。",
+        "estimated_minutes": 45,
+        "group": "内存分配与 printf",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -177,13 +177,13 @@
     },
     {
       "id": "n11",
-      "type": "learn",
+      "type": "project",
       "data": {
-        "title": "排序与搜索",
-        "kind": "learn",
-        "description": "实现二分查找、快速排序、归并排序，并分析时间/空间复杂度。",
-        "estimated_minutes": 60,
-        "group": "核心突破",
+        "title": "触发一次 panic",
+        "kind": "project",
+        "description": "做通标志:故意触发一次 panic,看到现场被打印出来。",
+        "estimated_minutes": 90,
+        "group": "内存分配与 printf",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -194,13 +194,13 @@
     },
     {
       "id": "n12",
-      "type": "project",
+      "type": "stage",
       "data": {
-        "title": "核心突破项目",
-        "kind": "project",
-        "description": "完成一道综合题（如二叉树的序列化与反序列化），要求写出完整代码并口头讲解。",
-        "estimated_minutes": 120,
-        "group": "核心突破",
+        "title": "陷阱与异常处理",
+        "kind": "stage",
+        "description": "设好陷阱入口,让 CPU 出错或被打断时跳进你的处理函数,而不是死机。",
+        "estimated_minutes": 5,
+        "group": "",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -213,11 +213,11 @@
       "id": "n13",
       "type": "learn",
       "data": {
-        "title": "基础DP题型",
+        "title": "异常 vs 中断",
         "kind": "learn",
-        "description": "学习斐波那契、爬楼梯、背包问题等基础DP，理解状态转移方程。",
-        "estimated_minutes": 60,
-        "group": "动态规划入门",
+        "description": "自己惹的(非法指令 / ecall) vs 外界敲门(定时器 / 键盘)。",
+        "estimated_minutes": 45,
+        "group": "陷阱与异常处理",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -230,11 +230,11 @@
       "id": "n14",
       "type": "learn",
       "data": {
-        "title": "字符串处理",
+        "title": "保存 / 恢复寄存器",
         "kind": "learn",
-        "description": "练习字符串匹配、最长回文子串、编辑距离等常见题型。",
-        "estimated_minutes": 60,
-        "group": "动态规划入门",
+        "description": "kernel_entry 存 31 个寄存器(黑盒汇编),处理完再原样复原。",
+        "estimated_minutes": 45,
+        "group": "陷阱与异常处理",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -245,13 +245,13 @@
     },
     {
       "id": "n15",
-      "type": "project",
+      "type": "learn",
       "data": {
-        "title": "DP与字符串项目",
-        "kind": "project",
-        "description": "完成一道中等难度的DP题（如最长递增子序列），要求写出复杂度分析并口头讲解。",
-        "estimated_minutes": 120,
-        "group": "动态规划入门",
+        "title": "scause / sepc",
+        "kind": "learn",
+        "description": "硬件自动记下出错原因和出错地址。",
+        "estimated_minutes": 45,
+        "group": "陷阱与异常处理",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -264,11 +264,453 @@
       "id": "n16",
       "type": "project",
       "data": {
-        "title": "模拟面试与复盘",
+        "title": "接住一次异常",
         "kind": "project",
-        "description": "限时45分钟完成2道中等题，模拟面试环境，之后复盘错题，更新错题本。",
-        "estimated_minutes": 120,
-        "group": "综合模拟与复盘",
+        "description": "做通标志:故意跑非法指令 unimp,被接住打印 scause,而非死机。",
+        "estimated_minutes": 90,
+        "group": "陷阱与异常处理",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n17",
+      "type": "stage",
+      "data": {
+        "title": "进程与上下文切换",
+        "kind": "stage",
+        "description": "★ MVP 节点。动手实现进程和上下文切换,让两个程序在一颗 CPU 上交替跑。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n18",
+      "type": "learn",
+      "data": {
+        "title": "进程与现场",
+        "kind": "learn",
+        "description": "进程 = 被保存的现场(寄存器 / sp / ra),装它的盒子就是 PCB。",
+        "estimated_minutes": 45,
+        "group": "进程与上下文切换",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n19",
+      "type": "learn",
+      "data": {
+        "title": "PCB",
+        "kind": "learn",
+        "description": "struct process,装下一个进程的全部现场。",
+        "estimated_minutes": 45,
+        "group": "进程与上下文切换",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n20",
+      "type": "learn",
+      "data": {
+        "title": "上下文切换",
+        "kind": "learn",
+        "description": "存现场 → 换人 → 复现场,复用陷阱那块肌肉,被切走的 A 毫无知觉。",
+        "estimated_minutes": 45,
+        "group": "进程与上下文切换",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n21",
+      "type": "learn",
+      "data": {
+        "title": "create_process 的伪造戏法",
+        "kind": "learn",
+        "description": "新进程没现场,第一次怎么切进去?往 ra 槽塞入口地址,伪造一份假现场。",
+        "estimated_minutes": 45,
+        "group": "进程与上下文切换",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n22",
+      "type": "learn",
+      "data": {
+        "title": "合作式调度与饿死",
+        "kind": "learn",
+        "description": "A 不主动让位就饿死 B,撞到这堵墙才引出抢占及其代价。",
+        "estimated_minutes": 45,
+        "group": "进程与上下文切换",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n23",
+      "type": "project",
+      "data": {
+        "title": "跑出 ABAB",
+        "kind": "project",
+        "description": "做通标志:./run.sh 跑出 ABABAB…,且能解释每个字母背后发生了什么。",
+        "estimated_minutes": 90,
+        "group": "进程与上下文切换",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n24",
+      "type": "stage",
+      "data": {
+        "title": "虚拟内存与页表",
+        "kind": "stage",
+        "description": "给每个进程一张页表,让它们各自拥有独立的地址空间,互不踩。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n25",
+      "type": "learn",
+      "data": {
+        "title": "Sv32 两级页表",
+        "kind": "learn",
+        "description": "map_page 建立虚拟页到物理页的映射。",
+        "estimated_minutes": 45,
+        "group": "虚拟内存与页表",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n26",
+      "type": "learn",
+      "data": {
+        "title": "地址翻译",
+        "kind": "learn",
+        "description": "MMU 按 satp 指的页表翻译每次访存,映射错就当场 fault。",
+        "estimated_minutes": 45,
+        "group": "虚拟内存与页表",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n27",
+      "type": "learn",
+      "data": {
+        "title": "权限位",
+        "kind": "learn",
+        "description": "R/W/X/U 控制每页能否读写执行、用户态能否访问。",
+        "estimated_minutes": 45,
+        "group": "虚拟内存与页表",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n28",
+      "type": "project",
+      "data": {
+        "title": "同地址互不踩",
+        "kind": "project",
+        "description": "做通标志:开分页后两进程用同一虚拟地址却互不干扰,ABAB 照跑。",
+        "estimated_minutes": 90,
+        "group": "虚拟内存与页表",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n29",
+      "type": "stage",
+      "data": {
+        "title": "用户态与系统调用",
+        "kind": "stage",
+        "description": "把程序降权到用户态,只能经 syscall 这道唯一闸门求内核办事。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n30",
+      "type": "learn",
+      "data": {
+        "title": "用户态 / 内核态",
+        "kind": "learn",
+        "description": "两个权限世界,sret 降权进入 U 态。",
+        "estimated_minutes": 45,
+        "group": "用户态与系统调用",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n31",
+      "type": "learn",
+      "data": {
+        "title": "syscall 唯一闸门",
+        "kind": "learn",
+        "description": "用户 ecall 陷入内核,handle_trap 派发;方向与第 1 章相反。",
+        "estimated_minutes": 45,
+        "group": "用户态与系统调用",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n32",
+      "type": "learn",
+      "data": {
+        "title": "trapframe",
+        "kind": "learn",
+        "description": "进出内核时在哪里保存用户现场。",
+        "estimated_minutes": 45,
+        "group": "用户态与系统调用",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n33",
+      "type": "project",
+      "data": {
+        "title": "越权被逮",
+        "kind": "project",
+        "description": "做通标志:用户程序 syscall 打印成功;故意越权写内核地址被硬件当场逮住。",
+        "estimated_minutes": 90,
+        "group": "用户态与系统调用",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n34",
+      "type": "stage",
+      "data": {
+        "title": "文件系统",
+        "kind": "stage",
+        "description": "写块设备驱动 + 一个最简文件系统,把数据存到磁盘、重启后还在。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n35",
+      "type": "learn",
+      "data": {
+        "title": "块设备驱动",
+        "kind": "learn",
+        "description": "virtio-blk 驱动(官方代码,黑盒);坑:必须 force-legacy 用 v1。",
+        "estimated_minutes": 45,
+        "group": "文件系统",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n36",
+      "type": "learn",
+      "data": {
+        "title": "inode 与目录",
+        "kind": "learn",
+        "description": "文件 = inode(大小 + 块号)+ 目录(名字 → inode)。",
+        "estimated_minutes": 45,
+        "group": "文件系统",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n37",
+      "type": "learn",
+      "data": {
+        "title": "用 tar 当文件系统",
+        "kind": "learn",
+        "description": "tar 每条自带名字 + 大小 + 内容,等于白送 inode + 目录。",
+        "estimated_minutes": 45,
+        "group": "文件系统",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n38",
+      "type": "project",
+      "data": {
+        "title": "重启后还在",
+        "kind": "project",
+        "description": "做通标志:写文件 → 重启 → 内容还在,宿主机 disk.tar 也真的变了。",
+        "estimated_minutes": 90,
+        "group": "文件系统",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n39",
+      "type": "stage",
+      "data": {
+        "title": "命令行 Shell",
+        "kind": "stage",
+        "description": "把前面所有子系统串起来,做一个能敲命令、跑程序、读写文件的 shell。",
+        "estimated_minutes": 5,
+        "group": "",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n40",
+      "type": "learn",
+      "data": {
+        "title": "串起全部子系统",
+        "kind": "learn",
+        "description": "进程 + 页表 + syscall + 文件系统 合到一起才跑得起 shell。",
+        "estimated_minutes": 45,
+        "group": "命令行 Shell",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n41",
+      "type": "learn",
+      "data": {
+        "title": "解析与执行命令",
+        "kind": "learn",
+        "description": "读一行、找到程序、把它跑起来。",
+        "estimated_minutes": 45,
+        "group": "命令行 Shell",
+        "status": "not_started",
+        "learningNotes": ""
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "n42",
+      "type": "project",
+      "data": {
+        "title": "shell 跑通",
+        "kind": "project",
+        "description": "做通标志:在自己的 OS 里 ls、跑程序、读写文件全部跑通。",
+        "estimated_minutes": 90,
+        "group": "命令行 Shell",
         "status": "not_started",
         "learningNotes": ""
       },
@@ -290,21 +732,21 @@
       "id": "e2",
       "source": "n2",
       "target": "n3",
-      "relation": "next",
+      "relation": "contains",
       "label": ""
     },
     {
       "id": "e3",
-      "source": "n3",
+      "source": "n2",
       "target": "n4",
-      "relation": "next",
+      "relation": "contains",
       "label": ""
     },
     {
       "id": "e4",
-      "source": "n4",
+      "source": "n2",
       "target": "n5",
-      "relation": "next",
+      "relation": "contains",
       "label": ""
     },
     {
@@ -318,72 +760,254 @@
       "id": "e6",
       "source": "n2",
       "target": "n7",
-      "relation": "contains",
+      "relation": "next",
       "label": ""
     },
     {
       "id": "e7",
-      "source": "n2",
+      "source": "n7",
       "target": "n8",
       "relation": "contains",
       "label": ""
     },
     {
       "id": "e8",
-      "source": "n3",
+      "source": "n7",
       "target": "n9",
       "relation": "contains",
       "label": ""
     },
     {
       "id": "e9",
-      "source": "n3",
+      "source": "n7",
       "target": "n10",
       "relation": "contains",
       "label": ""
     },
     {
       "id": "e10",
-      "source": "n3",
+      "source": "n7",
       "target": "n11",
       "relation": "contains",
       "label": ""
     },
     {
       "id": "e11",
-      "source": "n3",
+      "source": "n7",
       "target": "n12",
-      "relation": "contains",
+      "relation": "next",
       "label": ""
     },
     {
       "id": "e12",
-      "source": "n4",
+      "source": "n12",
       "target": "n13",
       "relation": "contains",
       "label": ""
     },
     {
       "id": "e13",
-      "source": "n4",
+      "source": "n12",
       "target": "n14",
       "relation": "contains",
       "label": ""
     },
     {
       "id": "e14",
-      "source": "n4",
+      "source": "n12",
       "target": "n15",
       "relation": "contains",
       "label": ""
     },
     {
       "id": "e15",
-      "source": "n5",
+      "source": "n12",
       "target": "n16",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e16",
+      "source": "n12",
+      "target": "n17",
+      "relation": "next",
+      "label": ""
+    },
+    {
+      "id": "e17",
+      "source": "n17",
+      "target": "n18",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e18",
+      "source": "n17",
+      "target": "n19",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e19",
+      "source": "n17",
+      "target": "n20",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e20",
+      "source": "n17",
+      "target": "n21",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e21",
+      "source": "n17",
+      "target": "n22",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e22",
+      "source": "n17",
+      "target": "n23",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e23",
+      "source": "n17",
+      "target": "n24",
+      "relation": "next",
+      "label": ""
+    },
+    {
+      "id": "e24",
+      "source": "n24",
+      "target": "n25",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e25",
+      "source": "n24",
+      "target": "n26",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e26",
+      "source": "n24",
+      "target": "n27",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e27",
+      "source": "n24",
+      "target": "n28",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e28",
+      "source": "n24",
+      "target": "n29",
+      "relation": "next",
+      "label": ""
+    },
+    {
+      "id": "e29",
+      "source": "n29",
+      "target": "n30",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e30",
+      "source": "n29",
+      "target": "n31",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e31",
+      "source": "n29",
+      "target": "n32",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e32",
+      "source": "n29",
+      "target": "n33",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e33",
+      "source": "n29",
+      "target": "n34",
+      "relation": "next",
+      "label": ""
+    },
+    {
+      "id": "e34",
+      "source": "n34",
+      "target": "n35",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e35",
+      "source": "n34",
+      "target": "n36",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e36",
+      "source": "n34",
+      "target": "n37",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e37",
+      "source": "n34",
+      "target": "n38",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e38",
+      "source": "n34",
+      "target": "n39",
+      "relation": "next",
+      "label": ""
+    },
+    {
+      "id": "e39",
+      "source": "n39",
+      "target": "n40",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e40",
+      "source": "n39",
+      "target": "n41",
+      "relation": "contains",
+      "label": ""
+    },
+    {
+      "id": "e41",
+      "source": "n39",
+      "target": "n42",
       "relation": "contains",
       "label": ""
     }
   ],
-  "updatedAt": "2026-06-06T13:32:48.101Z"
+  "updatedAt": "2026-06-13T12:00:00.000Z"
 }

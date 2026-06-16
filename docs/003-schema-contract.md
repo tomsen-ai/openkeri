@@ -111,14 +111,16 @@ support:
 - question plus code submission
 
 The current v0 turn input still uses `problem` because the reference
-implementation is an algorithm tutor. More general task metadata is represented
-by `LearningTask` and loaded through the task registry. For now, the algorithm
-tutor bridges the two by storing the algorithm `Problem` as a task resource.
+implementation began as an algorithm tutor. The product direction has moved
+toward node-level course workspaces, starting with an operating-systems course
+sample. More general task metadata is represented by `LearningTask` and loaded
+through the task registry. For now, the legacy tutor bridges the two by storing
+the original `Problem` as a task resource.
 
 ## 3. LearningTask
 
 `LearningTask` describes a reusable learning activity at a more general level
-than an algorithm problem.
+than an algorithm problem or an individual node lesson.
 
 An algorithm problem is one task type, but future task types may represent a
 reading task, writing task, rubric-based assessment, debugging task, or other
@@ -154,8 +156,9 @@ metadata: dict[str, Any] = {}
 
 `LearningTask` is intentionally generic. Task-specific assets are not stored on
 the schema directly. They are attached through a `LearningTaskBundle` resource
-map by the task registry. For the current algorithm tutor, the bundle attaches a
-`Problem` resource and a `ProblemTestSuite` resource.
+map by the task registry. For the current runtime experiments, the bundle can
+attach either the legacy `Problem` resources or node-course assets such as
+learning-point fixtures and review material.
 
 This keeps the registry open to non-algorithm tasks while avoiding a broad
 `CurrentInput` migration before another task type is implemented. A future

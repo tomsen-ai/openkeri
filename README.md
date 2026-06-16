@@ -9,7 +9,8 @@ current development should start from `examples/learning_manager/`.
 
 ## Active Product
 
-Plan Studio turns a raw learning intent into an editable learning route:
+Plan Studio turns a raw learning intent into an editable learning route and
+node-level course workspace:
 
 ```text
 raw intent
@@ -20,6 +21,11 @@ raw intent
 -> node-level learning page
 ```
 
+The first productized course sample is now **Operating Systems basics**, not an
+algorithm drill track. The initial course node should be something like
+`Processes and Threads`, with lesson/practice/qa content organized around a
+single learnable concept block.
+
 The current implementation lives here:
 
 ```text
@@ -28,6 +34,13 @@ examples/learning_manager/
   plan_intake.py           raw intent -> slots -> dynamic questions/brief
   plan_graph_generator.py  brief-aligned plan graph generation and validation
   plan_editor/             Mind map Plan Studio frontend
+```
+
+The course pipeline is still being shaped, but the intended flow is:
+
+```text
+node -> learning points -> lesson spec -> lesson slides -> practice pack
+-> qa prompts -> review/memory notes
 ```
 
 ## Current Flow

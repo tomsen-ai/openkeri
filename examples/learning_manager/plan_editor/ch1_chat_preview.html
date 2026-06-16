@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenKeri · ch1 学习对话(chatbot)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --surface: #f6f7fb; --card: #ffffff; --ink: #0f172a; --ink-soft: #475569; --ink-mute: #94a3b8;
+        --line: #e2e6ef; --outline: #cdd3df; --primary: #6366f1; --primary-deep: #4f46e5; --primary-soft: #eef2ff;
+        --code-bg: #f4f5fb;
+        --f-display: "Space Grotesk", "PingFang SC", sans-serif;
+        --f-body: "Hanken Grotesk", "PingFang SC", "Microsoft YaHei", sans-serif;
+        --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; font-family: var(--f-body); color: var(--ink); background: var(--surface); -webkit-font-smoothing: antialiased; }
+      .material-symbols-outlined { font-family: "Material Symbols Outlined"; font-variation-settings: "FILL" 0,"wght" 400; line-height: 1; vertical-align: middle; }
+
+      .appbar { flex: 0 0 56px; display: flex; align-items: center; gap: 12px; padding: 0 22px; background: var(--card); border-bottom: 1px solid var(--line); }
+      .brand { display: flex; align-items: center; gap: 9px; }
+      .brand .ok-logo { color: var(--primary); }
+      .brand strong { font-family: var(--f-display); font-size: 16px; font-weight: 700; }
+      .crumb { display: flex; align-items: center; gap: 8px; margin-left: 6px; padding-left: 14px; border-left: 1px solid var(--line); color: var(--ink-soft); font-size: 13px; font-weight: 600; }
+      .crumb .ch { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--primary-soft); color: var(--primary-deep); font-family: var(--f-mono); font-size: 11px; font-weight: 700; }
+      .appbar .right { margin-left: auto; display: flex; gap: 8px; }
+      .ghost { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink-soft); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--f-body); }
+      .ghost:hover { color: var(--ink); border-color: var(--outline); }
+      .ghost .material-symbols-outlined { font-size: 17px; }
+
+      .scroll { flex: 1; min-height: 0; overflow-y: auto; }
+      .thread { max-width: 800px; margin: 0 auto; padding: 28px 24px 40px; display: flex; flex-direction: column; gap: 18px; }
+
+      .msg { display: flex; gap: 11px; max-width: 100%; }
+      .msg.user { flex-direction: row-reverse; }
+      .msg .av { flex: 0 0 auto; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-family: var(--f-display); font-weight: 700; font-size: 13px; }
+      .msg.keri .av { background: var(--primary-soft); color: var(--primary-deep); }
+      .bubble { max-width: 78%; padding: 12px 16px; border-radius: 16px; font-size: 14.5px; line-height: 1.68; }
+      .msg.keri .bubble { background: var(--card); border: 1px solid var(--line); border-top-left-radius: 5px; }
+      .msg.user .bubble { background: var(--primary); color: #fff; border-top-right-radius: 5px; }
+      .bubble .p { margin: 0; }
+      .bubble .p + .p, .bubble .p + .cb, .bubble .cb + .p { margin-top: 10px; }
+      .cb { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--code-bg); font-family: var(--f-mono); font-size: 12.5px; line-height: 1.62; color: #334155; white-space: pre; overflow-x: auto; }
+      .cb .cmt { color: #94a3b8; }
+      .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fbfcfe; }
+      .fstage { padding: 7px 11px; border-radius: 9px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font-family: var(--f-mono); font-size: 12px; font-weight: 600; white-space: nowrap; transition: all 0.25s ease; }
+      .fstage.done { border-color: rgba(99,102,241,0.35); color: var(--primary-deep); }
+      .fstage.on { background: var(--primary); color: #fff; border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 6px 14px rgba(99,102,241,0.3); }
+      .fstage.goal.on { background: #16a34a; border-color: #16a34a; box-shadow: 0 6px 14px rgba(22,163,74,0.32); }
+      .farrow { color: var(--ink-mute); font-size: 14px; }
+      .fcap { width: 100%; margin-top: 9px; color: var(--ink-mute); font-size: 11.5px; line-height: 1.5; }
+      .typing::after { content: "▍"; color: var(--primary); animation: blink 1s steps(1) infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+
+      .inputbar { flex: 0 0 auto; padding: 12px 24px 18px; }
+      .inputbox { max-width: 800px; margin: 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 16px; border: 1px solid var(--outline); border-radius: 14px; background: var(--card); }
+      .inputbox input { flex: 1; border: 0; outline: none; font-family: var(--f-body); font-size: 14px; color: var(--ink); background: transparent; }
+      .inputbox input::placeholder { color: var(--ink-mute); }
+      .inputbox .send { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 10px; background: var(--primary); color: #fff; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <header class="appbar">
+      <div class="brand">
+        <svg class="ok-logo" width="24" height="24" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <path d="M50.7 18.5A23.8 23.8 0 1 0 51 45.8" stroke="currentColor" stroke-width="4.4" stroke-linecap="round"/>
+          <path d="M23 44V24M23 32.5l17.5-13M23 32.5l17.5 13" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="23" cy="24" r="5.2" fill="currentColor"/><circle cx="23" cy="44" r="5.2" fill="currentColor"/>
+          <circle cx="42.5" cy="18.5" r="5.2" fill="currentColor"/><circle cx="42.5" cy="45.5" r="5.2" fill="currentColor"/>
+        </svg>
+        <strong>OpenKeri</strong>
+      </div>
+      <div class="crumb"><span class="ch">01</span> 内核引导 · 跟 Keri 学</div>
+      <div class="right">
+        <button class="ghost" id="skip"><span class="material-symbols-outlined">unfold_more</span> 全部展开</button>
+        <button class="ghost" id="replay"><span class="material-symbols-outlined">replay</span> 重放</button>
+      </div>
+    </header>
+
+    <div class="scroll" id="scroll"><div class="thread" id="thread"></div></div>
+
+    <div class="inputbar">
+      <div class="inputbox"><input placeholder="不懂的随时问 Keri…" disabled /><button class="send"><span class="material-symbols-outlined">arrow_upward</span></button></div>
+    </div>
+
+    <script>
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const thread = document.getElementById("thread");
+      const scroller = document.getElementById("scroll");
+      const scroll = () => { scroller.scrollTop = scroller.scrollHeight; };
+      let skipAll = false;
+
+      const LD = `ENTRY(boot)            /* 入口函数叫 boot */
+SECTIONS {
+  . = 0x80200000;      /* 从这个地址开始摆代码 */
+  .text : { KEEP(*(.text.boot)); *(.text .text.*); }
+}`;
+      const BOOT = `__attribute__((section(".text.boot"))) __attribute__((naked))
+void boot(void) {
+  __asm__ __volatile__(
+    "mv sp, %[stack_top]\\n"   // ← 你想到的这行:把栈架好
+    "j kernel_main\\n"          // 然后跳进主函数
+    :: [stack_top] "r" (__stack_top));
+}`;
+      const PUTC = `void putchar(char ch) {
+  sbi_call(ch, 0,0,0,0,0,0, 1);   // 1 号服务 = 控制台输出一个字符
+}`;
+      const MAIN = `void kernel_main(void) {
+  const char *s = "Hello from my kernel!\\n";
+  for (int i = 0; s[i] != '\\0'; i++)
+    putchar(s[i]);
+  for (;;) {}   // 打完停这,别让 CPU 乱跑
+}`;
+
+      const T = (v) => ({ type: "t", v });
+      const C = (v) => ({ type: "c", v });
+      const V = (o) => ({ type: "v", ...o });
+      const TURNS = [
+        { role: "user", segs: [T("我想从零做个最简单的操作系统,目标先小点——开机后在屏幕打出一行 Hello。我几乎啥都不懂,你带我做。")] },
+        { role: "keri", segs: [T("没问题,这是最经典的第一步。先给你个全局:你要写的“操作系统”,本质就是一段开机后自己跑起来的程序;难点在于它脚下什么都没有——没人帮它启动、没给内存、也没有 print。所以“打一行字”会拆成三关:① 让你的代码真被 CPU 执行到;② 让它能正常跑 C(支栈);③ 让它能往屏幕输出。一关一关来。")] },
+        { role: "user", segs: [T("行。等下,第一关“被执行到”啥意思?我写个 main,开机不就跑了?")] },
+        { role: "keri", segs: [T("这是新手最容易愣的地方。平时是操作系统帮你把程序加载进内存、再跳过去执行。可现在没有操作系统——开机时 CPU 啥也不认,它只会死板地跳到一个固定地址、执行那儿的指令。所以你得保证:你的代码正好待在那个地址上。")] },
+        { role: "user", segs: [T("那地址是多少?谁规定的?")] },
+        { role: "keri", segs: [T("我们这台(QEMU 模拟的 RISC-V)开机还有层“固件(OpenSBI)”先醒,做最底层初始化,然后约定跳到 0x80200000 把控制权交给你。所以你内核第一条指令得摆在那。"), V({ stages: ["上电", "OpenSBI 固件", "跳到 0x80200000", "你的 boot"], goal: 3, cap: "开机后固件先跑,再把控制权交到约定地址 0x80200000——所以你得把代码摆到那。" }), T("这事由链接脚本 kernel.ld 管:"), C(LD), T("这块照抄、知道它干嘛即可——属于机制配置,不是你要反复琢磨的核心。")] },
+        { role: "user", segs: [T("懂了。那 boot 我直接写正常 C 就行?")] },
+        { role: "keri", segs: [T("差一点,这正是第二关。你要在 boot 里直接跑 C、再调函数,大概率崩。猜为什么?")] },
+        { role: "user", segs: [T("呃…不知道,看着没毛病啊。")] },
+        { role: "keri", segs: [T("提示:C 函数跑起来,得有地方放局部变量、记住“返回到哪”——这块地方叫栈。平时操作系统在你程序跑前就铺好了;现在没人铺,栈指针指着一片乱地址,函数一用栈就写坏 → 崩。所以 boot 进 C 前第一件事是自己支栈。关键就一行,你来写:把栈指针 sp 指到我们预留的栈顶 __stack_top,汇编是 mv sp, ...,试试?")] },
+        { role: "user", segs: [T("mv sp, __stack_top?")] },
+        { role: "keri", segs: [T("思路对!完整长这样(外面 naked、%[s] 是固定写法,照抄):"), C(BOOT)] },
+        { role: "user", segs: [T("naked 是啥,为啥要它?")] },
+        { role: "keri", segs: [T("普通 C 函数编译器会自动在开头加几条“用栈”的指令,可我们这会儿栈还没架好,那些会捣乱。naked 就是告诉编译器“别自动加任何东西,我自己写汇编”。只在“栈还没准备好”的入口这种极特殊处用,别处你都不碰——当黑盒记着。")] },
+        { role: "user", segs: [T("明白。那第三关,屏幕咋出字?我连 printf 都没。")] },
+        { role: "keri", segs: [T("对,没标准库,putchar 都得自己造。但“把字符显示到屏幕”这种最底层的事你自己干不了,得求那个比你先醒的固件——它有个最小服务:“给我一个字符,我替你显。”调它的方式叫 ecall。包成 putchar:"), C(PUTC), T("里面 sbi_call 是固定汇编,纯黑盒照抄。你只要懂这一句:打印 = 把字符交给固件去显示。")] },
+        { role: "user", segs: [T("那打一整行 Hello 呢?")] },
+        { role: "keri", segs: [T("一个字符一个字符 putchar 出去。这就是主函数:"), C(MAIN), T("三关齐了。跑一下 ./run.sh。")] },
+        { role: "user", segs: [T("(跑)出来了!终端最后蹦出 Hello from my kernel!")] },
+        { role: "keri", segs: [T("🎉 你的第一个内核活了。回看一个字符是怎么一路走到屏幕的:"), V({ stages: ["固件", "boot 支栈", "kernel_main", "putchar", "ecall", "屏幕:Hello"], goal: 5, cap: "字符从你的代码出发,经 ecall 求固件,最后显示到屏幕。" }), T("记住这章最值钱的一句:造操作系统就是脚下啥都没有,连 print、连一块栈都得自己补。你刚亲手补上了启动、栈、输出这三样平时白送的东西。")] },
+      ];
+
+      let flowIntervals = [];
+      function renderFlow(bubble, seg) {
+        const card = document.createElement("div"); card.className = "flow";
+        seg.stages.forEach((s, i) => {
+          if (i > 0) { const a = document.createElement("span"); a.className = "farrow"; a.textContent = "→"; card.appendChild(a); }
+          const b = document.createElement("span"); b.className = "fstage" + (seg.goal === i ? " goal" : ""); b.textContent = s; card.appendChild(b);
+        });
+        if (seg.cap) { const c = document.createElement("div"); c.className = "fcap"; c.textContent = seg.cap; card.appendChild(c); }
+        bubble.appendChild(card);
+        const stages = card.querySelectorAll(".fstage");
+        let idx = -1;
+        const id = setInterval(() => {
+          idx++;
+          if (idx >= stages.length + 1) { stages.forEach((s) => s.classList.remove("on", "done")); idx = -1; return; }
+          stages.forEach((s, i) => { s.classList.toggle("on", i === idx); s.classList.toggle("done", i < idx); });
+        }, 620);
+        flowIntervals.push(id);
+      }
+
+      function hl(src) {
+        const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return esc(src).replace(/(\/\*[\s\S]*?\*\/|\/\/[^\n]*)/g, (m) => `<span class='cmt'>${m}</span>`);
+      }
+
+      async function streamText(el, text) {
+        if (skipAll) { el.textContent = text; return; }
+        el.classList.add("typing");
+        for (let i = 0; i < text.length; i++) {
+          el.textContent = text.slice(0, i + 1);
+          scroll();
+          await sleep(15);
+          if (skipAll) { el.textContent = text; break; }
+        }
+        el.classList.remove("typing");
+      }
+
+      async function playTurn(turn) {
+        const wrap = document.createElement("div");
+        wrap.className = "msg " + turn.role;
+        wrap.innerHTML = (turn.role === "keri" ? `<span class="av">K</span>` : "") + `<div class="bubble"></div>`;
+        thread.appendChild(wrap);
+        const bubble = wrap.querySelector(".bubble");
+        scroll();
+        for (const seg of turn.segs) {
+          if (seg.type === "t") {
+            const p = document.createElement("div"); p.className = "p"; bubble.appendChild(p);
+            await streamText(p, seg.v);
+          } else if (seg.type === "c") {
+            const pre = document.createElement("pre"); pre.className = "cb"; pre.innerHTML = hl(seg.v); bubble.appendChild(pre); scroll();
+            if (!skipAll) await sleep(140);
+          } else if (seg.type === "v") {
+            renderFlow(bubble, seg); scroll();
+            if (!skipAll) await sleep(180);
+          }
+        }
+      }
+
+      async function play() {
+        skipAll = false; flowIntervals.forEach(clearInterval); flowIntervals = []; thread.innerHTML = "";
+        for (const t of TURNS) { await playTurn(t); if (!skipAll) await sleep(t.role === "keri" ? 480 : 320); }
+      }
+
+      document.getElementById("replay").addEventListener("click", play);
+      document.getElementById("skip").addEventListener("click", () => { skipAll = true; });
+      play();
+    </script>
+  </body>
+</html>

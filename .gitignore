@@ -7,3 +7,5 @@ __pycache__/
 build/
 dist/
 examples/learning_manager/learning_manager_state.json
+.DS_Store
+references/

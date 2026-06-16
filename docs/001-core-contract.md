@@ -10,6 +10,8 @@ The current active product work is **Learning Manager / Plan Studio** in
 The algorithm tutor described below is an early reference implementation for
 the teacher-agent runtime. It remains useful background for schemas, memory,
 evidence, and agent experiments, but it is not the current product focus.
+The first productized learning track is a node-level operating-systems course
+inside Plan Studio.
 
 Plan Studio's active loop is:
 
@@ -33,12 +35,12 @@ action.
 
 ## First Use Case
 
-The first reference use case is an algorithm learning tutor for adult technical
-learners.
+The first reference use case is a node-level operating-systems course for adult
+technical learners.
 
-A learner works on an algorithm problem, asks questions, and submits code.
-openkeri helps the teacher agent diagnose the learner's current issue and
-respond with either a hint or an explanation.
+A learner opens a course node, studies a lesson, works through practice, asks
+questions, and records notes. openkeri helps the teacher agent diagnose the
+learner's current issue and respond with either a hint or an explanation.
 
 ## Learning Loop Scope
 
@@ -162,7 +164,7 @@ It should not blindly pass full chat history into the teacher agent.
 The Evidence Layer turns the learner's current action into facts that can
 support diagnosis.
 
-For the first algorithm tutor use case, evidence may include:
+For the first course use case, evidence may include:
 
 ```json
 {

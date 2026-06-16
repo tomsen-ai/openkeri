@@ -35,6 +35,10 @@ graph-level relationship types.
 The current node-level learning design should stay inside the Learning Manager
 track. Do not create a separate product line for it.
 
+The first productized course sample has shifted to **Operating Systems basics**.
+The earlier algorithm prototype remains useful as a renderer reference, but the
+MVP course should start from an OS node such as `Processes and Threads`.
+
 The design target is:
 
 ```text
@@ -76,22 +80,20 @@ schemas, tools, prompts, and UI.
 Recommended first node:
 
 ```text
-source node: n6 / Arrays and Linked Lists
-working title: Linear Structure Pattern Training
-stage: Foundation
-goal: 30-day algorithm interview prep
+source node: os_01 / Processes and Threads
+working title: Processes and Threads
+stage: Foundations
+goal: understand how a program becomes a running process
 ```
 
-This node should assume the learner already has basic programming knowledge and
-knows the names of arrays, strings, and linked lists. It should not default to a
-data-structures textbook explanation. It should train interview problem
-handling:
+This node should assume the learner already knows basic programming and should
+not default to a textbook OS survey. It should train operational understanding:
 
 ```text
-recognize the problem pattern
-choose the right template
-write stable code
-review boundary and pointer mistakes
+distinguish program / process / thread
+read a process-state diagram
+trace a context switch
+explain shared memory and scheduling
 ```
 
 The first manual node should be organized by concrete learning points, not by a
@@ -117,60 +119,58 @@ The first manual node should start from these learning points:
 
 | Learning point | lesson | practice | qa |
 | --- | --- | --- | --- |
-| Two pointers | Explain sorted-array and palindrome signals, left/right movement, and why one pointer move can eliminate candidates. | Practice with `Valid Palindrome` and/or `Two Sum II`. | Answer why `left` or `right` moves, whether `left < right` is required, and when a hash table is or is not preferable. |
-| Sliding window | Explain contiguous substring/subarray signals, window boundaries, and hash state such as last-seen index or frequency. | Practice with `Longest Substring Without Repeating Characters`. | Answer why `left` must not move backward, what the window invariant is, and what the hash map stores. |
-| Slow write pointer | Explain read/write pointers, in-place array modification, and the meaning of the valid prefix. | Practice with `Move Zeroes` and/or `Remove Duplicates from Sorted Array`. | Answer what `nums[:write]` means, when to write, and when to preserve relative order. |
-| Dummy head and merge tail | Explain why a dummy head removes head-change special cases, why `dummy.next` is returned, and how a tail pointer builds a result list. | Practice with `Merge Two Sorted Lists` and the dummy-head part of `Remove Nth Node From End of List`. | Answer when dummy head is necessary, where `prev` or `tail` starts, and why returning `head` can be wrong. |
-| Fast/slow pointer | Explain fixed gaps or speed differences, with the nth-from-end case as the primary MVP target. | Practice with `Remove Nth Node From End of List`. | Answer how many steps `fast` moves first, what gap is maintained, and whether the loop condition should be `fast` or `fast.next`. |
-| Pointer reversal | Explain the linked-list reversal order: save `next`, rewire `curr.next`, then advance `prev` and `curr`. | Practice with `Reverse Linked List`. | Answer why `next` must be saved first and whether the final return value is `prev` or `curr`. |
+| Program vs process | Explain what a program is, what changes when it becomes a process, and how a process differs from the on-disk file. | Practice with a trace that classifies examples as program, process, or thread. | Answer what state changes when a process starts, and what stays the same. |
+| Process states | Explain ready/running/blocked, the meaning of a process-state diagram, and why transitions happen. | Practice with a state transition trace and a small scheduling scenario. | Answer why a process moves between states and what event caused the move. |
+| Threads and shared memory | Explain why threads share address space, what that enables, and what it makes risky. | Practice with a compare/contrast exercise between processes and threads. | Answer what resources are shared, what isolation is lost, and why locks become necessary. |
+| Context switch | Explain what a context switch saves/restores and why it has cost. | Practice with a timeline exercise that marks preemption and switch points. | Answer what the scheduler needs to preserve and why switching is not free. |
+| CPU scheduling basics | Explain why schedulers care about fairness, latency, and throughput. | Practice with a simple scheduling choice or queue-order scenario. | Answer why one policy favors responsiveness and another favors throughput. |
+| Synchronization preview | Explain the first reason locks exist and where race conditions come from. | Practice with a race-condition spotting task. | Answer why shared state without coordination can break correctness. |
 
 The node should still avoid a large problem dump. The small practice pool is:
 
 ```text
-Two Sum II or Valid Palindrome
-  target: basic two-pointer movement
+Process state trace
+  target: read and explain transitions
 
-Longest Substring Without Repeating Characters
-  target: sliding window + hash table
+Context switch timeline
+  target: identify what changes during a switch
 
-Move Zeroes or Remove Duplicates from Sorted Array
-  target: in-place array modification
+Process vs thread comparison
+  target: reason about sharing and isolation
 ```
 
-Linked-list practice should emphasize drawing pointer state, deciding whether a
-dummy head is needed, naming boundary cases, and reviewing pointer update
-order:
+OS practice should emphasize drawing state diagrams, tracing transitions,
+naming boundary cases, and explaining tradeoffs:
 
 ```text
-Merge Two Sorted Lists
-  target: dummy head and merge pointer
+Process state transition tracing
+  target: explain why a process moves from ready to running or blocked
 
-Remove Nth Node From End of List
-  target: dummy head + fast/slow pointers
+Context switch trace
+  target: identify what the scheduler saves and restores
 
-Reverse Linked List
-  target: next-pointer preservation order
+Scheduling scenario
+  target: compare policies by fairness, latency, and throughput
 ```
 
 The node should not be marked complete just because content was viewed. The
 learner should produce a review artifact:
 
 ```text
-1. My linear-structure pattern recognition table
-2. My two-pointer template
-3. My sliding-window template
-4. My linked-list dummy-head template
-5. My linked-list reversal pointer order
-6. Two mistakes I made or need to watch
-7. Problems I should revisit
+1. My program / process / thread comparison table
+2. My process-state diagram
+3. My context-switch trace
+4. My scheduler comparison notes
+5. Two mistakes I made or need to watch
+6. Questions I should revisit
 ```
 
 Completion criteria:
 
-- complete at least four practice problems
-- include at least one array/string medium problem
-- include at least one linked-list medium problem
-- explain the pattern choice for each completed problem
+- complete at least three practice tasks
+- include at least one state-trace or timeline exercise
+- include at least one compare/contrast exercise
+- explain the reason for each transition or policy choice
 - record at least two personal mistake notes
 
 This manual flow reveals the first tool needs:
@@ -212,7 +212,7 @@ example, a coding-practice review can record the submitted work summary, agent
 feedback summary, and a memory patch such as `missing_dummy_head` or
 `pointer_update_order`.
 
-For the first algorithm MVP, keep formal activity types small:
+For the first course MVP, keep formal activity types small:
 
 ```text
 lesson
@@ -292,14 +292,14 @@ Data must not define:
 
 For the first pass, keep the data as a local JavaScript object in the Plan
 Studio frontend. Do not move it to a JSON fixture, Pydantic schema, API, or LLM
-output format until the `Two Pointers` learning point feels usable.
+output format until the first OS learning point feels usable.
 
 Current implementation snapshot as of 2026-06-09:
 
-- `examples/learning_manager/plan_editor/src/main.jsx` contains a local
+- `examples/learning_manager/plan_editor/src/main.jsx` still contains the legacy
   `NODE_LEARNING_PLAN` for `n6 / Arrays & Linked Lists`.
-- The active working title remains `Linear Structure Pattern Training`.
-- The first filled learning point is `Two Pointers`.
+- The current MVP course sample should move to `Processes and Threads`.
+- The legacy `Two Pointers` learning point remains a renderer reference.
 - The remaining learning points are present as route items but do not yet have
   full lesson/practice content.
 - `NodeLearningWorkspace` now derives its UI from the local structured data.
@@ -352,21 +352,21 @@ should not become a third main-screen flow.
 
 The first implementation order for node-level learning is now:
 
-1. Done: refactor the `Two Pointers` prototype into a fixed renderer plus local
-   structured data.
+1. Done: refactor the legacy `Two Pointers` prototype into a fixed renderer
+   plus local structured data.
 2. Done: use that renderer to make the first learning point navigable:
    lesson slides, practice set, Q&A drawer, notes, and plan dropdown.
-3. In progress: review the rendered `Two Pointers` experience before adding more learning
-   points.
-4. Hand-author and review the complete "Linear Structure Pattern Training" node
-   learning design.
+3. In progress: review the rendered learning workspace shape before adding more
+   learning points.
+4. Hand-author and review the complete `Processes and Threads` node learning
+   design.
 5. Convert that approved manual design into a fixture.
 6. Derive the first schema fields from the fixture, not from generic agent
    abstractions.
 7. Define Pydantic schemas for `NodeLearningPlan`, `NodeActivity`,
    `ActivityContent`, `NodeMemory`, and `ActivityEvent`.
 8. Add a local persistence layer for node plans and node memory.
-9. Implement node plan generation for algorithm `learn` nodes.
+9. Implement node plan generation for course `learn` nodes.
 10. Implement lazy activity content generation for `lesson`.
 11. Implement lazy activity content generation for `coding_practice`.
 12. Add basic node memory display and manual notes.
@@ -392,8 +392,8 @@ observe current input
 -> update learning memory
 ```
 
-The first reference implementation is an algorithm tutor for adult technical
-learners.
+The first reference implementation is the legacy algorithm tutor for adult
+technical learners.
 
 The first version of openkeri does not aim to become:
 
@@ -438,7 +438,7 @@ In more detail:
 
 3. Collect evidence
    - The Evidence Collector extracts facts from the current input.
-   - For the first algorithm tutor, this mainly means running code and
+   - For the legacy algorithm tutor, this mainly means running code and
      collecting test results.
 
 4. Produce diagnosis
@@ -487,7 +487,7 @@ The registry stores a generic `LearningTask` plus named resources. It should not
 know about one domain, such as algorithm problems. Domain-specific resources are
 attached by callers or examples.
 
-For the first algorithm tutor, a task bundle contains:
+For the legacy algorithm tutor, a task bundle contains:
 
 ```text
 LearningTask(task_type="algorithm_problem")
@@ -535,7 +535,7 @@ search, or database persistence.
 `evidence` turns the learner's current action into facts that can support
 diagnosis.
 
-For the first algorithm tutor, it mainly handles:
+For the legacy algorithm tutor, it mainly handles:
 
 - running code
 - executing test cases
@@ -785,7 +785,7 @@ Directory principles:
 
 ## 5. First MVP Behavior
 
-The first MVP only needs to support one minimal algorithm tutoring loop.
+The first MVP only needs to support one minimal tutoring loop.
 The tutor CLI supports two learner actions in that loop: submitting a Python
 solution file and asking a follow-up question for the current problem.
 
