@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenKeri · 第一章 内核引导</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./ch1_article.css" />
+    <style>
+      html, body { height: 100%; overflow: hidden; }
+      .stage { position: fixed; left: 0; right: 0; top: 54px; bottom: 74px; }
+      .slide { position: absolute; inset: 0; display: grid; place-items: center; padding: 28px 44px; overflow: auto;
+        opacity: 0; transform: translateY(10px); pointer-events: none; transition: opacity .4s ease, transform .4s ease; }
+      .slide.on { opacity: 1; transform: none; pointer-events: auto; }
+      .slide .codew .body { font-size: 13.5px; }
+
+      .deckbar { position: fixed; left: 0; right: 0; bottom: 0; height: 74px; z-index: 40; display: flex; align-items: center; justify-content: center; gap: 18px;
+        background: rgba(250,248,243,.86); backdrop-filter: blur(12px); border-top: 1px solid var(--line); }
+      .deckbar button { display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0 18px; border: 1px solid var(--line); border-radius: 11px; background: var(--card); color: var(--soft); font-family: var(--f-ui); font-weight: 600; font-size: 14px; cursor: pointer; transition: all .14s; }
+      .deckbar button:hover:not(:disabled) { color: var(--accent-deep); border-color: #c7c4f5; background: var(--accent-soft); }
+      .deckbar button:disabled { opacity: .35; cursor: not-allowed; }
+      .deckbar button.next { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 9px 18px -7px rgba(67,56,202,.55); } .deckbar button.next:hover { background: var(--accent-deep); color: #fff; }
+      .deckbar .count { font-family: var(--f-mono); font-size: 13px; color: var(--mute); min-width: 70px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="progress" id="progress"></div>
+    <header class="appbar">
+      <div class="brand">
+        <svg class="lg" width="22" height="22" viewBox="0 0 64 64" fill="none"><path d="M50.7 18.5A23.8 23.8 0 1 0 51 45.8" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"/><path d="M23 44V24M23 32.5l17.5-13M23 32.5l17.5 13" stroke="currentColor" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="24" r="5" fill="currentColor"/><circle cx="23" cy="44" r="5" fill="currentColor"/><circle cx="42.5" cy="18.5" r="5" fill="currentColor"/><circle cx="42.5" cy="45.5" r="5" fill="currentColor"/></svg>
+        <b>OpenKeri</b>
+      </div>
+      <div class="crumb"><span class="ch">01</span> 内核引导</div>
+      <div class="modetag"><span class="pill"><span class="mi" style="font-size:15px">menu_book</span> 图文页</span></div>
+    </header>
+
+    <div class="stage" id="stage"></div>
+
+    <div class="deckbar">
+      <button class="prev" id="prev"><span class="mi">arrow_back</span> 上一页</button>
+      <span class="count" id="count"></span>
+      <button class="next" id="next">下一页 <span class="mi">arrow_forward</span></button>
+    </div>
+
+    <script src="./ch1_content.js"></script>
+    <script>
+      const C = window.CH1;
+      const el = (h) => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+      const stage = document.getElementById("stage");
+      const blocks = C.DOC;
+      const PAGE = (b) => b.kind === "figure" || b.kind === "code" || b.kind === "brief";
+      const mascot = C.mountMascot(blocks.find((b) => b.kind === "hands"));
+
+      blocks.forEach((b) => {
+        const inner = PAGE(b) ? C.renderPageInner(b) : C.renderFrameInner({ type: b.kind, block: b });
+        const s = el(`<div class="slide"><div class="fcenter${PAGE(b) ? " wide" : ""}">${inner}</div></div>`);
+        s._b = b; stage.appendChild(s);
+        if (PAGE(b)) C.wirePage(s, b);          // 接上图的聚焦 ◀▶,并预置高亮
+      });
+      const slides = [...stage.children];
+      stage.querySelectorAll(".callmascot").forEach((b) => (b.onclick = () => mascot.open()));
+
+      const prog = document.getElementById("progress"), count = document.getElementById("count");
+      const prevB = document.getElementById("prev"), nextB = document.getElementById("next");
+      let cur = -1;
+      function show(n) {
+        n = Math.max(0, Math.min(slides.length - 1, n));
+        if (cur >= 0) slides[cur].classList.remove("on");
+        cur = n; const s = slides[cur]; s.classList.add("on"); s.scrollTop = 0;
+        if (s._b.kind === "hands") mascot.call();
+        count.textContent = (cur + 1) + " / " + slides.length;
+        prevB.disabled = cur === 0; nextB.disabled = cur === slides.length - 1;
+        prog.style.width = (cur / (slides.length - 1) * 100) + "%";
+      }
+      prevB.onclick = () => show(cur - 1); nextB.onclick = () => show(cur + 1);
+      addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); show(cur + 1); }
+        else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); show(cur - 1); }
+      });
+      show(0);
+    </script>
+  </body>
+</html>
