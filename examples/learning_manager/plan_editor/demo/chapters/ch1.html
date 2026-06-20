@@ -2,367 +2,243 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OpenKeri · 第一章 内核引导</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>造核 · 第 01 章 内核引导</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
-    <style>
-      :root { --ink:#0f172a; --soft:#475569; --mute:#64748b; --faint:#94a3b8; --line:#e6e9f0; --line2:#eef1f6;
-        --surface:#f6f7fb; --card:#ffffff; --indigo:#6366f1; --indigo-deep:#4f46e5; --soft-i:#eef2ff;
-        --green:#16a34a; --green-soft:#dcfce7; --amber:#d97706; --red:#dc2626;
-        --f-disp:"Space Grotesk","PingFang SC",sans-serif; --f-body:"Hanken Grotesk","PingFang SC",sans-serif; --f-mono:"JetBrains Mono",monospace; }
-      * { box-sizing:border-box; }
-      html,body { margin:0; height:100%; }
-      body { height:100vh; display:flex; flex-direction:column; color:var(--ink); overflow:hidden; font-family:var(--f-body); -webkit-font-smoothing:antialiased;
-        background:var(--surface); background-image:linear-gradient(rgba(15,23,42,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.04) 1px,transparent 1px); background-size:20px 20px; }
-      .mi { font-family:"Material Symbols Outlined"; font-variation-settings:"FILL" 0,"wght" 400; line-height:1; vertical-align:middle; font-size:18px; }
-      .scene .ic .mi { font-size:50px; } .take .ck .mi { font-size:24px; } .op-kick .num .mi { font-size:17px; }
-
-      .appbar { flex:0 0 50px; display:flex; align-items:center; gap:12px; padding:0 18px; background:var(--card); border-bottom:1px solid var(--line); }
-      body.embed .appbar { display:none; }
-      body.embed .wrap { padding:0; }
-      body.embed .deck { width:100%; max-width:none; border-radius:0; border:0; box-shadow:none; background:transparent; }
-      .brand { display:flex; align-items:center; gap:8px; } .brand .lg { color:var(--indigo); } .brand b { font-family:var(--f-disp); font-weight:700; font-size:14.5px; }
-      .crumb { display:flex; align-items:center; gap:8px; margin-left:4px; padding-left:13px; border-left:1px solid var(--line); color:var(--soft); font-size:12.5px; font-weight:600; }
-      .crumb .ch { display:inline-grid; place-items:center; width:21px; height:21px; border-radius:6px; background:var(--soft-i); color:var(--indigo-deep); font-family:var(--f-mono); font-size:10.5px; font-weight:700; }
-
-      .wrap { flex:1; min-height:0; position:relative; display:flex; flex-direction:column; align-items:center; padding:20px; }
-      .deck { width:min(1000px,100%); flex:1; min-height:0; position:relative; display:flex; flex-direction:column;
-        border:1px solid var(--line); border-radius:18px; overflow:hidden; background:var(--card); box-shadow:0 16px 44px rgba(15,23,42,.08); }
-
-      .board { flex:1; min-height:0; overflow:auto; padding:30px 46px; display:flex; flex-direction:column; justify-content:center; gap:16px; }
-      .litbox { animation:rise .42s backwards; } @keyframes rise { from { opacity:0; transform:translateY(12px); } }
-      .fig svg { display:block; width:100%; height:auto; max-height:330px; }
-      .fig .p { transition:opacity .4s ease; } .fig.has-lit .p { opacity:.3; } .fig.has-lit .p.lit { opacity:1; }
-      text { font-family:var(--f-body); } .mono { font-family:var(--f-mono); } .addr { fill:var(--faint); font-size:11.5px; font-family:var(--f-mono); }
-
-      .opener { animation:rise .42s backwards; }
-      .op-kick { display:inline-flex; align-items:center; gap:10px; font-family:var(--f-mono); font-size:12px; letter-spacing:2px; color:var(--indigo-deep); text-transform:uppercase; }
-      .op-kick .num { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; background:linear-gradient(150deg,#818cf8,#4f46e5); color:#fff; font-weight:700; font-size:14px; box-shadow:0 6px 16px rgba(79,70,229,.28); }
-      .op-title { font-family:var(--f-disp); font-weight:700; font-size:48px; line-height:1.05; margin:16px 0 0; letter-spacing:-1px; }
-      .op-sub { font-size:18px; color:var(--soft); margin-top:6px; }
-      .op-rule { width:62px; height:3px; border-radius:2px; background:linear-gradient(90deg,#6366f1,transparent); margin:16px 0; }
-      .op-lede { font-size:15px; color:var(--soft); max-width:520px; line-height:1.65; }
-      .scene { text-align:center; position:relative; animation:rise .42s backwards; } .scene .glow { position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); width:340px; height:190px; border-radius:50%; background:radial-gradient(closest-side, rgba(220,38,38,.1), transparent); pointer-events:none; }
-      .scene .ic { color:var(--amber); position:relative; } .scene .big { position:relative; font-family:var(--f-disp); font-size:30px; font-weight:700; margin-top:8px; letter-spacing:-.4px; } .scene .sub { position:relative; font-size:16px; color:var(--red); margin-top:12px; }
-      .take { text-align:center; position:relative; animation:rise .42s backwards; } .take .glow { position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); width:420px; height:200px; border-radius:50%; background:radial-gradient(closest-side, rgba(22,163,74,.1), transparent); }
-      .take .ck { position:relative; display:inline-grid; place-items:center; width:46px; height:46px; border-radius:50%; background:var(--green-soft); border:1px solid #86efac; color:var(--green); margin-bottom:14px; }
-      .take .line { position:relative; font-family:var(--f-disp); font-weight:600; font-size:26px; line-height:1.45; letter-spacing:-.3px; } .take .line b { color:var(--indigo-deep); } .take .foot { position:relative; font-size:15px; color:var(--soft); margin-top:14px; }
-
-      .brief-goal { font-size:15px; color:var(--soft); margin:0 0 12px; } .brief-goal b { color:var(--green); font-family:var(--f-mono); font-weight:700; }
-      .pmlegend { font-size:12px; color:var(--mute); margin:0 0 14px; } .pmlegend .ptag { margin:0 2px; }
-      .projmap { width:100%; max-width:660px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--card); }
-      .pmrow { display:flex; flex-direction:column; gap:5px; padding:13px 16px; border-top:1px solid var(--line2); } .pmrow:first-child { border-top:0; }
-      .pmrow .prow1 { display:flex; align-items:center; gap:11px; }
-      .pmrow .pmod { font-family:var(--f-body); font-weight:700; font-size:14px; color:var(--ink); }
-      .pmrow .pfile { font-family:var(--f-mono); font-size:12px; color:var(--indigo-deep); }
-      .pmrow .prow1 .ptag { margin-left:auto; }
-      .pmrow .pdesc { font-family:var(--f-body); font-size:13px; color:var(--soft); line-height:1.55; }
-      .projmap .p { transition:opacity .35s ease; } .projmap.has-lit .p { opacity:.34; } .projmap.has-lit .p.lit { opacity:1; }
-      .ptag { flex:0 0 auto; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; }
-      .t-w { background:var(--soft-i); color:var(--indigo-deep); border:1px solid #c7d2fe; }
-      .t-b { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
-      .t-r { background:var(--green-soft); color:#15803d; border:1px solid #86efac; }
-
-      .codew { max-width:620px; width:100%; margin:0 auto; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--card); animation:rise .42s backwards; }
-      .codew .cf { display:flex; align-items:center; gap:7px; padding:9px 14px; border-bottom:1px solid var(--line); font-family:var(--f-mono); font-size:11.5px; color:var(--soft); background:#fafbfd; }
-      .codew .cf .legend { margin-left:auto; font-size:10.5px; } .codew .cf .legend .k{color:var(--indigo-deep)}.codew .cf .legend .x{color:#64748b}
-      .codew .body { padding:12px 0; font-family:var(--f-mono); font-size:13px; line-height:1.95; }
-      .codew .p { display:flex; padding:0 16px; opacity:.42; transition:opacity .35s, background .35s; }
-      .codew .p.lit { opacity:1; background:#fff7e0; box-shadow:inset 3px 0 0 var(--amber); }
-      .codew .p.wall { box-shadow:inset 3px 0 0 #c7d2fe; } .codew .p.box { box-shadow:inset 3px 0 0 #cbd5e1; }
-      .codew .gut { width:22px; text-align:center; flex:0 0 auto; } .codew .src { white-space:pre; color:#334155; }
-      .kw{color:#7c3aed}.ty{color:#2563eb}.fn{color:#2563eb}.st{color:#16a34a}.cm{color:#94a3b8;font-style:italic}.at{color:#d97706}.nu{color:#ea580c}
-
-      .narr { flex:0 0 auto; display:flex; align-items:flex-start; gap:12px; padding:15px 46px; border-top:1px solid var(--line); background:#fcfcfe; min-height:80px; }
-      .narr .av { flex:0 0 auto; display:grid; place-items:center; width:32px; height:32px; border-radius:50%; background:linear-gradient(150deg,#818cf8,#4f46e5); color:#fff; font-family:var(--f-disp); font-weight:700; font-size:13px; } .narr .av.talk { animation:talk .7s ease-in-out infinite; } @keyframes talk { 50% { box-shadow:0 0 0 5px rgba(99,102,241,.22); } }
-      .narr .txt { font-size:15.5px; line-height:1.7; padding-top:4px; color:var(--ink); }
-
-      .ctrl { flex:0 0 auto; display:flex; align-items:center; gap:12px; padding:11px 20px; border-top:1px solid var(--line); }
-      .pp { display:grid; place-items:center; width:36px; height:36px; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--soft); cursor:pointer; } .pp:hover { color:var(--ink); }
-      .dots { display:flex; gap:6px; } .dots i { width:7px; height:7px; border-radius:50%; background:var(--line); transition:all .2s; } .dots i.on { background:var(--indigo); width:22px; border-radius:99px; } .dots i.seen { background:#c7d2fe; }
-      .nav { margin-left:auto; display:flex; gap:8px; }
-      .nav button { height:42px; border-radius:10px; font-family:var(--f-disp); font-size:14px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
-      .nav .back { padding:0 15px; border:1px solid var(--line); background:#fff; color:var(--soft); } .nav .back:disabled { opacity:.4; cursor:not-allowed; }
-      .nav .cont { padding:0 22px; border:0; background:var(--indigo); color:#fff; box-shadow:0 8px 18px rgba(99,102,241,.26); } .nav .cont:hover { background:var(--indigo-deep); }
-      .nav .do { padding:0 22px; border:0; background:var(--green); color:#fff; box-shadow:0 8px 18px rgba(22,163,74,.26); } .nav .do:hover { background:#15803d; }
-
-      .start { position:absolute; inset:0; z-index:30; display:grid; place-items:center; background:rgba(246,247,251,.84); backdrop-filter:blur(3px); }
-      .start button { display:inline-flex; align-items:center; gap:10px; height:56px; padding:0 30px; border:0; border-radius:14px; background:var(--indigo); color:#fff; font-family:var(--f-disp); font-size:18px; font-weight:700; cursor:pointer; box-shadow:0 12px 30px rgba(99,102,241,.3); }
-
-      .doov { position:absolute; inset:0; z-index:40; display:none; } .doov.show { display:flex; flex-direction:column; }
-      .doov .dh { flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:12px 18px; background:#fff; border-bottom:1px solid var(--line); }
-      .doov .dh .wall { font-family:var(--f-mono); font-size:11px; font-weight:700; color:var(--amber); background:#fef3c7; border:1px solid #fcd34d; padding:3px 9px; border-radius:7px; }
-      .doov .dh b { font-family:var(--f-disp); font-size:15px; } .doov .dh .sub { font-size:12.5px; color:var(--mute); }
-      .doov .dh .done { margin-left:auto; height:36px; padding:0 18px; border:0; border-radius:9px; background:var(--green); color:#fff; font-family:var(--f-disp); font-weight:700; font-size:13.5px; cursor:pointer; }
-      .doov iframe { flex:1; width:100%; border:0; background:#1e1e1e; }
-    </style>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./os-design.css" />
   </head>
   <body>
-    <header class="appbar">
-      <div class="brand">
-        <svg class="lg" width="22" height="22" viewBox="0 0 64 64" fill="none"><path d="M50.7 18.5A23.8 23.8 0 1 0 51 45.8" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"/><path d="M23 44V24M23 32.5l17.5-13M23 32.5l17.5 13" stroke="currentColor" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23" cy="24" r="5" fill="currentColor"/><circle cx="23" cy="44" r="5" fill="currentColor"/><circle cx="42.5" cy="18.5" r="5" fill="currentColor"/><circle cx="42.5" cy="45.5" r="5" fill="currentColor"/></svg>
-        <b>OpenKeri</b>
-      </div>
-      <div class="crumb"><span class="ch">01</span> 内核引导 · 你的第一句话</div>
-    </header>
+    <div class="progress"><i id="prog"></i></div>
+    <header class="top"><div class="in">
+      <div class="brand"><span class="mk"><i></i></span><b>造核</b><span class="en">Kernel From Scratch</span></div>
+      <div class="meta"><span>第 01 章 · 内核引导</span><span class="sep"></span><span class="hl">2 处动手</span></div>
+    </div></header>
 
-    <div class="wrap">
-      <div class="deck">
-        <div class="board" id="board"></div>
-        <div class="narr"><span class="av" id="av">K</span><div class="txt" id="narr"></div></div>
-        <div class="ctrl">
-          <button class="pp" id="pp"><span class="mi">pause</span></button>
-          <div class="dots" id="dots"></div>
-          <div class="nav" id="nav"></div>
+    <main id="main"></main>
+
+    <!-- Keri -->
+    <div class="keri" id="keri">
+      <button class="orb" id="keriOrb"><span class="av">K</span><span class="t"><b>问 Keri</b><span>卡住了?随时叫我</span></span></button>
+      <div class="panel">
+        <div class="ph"><div style="display:flex;align-items:center;gap:10px"><span class="av">K</span><div style="line-height:1.25"><div><b>Keri</b></div><div class="st"><i></i>陪你读这一章</div></div></div><button class="x" id="keriX">×</button></div>
+        <div class="kbody" id="keriBody"><p class="intro">嗨,我是 Keri。这一章绕着<b>启动</b>和<b>栈</b>转 —— 先挑个话题,或直接打字问我。</p>
+          <div class="chips" id="keriChips"></div>
         </div>
-        <div class="start" id="start"><button id="startBtn"><span class="mi">play_arrow</span> 开始第一章</button></div>
-        <div class="doov" id="doov">
-          <div class="dh"><span class="wall" id="doWall">你来写</span><div><b id="doTitle"></b> <span class="sub" id="doSub"></span></div><button class="done" id="doDone">写完了,继续 <span class="mi">arrow_forward</span></button></div>
-          <iframe id="doFrame" title="真沙箱"></iframe>
-        </div>
+        <div class="kin"><input id="keriInput" placeholder="问 Keri 任何问题…" /><button class="send" id="keriSend">↑</button></div>
       </div>
     </div>
 
     <script>
-      const AR = `<defs><marker id="ar" markerWidth="9" markerHeight="9" refX="5" refY="4.5" orient="auto"><path d="M1,1 L8,4.5 L1,8" fill="none" stroke="#94a3b8" stroke-width="1.5"/></marker><marker id="ip" markerWidth="9" markerHeight="9" refX="5" refY="4.5" orient="auto"><path d="M1,1 L8,4.5 L1,8" fill="none" stroke="#6366f1" stroke-width="1.5"/></marker></defs>`;
-      const FIG = {
-        compare: () => `<svg viewBox="0 0 760 220">${AR}
-          <g class="p f-l"><text x="180" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">平时:你写个普通程序</text>
-            <rect x="70" y="36" width="220" height="32" rx="8" fill="#fff" stroke="#e6e9f0"/><text x="180" y="57" text-anchor="middle" font-size="13">你的程序</text></g>
-          <g class="p f-lhelp"><line x1="180" y1="68" x2="180" y2="90" stroke="#cbd5e1" marker-end="url(#ar)"/><rect x="56" y="92" width="248" height="34" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="180" y="114" text-anchor="middle" font-size="12" fill="#4f46e5">操作系统:加载 · 内存 · printf</text></g>
-          <g class="p f-l"><line x1="180" y1="126" x2="180" y2="148" stroke="#cbd5e1" marker-end="url(#ar)"/><rect x="86" y="150" width="188" height="34" rx="8" fill="#dcfce7" stroke="#86efac"/><text x="180" y="172" text-anchor="middle" font-size="13" fill="#15803d">屏幕:Hello ✓</text></g>
-          <line x1="380" y1="24" x2="380" y2="196" stroke="#e6e9f0" stroke-dasharray="4 4"/>
-          <g class="p f-r"><text x="580" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">现在:你写的就是操作系统</text>
-            <rect x="470" y="36" width="220" height="32" rx="8" fill="#fff" stroke="#e6e9f0"/><text x="580" y="57" text-anchor="middle" font-size="13">你的程序(内核)</text></g>
-          <g class="p f-rgone"><line x1="580" y1="68" x2="580" y2="90" stroke="#cbd5e1" marker-end="url(#ar)"/><rect x="456" y="92" width="248" height="34" rx="8" fill="#fee2e2" stroke="#fca5a5"/><text x="580" y="114" text-anchor="middle" font-size="12" fill="#dc2626">脚下什么都没有 —— 全靠你自己</text></g>
-          <g class="p f-rq"><line x1="580" y1="126" x2="580" y2="148" stroke="#cbd5e1" marker-end="url(#ar)"/><rect x="500" y="150" width="160" height="34" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/><text x="580" y="172" text-anchor="middle" font-size="13" fill="#94a3b8">屏幕:?</text></g></svg>`,
-        boot: () => `<svg viewBox="0 0 760 130">${AR}
-          <g class="p f-1"><rect x="20" y="44" width="120" height="44" rx="10" fill="#fff" stroke="#e6e9f0"/><text x="80" y="71" text-anchor="middle" font-size="13">上电</text></g>
-          <g class="p f-2"><rect x="190" y="44" width="170" height="44" rx="10" fill="#eef2ff" stroke="#c7d2fe"/><text x="275" y="66" text-anchor="middle" font-size="13" fill="#4f46e5">固件 OpenSBI</text><text x="275" y="82" text-anchor="middle" font-size="10.5" fill="#818cf8">比你先醒</text></g>
-          <g class="p f-3"><rect x="410" y="44" width="160" height="44" rx="10" fill="#fff" stroke="#e6e9f0"/><text x="490" y="66" text-anchor="middle" font-size="13">跳到约定地址</text><text x="490" y="82" text-anchor="middle" font-size="11" class="mono" fill="#475569">0x80200000</text></g>
-          <g class="p f-4"><rect x="620" y="44" width="120" height="44" rx="10" fill="#dcfce7" stroke="#86efac"/><text x="680" y="71" text-anchor="middle" font-size="13" fill="#15803d">你的 boot</text></g>
-          <g stroke="#cbd5e1" marker-end="url(#ar)"><line x1="140" y1="66" x2="186" y2="66"/><line x1="360" y1="66" x2="406" y2="66"/><line x1="570" y1="66" x2="616" y2="66"/></g></svg>`,
-        mem: () => `<svg viewBox="0 0 600 300">${AR}
-          <text x="44" y="20" class="addr" text-anchor="middle">高地址</text><line x1="44" y1="30" x2="44" y2="270" stroke="#cbd5e1"/><text x="44" y="288" class="addr" text-anchor="middle">低</text>
-          <g class="p f-stack"><rect x="120" y="70" width="360" height="110" rx="6" fill="#fef9ec" stroke="#fcd34d"/><text x="300" y="96" text-anchor="middle" font-size="13" fill="#b45309">栈区(预留 128KB)</text><text x="110" y="78" text-anchor="end" class="addr">__stack_top</text><line x1="300" y1="110" x2="300" y2="168" stroke="#d97706" stroke-width="1.6" marker-end="url(#ar)"/><text x="316" y="144" font-size="11.5" fill="#b45309">栈从顶往下增长</text></g>
-          <g class="p f-data"><rect x="120" y="185" width="360" height="40" rx="6" fill="#fff" stroke="#e6e9f0"/><text x="300" y="210" text-anchor="middle" font-size="12.5">.rodata / .data / .bss</text></g>
-          <g class="p f-text"><rect x="120" y="230" width="360" height="40" rx="6" fill="#eef2ff" stroke="#c7d2fe"/><text x="300" y="255" text-anchor="middle" font-size="13" fill="#4f46e5">.text — 内核代码(boot 在最前)</text><text x="110" y="255" text-anchor="end" class="addr">0x80200000</text></g></svg>`,
-        stack: () => `<svg viewBox="0 0 600 250">${AR}
-          <text x="300" y="20" text-anchor="middle" font-size="12.5" font-weight="700" fill="#475569">调用栈:每调一层函数,压一个栈帧</text>
-          <g class="p f-frames"><rect x="180" y="40" width="240" height="36" rx="6" fill="#fff" stroke="#e6e9f0"/><text x="300" y="63" text-anchor="middle" font-size="12.5">kernel_main 的栈帧</text>
-            <rect x="180" y="84" width="240" height="36" rx="6" fill="#fff" stroke="#e6e9f0"/><text x="300" y="107" text-anchor="middle" font-size="12.5">putchar 的栈帧</text></g>
-          <g class="p f-sp"><rect x="180" y="128" width="240" height="44" rx="6" fill="#eef2ff" stroke="#c7d2fe"/><text x="300" y="146" text-anchor="middle" font-size="12.5" fill="#4f46e5">当前函数的栈帧</text><text x="300" y="163" text-anchor="middle" font-size="10.5" fill="#818cf8">局部变量 + 返回地址</text><text x="450" y="153" font-size="13" class="mono" fill="#dc2626">← sp</text></g>
-          <g class="p f-bad"><text x="300" y="210" text-anchor="middle" font-size="12.5" fill="#475569">平时操作系统替你把 sp 铺好;现在没人铺 →</text><text x="300" y="230" text-anchor="middle" font-size="12.5" fill="#dc2626">sp 指着乱地址 → 函数一写就崩</text></g></svg>`,
-        ecall: () => `<svg viewBox="0 0 600 240">${AR}
-          <g class="p f-lane"><rect x="60" y="26" width="190" height="34" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="155" y="48" text-anchor="middle" font-size="12.5" fill="#4f46e5">你的内核 · putchar('H')</text><text x="155" y="74" text-anchor="middle" class="addr">S 模式(权限低)</text><line x1="155" y1="82" x2="155" y2="210" stroke="#cbd5e1" stroke-dasharray="4 4"/>
-            <rect x="360" y="26" width="190" height="34" rx="8" fill="#fef9ec" stroke="#fcd34d"/><text x="455" y="48" text-anchor="middle" font-size="12.5" fill="#b45309">OpenSBI 固件</text><text x="455" y="74" text-anchor="middle" class="addr">M 模式(权限高)</text><line x1="455" y1="82" x2="455" y2="210" stroke="#cbd5e1" stroke-dasharray="4 4"/></g>
-          <g class="p f-call"><line x1="155" y1="110" x2="451" y2="110" stroke="#6366f1" stroke-width="1.6" marker-end="url(#ip)"/><text x="305" y="103" text-anchor="middle" font-size="12" fill="#4f46e5">ecall:这是字符 'H'</text><rect x="372" y="126" width="166" height="32" rx="7" fill="#fff" stroke="#e6e9f0"/><text x="455" y="147" text-anchor="middle" font-size="12">把 'H' 写到屏幕</text></g>
-          <g class="p f-ret"><line x1="455" y1="182" x2="159" y2="182" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ar)"/><text x="305" y="175" text-anchor="middle" font-size="12" fill="#64748b">返回(切回 S 模式)</text></g></svg>`,
-        life: () => { const xs = [["固件", "#fef9ec", "#b45309"], ["0x80200000", "#fff", "#475569"], ["boot", "#fff", "#334155"], ["支栈", "#eef2ff", "#4f46e5"], ["kernel_main", "#fff", "#334155"], ["putchar", "#fff", "#334155"], ["ecall", "#fef9ec", "#b45309"], ["屏幕 Hello", "#dcfce7", "#15803d"]]; let w = 0; const g = xs.map((c, k) => { const wd = c[0].length > 6 ? 96 : 70; const x = 14 + w; w += wd + 14; return `<g class="p f-${k}"><rect x="${x}" y="44" width="${wd}" height="36" rx="9" fill="${c[1]}" stroke="#e6e9f0"/><text x="${x + wd / 2}" y="66" text-anchor="middle" font-size="11" class="${c[0].match(/[a-z_]/) ? "mono" : ""}" fill="${c[2]}">${c[0]}</text></g>${k < xs.length - 1 ? `<line x1="${x + wd}" y1="62" x2="${x + wd + 14}" y2="62" stroke="#cbd5e1" marker-end="url(#ar)"/>` : ""}`; }).join(""); return `<svg viewBox="0 0 ${w + 10} 110">${AR}${g}</svg>`; },
-      };
+      const $ = (s, r = document) => r.querySelector(s);
+      const main = $("#main");
+      const term = (w, lab, def) => `<span class="term">${w}<span class="tip"><span class="lab">${lab}</span>${def}</span></span>`;
 
-      const CODE = {
-        out: { file: "kernel.c", lines: [
-          { h:`<span class="ty">void</span> <span class="fn">putchar</span>(<span class="ty">char</span> ch) {` },
-          { h:`  <span class="fn">sbi_call</span>(ch, <span class="nu">0</span>,<span class="nu">0</span>,<span class="nu">0</span>,<span class="nu">0</span>,<span class="nu">0</span>,<span class="nu">0</span>, <span class="nu">1</span>);`, mark:"", cls:"box" },
-          { h:`}` }, { h:`` },
-          { h:`<span class="ty">void</span> <span class="fn">kernel_main</span>(<span class="ty">void</span>) {` },
-          { h:`  <span class="ty">const char</span> *s = <span class="st">"Hello from my kernel!\\n"</span>;` },
-          { h:`  <span class="kw">for</span> (<span class="ty">int</span> i = <span class="nu">0</span>; s[i]; i++)` },
-          { h:`    <span class="fn">putchar</span>(s[i]);`, mark:"", cls:"wall" },
-          { h:`}` },
-        ] },
-      };
+      /* ============ 文章主体 ============ */
+      main.innerHTML = `
+        <section class="hero">
+          <div class="kicker">Chapter 01 · The Boot</div>
+          <h1>让一台裸机,<br>说出第一句话</h1>
+          <p class="lead">一台刚通电、什么都没有的机器,怎么在屏幕上打出 Hello?这一章,你顺着「启动」和「栈」把它弄明白 —— 并亲手写下让它活过来的那两行。</p>
+          <div class="facts"><span>阅读 ~10 分钟</span><span>·</span><span>动手 2 处</span><span>·</span><span>难度 ●○○</span></div>
+        </section>
+        <div class="hr"></div>
 
-      const B = [
-        { type:"opener", kicker:"第 1 章", num:"01", title:"内核引导", sub:"你的第一句话",
-          lede:"从一块什么都没有的裸机,到屏幕上冒出 Hello —— 这一章,你亲手补齐操作系统平时白送你的三样。",
-          segs:[{ say:"欢迎来到第一章。这一章结束时,你会让一台裸机,说出它的第一句话。", cues:[] }] },
+        <section class="txt">
+          <div class="sechead">§ 1.1 · 你写的就是操作系统本身</div>
+          <p class="body">平时你写一句 <span class="ko">printf</span>,屏幕就出字 —— 那是脚下垫着一整层操作系统替你干活。而这一章,<b>你写的就是这层操作系统本身</b>。开机那一刻,先跑的根本不是你的代码:有段叫${term("固件", "FIRMWARE · OpenSBI", "比你先运行的小程序,把最底层硬件弄好,再把控制权交给你。")}的小程序比你先醒,准备好后跳到约定地址,把接力棒交给你的 <span class="ko">boot</span>。</p>
+        </section>
 
-        { type:"fig", fig:"compare", segs:[
-          { say:"先搞清楚你在写什么。平时你写一句 printf,屏幕就出字——背后是操作系统替你加载、给内存、提供 printf。", cues:[{q:"平时",lit:[".f-l"]},{q:"操作系统",lit:[".f-lhelp"]}] },
-          { say:"而这一章你写的,就是这个操作系统本身;脚下那层一旦没了,Hello 就得你自己补回三样:启动、内存、输出。", cues:[{q:"操作系统本身",lit:[".f-r"]},{q:"脚下",lit:[".f-rgone"]},{q:"三样",lit:[".f-rq"]}] },
-        ] },
+        <div class="scene"><div class="sb"><div class="sk">撞墙 · Dead End</div><div class="st">你接过棒,写了个再普通不过的 C 函数 —— 直接崩了。</div><p>语法明明没错。问题是:这台机器现在<b>连「栈」都还没有</b> —— 而每个 C 函数,都离不开它。</p></div></div>
 
-        { type:"brief", title:"第一章 · 你要做出什么", goal:"屏幕跑出 Hello from my kernel!", rows:[
-            ["启动", "arch/boot.c", "机器一开机,最先跑的就是它。它先给内核铺好一块「栈」(函数运行时存东西的临时草稿区),再跳进主程序——没有它,你写的任何 C 代码都跑不起来。", "w", "boot"],
-            ["输出", "kernel/main.c", "内核的主程序。这一章它只干一件事:把 “Hello from my kernel!” 这串字,一个字符一个字符地送出去。", "w", "main"],
-            ["底层输出", "arch/sbi.c · drivers/console.c", "字符到底怎么「冒到屏幕上」?裸机自己点不亮屏,得请固件代劳——这套底层细节已给你写好,你知道它负责「把一个字符吐到屏幕」就够了。", "b", "sbi"],
-          ], segs:[
-          { say:"先说清这一章你要做出什么:让一台刚开机、什么都没有的机器,在屏幕上打出第一句话,Hello。为此你要碰三块代码,我挨个讲。", cues:[] },
-          { say:"第一块,启动,在 boot 这个文件。机器一上电,最先跑的就是它。它得先给内核铺出一块叫「栈」的草稿区——函数运行时要靠它临时存东西;栈没铺好,你后面写的任何 C 代码一跑就崩。这块的关键几行,要你亲手写,得吃透。", cues:[{ q:"启动", lit:["[data-k='boot']"] }] },
-          { say:"第二块,输出,在 main 这个文件,它是内核的主程序。这一章它只干一件事:把 Hello 这串字,一个字符一个字符地送出去。这几行,也要你亲手写。", cues:[{ q:"第二块", lit:["[data-k='main']"] }] },
-          { say:"可字符到底怎么冒到屏幕上?裸机自己点不亮屏,得喊更底层的固件帮忙。这套底层细节,放在 sbi 和 console 两个文件里,已经给你写好了——你只要知道它负责把一个字符吐到屏幕,不用纠结里面怎么实现。", cues:[{ q:"底层", lit:["[data-k='sbi']"] }] },
-          { say:"所以这一章,真正要你吃透、亲手写的就两处:支栈和打印。带着这个目标,我们一步步来,先搞懂为什么,再动手。", cues:[{ q:"两处", lit:["[data-k='boot']", "[data-k='main']"] }] },
-        ] },
+        <section class="txt" style="margin-top:34px">
+          <div class="sechead">§ 1.2 · 函数为什么离不开栈</div>
+          <p class="body">每当你调用一个函数,CPU 要记住「待会儿回到哪儿」,它把返回地址、局部变量压进一块叫${term("栈", "STACK", "一块后进先出的内存。函数的返回地址、参数、局部变量都临时住这儿。")}的内存。跟踪栈顶的,是一个叫 ${term("sp", "sp · STACK POINTER", "栈指针寄存器,永远指着当前栈顶。压栈下移,弹栈上移。")} 的寄存器。它指对了一切如常;它指错了 —— 返回地址就被取错,程序跳进未知,<b>当场崩溃</b>。</p>
+        </section>
 
-        { type:"opener", kicker:"第一关", num:"1", title:"启动", sub:"代码凭啥能被跑到",
-          lede:"开机那一刻,先跑的根本不是你的代码。这一关,把控制权一路接到你手里。",
-          segs:[{ say:"第一关,启动。开机那一瞬间,先跑的根本不是你的代码。", cues:[] }] },
+        <figure class="fig"><div class="fh"><span class="l">图 1.1 · 示意</span><span class="r">一次调用压入栈的内容</span></div>
+          <div class="fbody"><div class="stackdia">
+            <div style="flex:1;background:#f1f3f7"><div class="t" style="color:#8b93a1">高地址</div><div class="v" style="color:#586070">…调用者</div></div>
+            <div style="flex:1;background:#eceefc;border-color:#cdd3f5"><div class="t" style="color:#3a4ed6">参数</div><div class="v" style="color:#2b3aa8;font-weight:600">arg…</div></div>
+            <div style="flex:1.2;background:#3a4ed6;border-color:#2b3aa8"><div class="t" style="color:#bcc6ff">★ 返回地址</div><div class="v" style="color:#fff;font-weight:600">0x…4a2c</div></div>
+            <div style="flex:1.3;background:#f1f3f7"><div class="t" style="color:#8b93a1">局部变量 ← sp</div><div class="v" style="color:#586070">栈顶 · 低地址</div></div>
+          </div><div style="display:flex;justify-content:flex-end;margin-top:10px;font-family:var(--mono);font-size:11px;color:#8b93a1">压栈方向 <span style="color:#3a4ed6;margin-left:6px">→</span> 向低地址增长</div></div>
+          <figcaption>那个高亮的<span style="color:#3a4ed6;font-weight:600">返回地址</span>就是命门 —— sp 指偏,它被取错,函数就再也回不了家。</figcaption>
+        </figure>
 
-        { type:"fig", fig:"boot", segs:[
-          { say:"开机时 CPU 什么都不懂,只会跳到一个固定地址执行。", cues:[{q:"开机",lit:[".f-1"]}] },
-          { say:"有段叫固件的小程序,OpenSBI,比你先醒;它做完准备,跳到约定地址 0x80200000,把接力棒交给你的 boot。", cues:[{q:"固件",lit:[".f-2"]},{q:"0x80200000",lit:[".f-3"]},{q:"boot",lit:[".f-4"]}] },
-        ] },
+        <aside class="note metaphor"><div class="bar"></div><div class="nb"><div class="nk">比喻</div><p>把栈想象成<b>一摞盘子</b>:进一层函数摞一只上去,返回就拿走最上面那只。sp 就是你的手 —— 始终停在最顶的盘子上。手伸错地方,整摞就塌了。</p></div></aside>
 
-        { type:"fig", fig:"mem", code:{ file:"kernel.ld", lines:[
-            { h:`. = <span class="nu">0x80200000</span>;        <span class="cm">// 代码从这开始摆</span>` },
-            { h:`__stack_top = .;       <span class="cm">// 最上面预留一段当栈</span>` } ] },
-          segs:[
-          { say:"代码摆在内存哪里,由链接脚本一行行钉死。点号等于 0x80200000,就是把内核代码摆到这,固件正好跳来。", cues:[{q:"0x80200000",lit:[".f-text"]}] },
-          { say:"最上面再预留一段当栈,记下栈顶 __stack_top —— 下一关就要用它。", cues:[{q:"预留一段当栈",lit:[".f-stack"]}] },
-        ] },
+        <section style="margin:40px 0 0">
+          <div class="playhead">动手 · 可玩图</div><h2 class="dh">拖动 sp,看它落在哪</h2>
+          <p class="dlead">上下拖那个 <span style="font-family:var(--mono);color:#3a4ed6;font-weight:600">sp</span> 把手。落在栈区一切正常;一旦滑出去,右边的屏幕立刻给你颜色看。</p>
+          <div class="playbox">
+            <div class="track" id="track">
+              <div class="zone" style="height:16%;background:#f4f1f1;color:#9a8b8b">保留 / 越界</div>
+              <div class="zone lab" style="height:30%;background:#e8f4ee;color:#1f7a55">栈区 stack ✓</div>
+              <div class="zone" style="height:22%;background:#faf6ef;color:#b4541f">未映射空隙</div>
+              <div class="zone" style="height:18%;background:#eceefc;color:#3a4ed6">堆 / 数据段</div>
+              <div class="zone" style="height:14%;background:#22262e;color:#9aa6c8;border-bottom:0">代码段 · 0x0</div>
+              <div class="sp" id="spHandle" style="top:30%"><span class="ln"></span><span class="pill"><i>sp</i>→</span></div>
+            </div>
+            <div class="readout">
+              <div class="lbl">sp 现在指向</div><div class="zone-name" id="spName"></div><p class="zone-msg" id="spMsg"></p>
+              <div class="screen"><div class="sbar"><span>内核屏幕</span><span>console</span></div><div id="spScreen"></div></div>
+            </div>
+          </div>
+        </section>
 
-        { type:"scene", ic:"bolt", big:"你写个 C 函数 —— 直接崩了", sub:"语法明明没错,为什么?",
-          segs:[{ say:"代码能跑到了,你写个再普通不过的 C 函数,结果直接崩。语法没错,为什么?", cues:[] }] },
+        <p class="body" style="margin-top:34px">看明白了 —— <b>开机第一件事,就得先把 sp 指到栈顶</b>。这一步,该你写进你的 OS 了。</p>
 
-        { type:"fig", fig:"stack", segs:[
-          { say:"原因在栈。每个 C 函数运行,都要一块草稿区放局部变量、记返回地址,每调一层就压一个栈帧。", cues:[{q:"栈",lit:[".f-frames"]}] },
-          { say:"寄存器 sp 指着当前栈顶。平时操作系统替你铺好;现在没人铺,sp 指着乱地址,函数一写就崩。", cues:[{q:"sp",lit:[".f-sp"]},{q:"乱地址",lit:[".f-bad"]}] },
-        ] },
+        <section style="margin:30px 0 0">
+          <div class="playhead">动手 · 写下关键一行</div><h2 class="dh">第 1 步:给内核支起栈</h2>
+          <p class="dlead">整份文件都搭好了。<b>你只补高亮那一行</b> —— 用一条汇编,把 <span style="font-family:var(--mono);color:#3a4ed6">sp</span> 指到栈顶 <span style="font-family:var(--mono);color:#3a4ed6">__stack_top</span>。其余不用管。</p>
+          <div id="do1"></div>
+        </section>
 
-        { type:"scene", ic:"monitor", big:"想打印 Hello —— 没有 printf", sub:"printf 本来就是操作系统给你的",
-          segs:[{ say:"代码稳稳跑起来了,你想打印 Hello,伸手找 printf……没有。那屏幕上,怎么才能冒出一个字?", cues:[] }] },
+        <aside class="note pit"><div class="bar"></div><div class="nb"><div class="nk">坑</div><p>裸机上没有标准库。<span style="font-family:var(--mono)">printf</span> / <span style="font-family:var(--mono)">malloc</span> 全用不了 —— 它们本来就是操作系统提供的服务。我们现在,正是在<b>造</b>那个系统。</p></div></aside>
 
-        { type:"fig", fig:"ecall", segs:[
-          { say:"你自己点不亮屏幕,那是更底层的事;但你能求那个先醒的固件。", cues:[{q:"固件",lit:[".f-lane"]}] },
-          { say:"用一条特殊指令 ecall,把字符托给固件,它替你写到屏幕,办完再切回来。包成函数,就是你的 putchar。", cues:[{q:"ecall",lit:[".f-call"]},{q:"切回来",lit:[".f-ret"]}] },
-        ] },
+        <section class="txt" style="margin-top:40px">
+          <div class="sechead">§ 1.3 · 屏幕怎么冒出一个字</div>
+          <p class="body">栈支好了,代码稳稳跑起来,你想打印 Hello —— 伸手找 printf,没有。你自己点不亮屏幕,但你能求那个先醒的固件:用一条 ${term("ecall", "ecall · 环境调用", "RISC-V 指令:主动陷入更高权限层(固件),请它代办一件事,比如往屏幕写字符。")} 把字符托给它,它替你写到屏幕再切回来。包成函数,就是你的 <span class="ko">putchar</span>。</p>
+        </section>
 
-        { type:"code", code:CODE.out, segs:[
-          { say:"看代码。输出这步靠 ecall 求固件,是黑盒,照抄就行,别纠结。", cues:[{q:"黑盒",code:[1]}] },
-          { say:"主函数里备好字符串 Hello。", cues:[{q:"字符串",code:[5]}] },
-          { say:"然后循环里,一个字符一个字符 putchar 出去——这行是承重墙,你来写。", cues:[{q:"承重墙",code:[6,7]}] },
-        ] },
+        <section class="quiz" id="quiz">
+          <div class="qhead"><span class="badge">小测</span><span class="sub">单选 · 选完即时揭晓</span></div>
+          <p class="q">putchar 到底是怎么把一个字符显示到屏幕上的?</p>
+          <div class="opts" id="opts"></div>
+          <div class="qexp" id="qexp"><div class="l">解析</div><p>裸机上既没有显存驱动也没有 printf,只能用一条 <b>ecall</b> 陷进固件、请它代写。这段陷入的汇编你不用懂,照抄即可(黑盒);真正要你写的,是「把字符一个个交出去」那一行。</p></div>
+        </section>
 
-        { type:"hands", wall:"该你了", title:"完成内核:支栈 + 打印", sub:"填好 arch/boot.c 和 kernel/main.c 两处承重墙,真跑出 Hello", file:"arch/boot.c",
-          segs:[{ say:"该你动手了。进真沙箱,项目骨架已经搭好,你要填两处承重墙:在 boot.c 把 sp 指到栈顶,在 main.c 把每个字符 putchar 出去。然后点运行,见证它说出第一句话。", cues:[] }] },
+        <section style="margin:44px 0 0">
+          <div class="playhead">动手 · 写下关键一行</div><h2 class="dh">第 2 步:让屏幕亮出第一句话</h2>
+          <p class="dlead">主程序也给好了。<b>你只补高亮那一行</b> —— 把字符串里的字符,一个一个交给 <span style="font-family:var(--mono);color:#3a4ed6">putchar</span> 送出去。</p>
+          <div id="do2"></div>
+        </section>
 
-        { type:"fig", fig:"life", segs:[
-          { say:"回头看这一个字符走了多远:", cues:[{q:"回头",lit:[".f-0"]}] },
-          { say:"固件先醒,跳到地址,boot,支起栈,进主函数,调 putchar,一条 ecall 喊到固件,固件把字送上屏幕。", cues:[{q:"固件先醒",lit:[".f-0"]},{q:"跳到地址",lit:[".f-1"]},{q:"boot",lit:[".f-2"]},{q:"支起栈",lit:[".f-3"]},{q:"进主函数",lit:[".f-4"]},{q:"putchar",lit:[".f-5"]},{q:"ecall",lit:[".f-6"]},{q:"送上屏幕",lit:[".f-7"]}] },
-        ] },
+        <section style="margin:40px 0 0">
+          <div class="playhead" style="color:#1f8a5b">运行 · 见证成果</div><h2 class="dh">编译、启动,然后 —— 它活了</h2>
+          <div class="runwrap" style="margin-top:16px">
+            <div class="rbar"><span>terminal — build &amp; run</span><button class="run" id="runBtn"><span style="font-size:9px">▶</span><span id="runLabel">运行</span></button></div>
+            <div class="runterm" id="runTerm"><div class="idle">$ <span style="color:#8b93a1">两处承重墙写好后,点右上角 ▶ 运行,真编译并启动你的内核…</span></div></div>
+            <div id="runResult"></div>
+          </div>
+          <div id="achWrap"></div>
+        </section>
 
-        { type:"take", line:`它一点都不是魔法 ——<br>你补齐了 <b>启动</b> · <b>内存</b> · <b>输出</b> 三样。`, foot:"这就是从零造一个操作系统,真正的意思。",
-          segs:[{ say:"它一点都不是魔法。你补齐了启动、内存、输出三样——这就是从零造一个操作系统,真正的意思。第一章,完成。", cues:[] }] },
-      ];
+        <aside class="note tip2"><div class="bar"></div><div class="nb"><div class="nk">提示</div><p>下一章我们会让内核学会<b>接住意外</b>(陷阱与异常)—— 你这章写的 <span style="font-family:var(--mono)">putchar</span>,马上就会被反复用到。</p></div></aside>
 
-      let bi = 0, si = 0, gen = 0, paused = false, autoTimer = null;
-      if (window.parent !== window) document.body.classList.add("embed");
-      const seen = new Set(), done = new Set();
-      const $ = (id) => document.getElementById(id);
-      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-      let zhVoice = null;
-      function pickVoice() { const vs = speechSynthesis.getVoices(); zhVoice = vs.find((v) => /zh|Chinese/i.test(v.lang + v.name)) || null; }
-      if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+        <div class="hr" style="margin:44px 0 0"></div>
+        <div class="pager"><span>← 第 0 章 · 环境与工具链</span><span class="next">第 02 章 · 接住意外 →</span></div>
+      `;
 
-      function applyLit(arr) {
-        const box = $("board").querySelector(".litbox"); if (!box) return;
-        if (!arr || !arr.length) { box.classList.remove("has-lit"); box.querySelectorAll(".p.lit").forEach((x) => x.classList.remove("lit")); return; }
-        box.classList.add("has-lit"); box.querySelectorAll(".p").forEach((x) => x.classList.remove("lit"));
-        arr.forEach((sel) => box.querySelectorAll(sel).forEach((x) => x.classList.add("lit")));
-      }
-      function applyCode(idxs) { const box = $("board").querySelector(".codew"); if (!box) return;
-        box.classList.add("has-lit"); box.querySelectorAll(".p").forEach((x) => x.classList.remove("lit"));
-        idxs.forEach((i) => { const r = box.querySelector(`[data-i="${i}"]`); if (r) r.classList.add("lit"); }); }
-
-      function speakSeg(seg, myGen) {
-        return new Promise((res) => {
-          $("narr").textContent = seg.say;
-          const src = seg.cues || [];
-          const cues = src.map((c) => ({ idx: c.q ? Math.max(0, seg.say.indexOf(c.q)) : 0, lit: c.lit, code: c.code, fired: false }));
-          const fire = (c) => { if (c.lit) applyLit(c.lit); if (c.code) applyCode(c.code); };
-          if (cues.length) { fire(cues[0]); cues[0].fired = true; }
-          const upto = (pos) => cues.forEach((c) => { if (!c.fired && pos >= c.idx) { c.fired = true; fire(c); } });
-          let done = false, boundary = false, iv = null;
-          const fin = () => { if (!done) { done = true; clearInterval(iv); res(); } };
-          if ("speechSynthesis" in window) {
-            const u = new SpeechSynthesisUtterance(seg.say); u.lang = "zh-CN"; if (zhVoice) u.voice = zhVoice; u.rate = 1.05;
-            u.onboundary = (e) => { boundary = true; upto(e.charIndex || 0); };
-            u.onend = fin; u.onerror = fin; speechSynthesis.cancel(); speechSynthesis.speak(u);
-            const t0 = performance.now(), est = Math.max(1200, seg.say.length * 235);
-            iv = setInterval(() => { if (myGen !== gen) { clearInterval(iv); return; } if (!boundary) upto((performance.now() - t0) / est * seg.say.length); }, 110);
-            setTimeout(() => { if (myGen === gen) fin(); }, seg.say.length * 700 + 5000);
-          } else { const t0 = performance.now(), est = Math.max(1400, seg.say.length * 150);
-            iv = setInterval(() => { upto((performance.now() - t0) / est * seg.say.length); if (performance.now() - t0 >= est) fin(); }, 90); }
-        });
-      }
-
-      function renderBoard() {
-        const b = B[bi]; let html = "";
-        if (b.type === "opener") html = `<div class="opener"><div class="op-kick"><span class="num">${b.num}</span>${b.kicker}</div><div class="op-title">${b.title}</div><div class="op-sub">${b.sub}</div><div class="op-rule"></div><div class="op-lede">${b.lede}</div></div>`;
-        else if (b.type === "scene") html = `<div class="scene"><div class="glow"></div><div class="ic"><span class="mi">${b.ic}</span></div><div class="big">${b.big}</div><div class="sub">${b.sub}</div></div>`;
-        else if (b.type === "take") html = `<div class="take"><div class="glow"></div><div class="ck"><span class="mi">check</span></div><div class="line">${b.line}</div><div class="foot">${b.foot}</div></div>`;
-        else if (b.type === "hands") html = `<div class="scene"><div class="ic"><span class="mi">construction</span></div><div class="big" style="font-size:24px">${b.title}</div><div class="sub" style="color:#475569">${b.sub}</div></div>`;
-        else if (b.type === "brief") html = `<div class="opener" style="align-items:flex-start"><div class="op-kick"><span class="num"><span class="mi">flag</span></span>本章目标</div><div class="op-title" style="font-size:29px;margin:12px 0 8px">${b.title}</div><div class="brief-goal">产出 · <b>${b.goal}</b></div><div class="pmlegend"><span class="ptag t-w">承重墙</span> 你写&吃透 · <span class="ptag t-b">黑盒</span> 给你&照抄</div><div class="projmap litbox">${b.rows.map((r) => `<div class="pmrow p" data-k="${r[4]}"><div class="prow1"><span class="pmod">${r[0]}</span><span class="pfile">${r[1]}</span><span class="ptag t-${r[3]}">${({ w: "承重墙", b: "黑盒", r: "读懂" })[r[3]]}</span></div><div class="pdesc">${r[2]}</div></div>`).join("")}</div></div>`;
-        else if (b.type === "code") {
-          const c = b.code; let no = 0;
-          html = `<div class="codew litbox"><div class="cf">${c.file}<span class="legend"><b class="k">承重墙</b> 你写 · <b class="x">黑盒</b> 照抄</span></div><div class="body">${c.lines.map((l, i) => { no++; return `<div class="p row ${l.cls || ""}" data-i="${i}"><span class="gut">${l.mark || ""}</span><span class="src">${l.h || " "}</span></div>`; }).join("")}</div></div>`;
-        } else {
-          html = `<div class="litbox fig">${FIG[b.fig]()}</div>`;
-          if (b.code) html += `<div class="codew" style="max-width:520px"><div class="cf">${b.code.file}</div><div class="body">${b.code.lines.map((l) => `<div class="p row lit"><span class="gut"></span><span class="src">${l.h}</span></div>`).join("")}</div></div>`;
+      /* ============ 可玩图:拖 sp ============ */
+      (function () {
+        const track = $("#track"), handle = $("#spHandle"), name = $("#spName"), msg = $("#spMsg"), screen = $("#spScreen");
+        let dragging = false;
+        const zoneOf = (p) => p < 16 ? { n: "保留 / 越界区", ok: 0, m: "越过栈顶,踩进保留地址。取出的「返回地址」是垃圾值。" }
+          : p < 46 ? { n: "栈区 (stack) ✓", ok: 1, m: "正中靶心。返回地址安然无恙,函数能干净地回到调用处。" }
+          : p < 68 ? { n: "未映射的空隙", ok: 0, m: "这段地址没有物理内存 —— 一访问就是 fault。" }
+          : p < 86 ? { n: "堆 / 数据段", ok: 0, m: "把别人的数据当返回地址。一 ret,程序就跳进了数据里。" }
+          : { n: "代码段 · 0x0", ok: 0, m: "指向只读代码或空指针。下一条 ret,直接 PANIC。" };
+        function render(p) {
+          handle.style.top = p + "%"; const z = zoneOf(p); name.textContent = z.n; msg.textContent = z.m;
+          screen.outerHTML = z.ok
+            ? `<div id="spScreen"><div class="ok">kernel_main()<br>&gt; 一切正常<span class="cur"></span></div></div>`
+            : `<div id="spScreen"><div class="crash"><b>*** KERNEL PANIC ***</b><br>invalid return address<br>sp 落在非法区域,机器停摆。</div></div>`;
         }
-        $("board").innerHTML = html;
-      }
+        const at = (e) => { const r = track.getBoundingClientRect(); render(Math.max(2, Math.min(98, (e.clientY - r.top) / r.height * 100))); };
+        track.addEventListener("pointerdown", (e) => { dragging = true; try { track.setPointerCapture(e.pointerId); } catch (_) {} at(e); });
+        track.addEventListener("pointermove", (e) => dragging && at(e));
+        track.addEventListener("pointerup", () => dragging = false);
+        render(30);
+      })();
 
-      function applySegStatic(seg) {
-        $("narr").textContent = seg.say;
-        (seg.cues || []).forEach((c) => { if (c.lit) applyLit(c.lit); if (c.code) applyCode(c.code); });
-      }
-      function playSeg() {
-        const myGen = ++gen; clearTimeout(autoTimer);
-        const b = B[bi], seg = b.segs[si]; if (!seg) return;
-        updateCont();
-        if (paused) { applySegStatic(seg); $("av").classList.remove("talk"); return; }
-        $("av").classList.add("talk");
-        speakSeg(seg, myGen).then(() => { if (myGen !== gen) return; $("av").classList.remove("talk"); advance(myGen); });
-      }
-      function advance(myGen) {
-        const b = B[bi];
-        if (si < b.segs.length - 1) { si++; playSeg(); }
-        else if (b.type !== "hands") autoTimer = setTimeout(() => { if (myGen === gen && bi < B.length - 1) next(); }, 1000);
-      }
-      function nextSentence() {
-        if ("speechSynthesis" in window) speechSynthesis.cancel(); clearTimeout(autoTimer); gen++;
-        const b = B[bi];
-        if (si < b.segs.length - 1) { si++; playSeg(); }
-        else if (bi < B.length - 1) next();
-        else finish();
-      }
-      function finish() { try { localStorage.setItem("openkeri.progress.内核引导", "done"); } catch (e) {} if (window.parent !== window) window.parent.postMessage("openkeri:chapter-done", "*"); else location.href = "../plan_roadmap_preview.html"; }
+      /* ============ 选择题 ============ */
+      (function () {
+        const opts = $("#opts"), exp = $("#qexp"), correct = 2;
+        const data = [["A", "直接往显存地址写字节"], ["B", "调用 C 标准库的 printf"], ["C", "用一条 ecall 请固件代劳"], ["D", "靠编译器自动输出"]];
+        let done = false;
+        opts.innerHTML = data.map(([l, t], i) => `<button class="opt" data-i="${i}"><span class="lt">${l}</span><span class="ot">${t}</span><span class="bg"></span></button>`).join("");
+        opts.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+          if (done) return; done = true; const pick = +b.dataset.i;
+          opts.querySelectorAll(".opt").forEach((o) => { o.disabled = true; const i = +o.dataset.i;
+            if (i === correct) { o.classList.add("right"); o.querySelector(".bg").textContent = "✓ 正确"; o.querySelector(".bg").style.color = "#1f8a5b"; }
+            else if (i === pick) { o.classList.add("wrong"); o.querySelector(".bg").textContent = "你选的"; o.querySelector(".bg").style.color = "#b4541f"; }
+            else o.classList.add("dim"); });
+          exp.style.display = "block";
+        });
+      })();
 
-      function render() { renderBoard(); $("dots").innerHTML = B.map((_, k) => `<i class="${k === bi ? "on" : seen.has(k) ? "seen" : ""}"></i>`).join(""); si = 0; updateNav(); playSeg(); }
-      function updateCont() {
-        const c = $("cont"); if (!c) return;
-        const end = bi === B.length - 1 && si === B[bi].segs.length - 1;
-        c.innerHTML = end ? '完成 <span class="mi">check</span>' : '下一句 <span class="mi">arrow_forward</span>';
+      /* ============ 动手写代码(两步)============ */
+      const doneSteps = new Set();
+      function editor(mount, { n, file, rt, lines, writeIdx, placeholder, answerRe, refAnswer, hint }) {
+        const code = lines.map((l, i) => {
+          if (i === writeIdx) return `<div class="ln writeln"><span class="no">✍</span><span class="src" style="color:#c9d2de">    </span><input class="wallin" placeholder="${placeholder}" spellcheck="false" autocomplete="off"/><span class="src" style="color:#6b7688;margin-left:6px">${l.cmt || ""}</span></div>`;
+          return `<div class="ln"><span class="no">${l.no}</span><span class="src">${l.h}</span></div>`;
+        }).join("");
+        mount.innerHTML = `<div class="editor"><div class="ebar"><div class="dots"><i style="background:#e5484d"></i><i style="background:#e3b27c"></i><i style="background:#46c08a"></i><span class="fn">${file}</span></div><span class="rt">${rt}</span></div><div class="code">${code}</div></div>
+          <div class="ebtns"><button class="btn pri check">检查</button><button class="btn sec ref">看参考答案</button><span class="note">只有 ✍ 那一行需要你写</span></div>
+          <div class="fbslot"></div>`;
+        const inp = mount.querySelector(".wallin"), slot = mount.querySelector(".fbslot");
+        const done = () => { inp.disabled = true; doneSteps.add(n); slot.innerHTML = `<div class="fb ok"><span class="i">✓</span><span><b>写对了</b> —— 这一行已并入你的项目。${doneSteps.size >= 2 ? "两步都好了,去最下面点「运行」。" : "继续往下走。"}</span></div>`; };
+        mount.querySelector(".check").onclick = () => { if (answerRe.test(inp.value)) done(); else slot.innerHTML = `<div class="fb bad"><span class="i">!</span><span>还差一点 —— ${hint}</span></div>`; };
+        mount.querySelector(".ref").onclick = () => { inp.value = refAnswer; done(); };
       }
-      function updateNav() {
-        const b = B[bi];
-        $("nav").innerHTML = (b.type === "hands" && !done.has(bi))
-          ? `<button class="back" ${bi === 0 ? "disabled" : ""} id="b2"><span class="mi">arrow_back</span> 上一拍</button><button class="do" id="doBtn"><span class="mi">construction</span> 动手</button>`
-          : `<button class="back" ${bi === 0 ? "disabled" : ""} id="b2"><span class="mi">arrow_back</span> 上一拍</button><button class="cont" id="cont">下一句 <span class="mi">arrow_forward</span></button>`;
-        $("b2").onclick = () => { if (bi > 0) { gen++; if ("speechSynthesis" in window) speechSynthesis.cancel(); bi--; render(); } };
-        $("doBtn") && ($("doBtn").onclick = openDo); $("cont") && ($("cont").onclick = nextSentence);
-        updateCont();
-      }
-      function next() { gen++; if ("speechSynthesis" in window) speechSynthesis.cancel(); clearTimeout(autoTimer); seen.add(bi); if (bi < B.length - 1) { bi++; render(); } }
+      editor($("#do1"), { n: 1, file: "arch/boot.c", rt: "ASM · 脚手架已就绪", writeIdx: 3,
+        lines: [{ no: "01", h: `<span class="cm">// arch/boot.c — 开机第一段,此刻还没有栈</span>` },
+          { no: "02", h: `<span class="kw">__attribute__</span>((naked)) <span class="kw">void</span> <span class="fn2">boot</span>(<span class="kw">void</span>) {` },
+          { no: "03", h: `    <span class="kw">__asm__</span> <span class="kw">__volatile__</span>(` },
+          { no: "04", h: ``, cmt: `// 承重墙:把栈指针 sp 指到栈顶` },
+          { no: "05", h: `        <span class="st">"j  kernel_main\\n"</span>` },
+          { no: "06", h: `    );` }, { no: "07", h: `}` }],
+        placeholder: `← 你写这一行(把 sp 指到 __stack_top)`, answerRe: /la\s*sp\s*,\s*__stack_top/i, refAnswer: `"la sp, __stack_top\\n"`, hint: `提示:<span style="font-family:var(--mono);background:#f7e6d6;padding:1px 5px;border-radius:4px">la</span> 指令能把一个地址装进寄存器。` });
+      editor($("#do2"), { n: 2, file: "kernel/main.c", rt: "C · 脚手架已就绪", writeIdx: 3,
+        lines: [{ no: "01", h: `<span class="kw">void</span> <span class="fn2">kernel_main</span>(<span class="kw">void</span>) {` },
+          { no: "02", h: `    <span class="kw">const char</span> *s = <span class="st">"Hello from my kernel!\\n"</span>;` },
+          { no: "03", h: `    <span class="kw">for</span> (<span class="kw">int</span> i = 0; s[i]; i++)` },
+          { no: "04", h: ``, cmt: `// 承重墙:把 s[i] 送出去` },
+          { no: "05", h: `    <span class="kw">for</span> (;;);  <span class="cm">// 打印完停这,别跑飞</span>` }, { no: "06", h: `}` }],
+        placeholder: `← 你写这一行(把 s[i] 交给 putchar)`, answerRe: /putchar\s*\(\s*s\s*\[\s*i\s*\]\s*\)/, refAnswer: `putchar(s[i]);`, hint: `把第 i 个字符 <span style="font-family:var(--mono)">s[i]</span> 交给 <span style="font-family:var(--mono)">putchar</span>。` });
 
-      $("pp").onclick = () => {
-        if (!paused) { paused = true; if ("speechSynthesis" in window) speechSynthesis.cancel(); clearTimeout(autoTimer); gen++; $("av").classList.remove("talk"); $("pp").innerHTML = '<span class="mi">play_arrow</span>'; }
-        else { paused = false; $("pp").innerHTML = '<span class="mi">pause</span>'; playSeg(); }
-      };
+      /* ============ 运行 / 成就 ============ */
+      (function () {
+        const btn = $("#runBtn"), label = $("#runLabel"), termEl = $("#runTerm"), result = $("#runResult"), achWrap = $("#achWrap");
+        let running = false;
+        btn.onclick = () => {
+          if (running) return;
+          if (doneSteps.size < 2) { termEl.innerHTML = `<div class="idle">$ <span style="color:#ff8a8a">还有承重墙没写(第 ${[1, 2].filter((x) => !doneSteps.has(x)).join("、")} 步)—— 回上面把它补上再运行。</span></div>`; return; }
+          running = true; label.textContent = "运行中…"; termEl.innerHTML = ""; result.innerHTML = ""; achWrap.innerHTML = "";
+          const seq = ["clang -target riscv32 -c arch/boot.c kernel/main.c …", "ld.lld -T kernel.ld -o kernel.elf", "qemu-system-riscv32 -kernel kernel.elf", "OpenSBI v1.x  ·  跳转 → 0x80200000", "→ boot:支栈完成 → kernel_main()"];
+          seq.forEach((l, i) => setTimeout(() => termEl.insertAdjacentHTML("beforeend", `<div class="l"><span class="a">›</span> ${l}</div>`), 300 * (i + 1)));
+          setTimeout(() => {
+            running = false; label.textContent = "重新运行";
+            result.innerHTML = `<div class="vga"><div class="lab">CONSOLE OUTPUT · via SBI</div><div class="out">Hello from my kernel!<span class="cur" style="height:22px;width:11px"></span></div></div>`;
+            achWrap.innerHTML = `<div class="ach"><div class="ico">🏆</div><div style="flex:1"><div class="k">成就解锁</div><div class="t">第一次说出第一句话</div><div class="d">你的内核向世界打了招呼。第 01 章 · 进度 +1。</div></div><span class="xp">+10 XP</span></div>`;
+          }, 300 * (seq.length + 1));
+        };
+      })();
 
-      function openDo() { const b = B[bi]; clearTimeout(autoTimer); gen++; if ("speechSynthesis" in window) speechSynthesis.cancel();
-        $("doWall").textContent = b.wall; $("doTitle").textContent = b.title; $("doSub").textContent = b.sub;
-        const want = "../sandbox/sandbox.html" + (b.file ? "?file=" + encodeURIComponent(b.file) : "");
-        if ($("doFrame").getAttribute("src") !== want) $("doFrame").setAttribute("src", want);
-        $("doov").classList.add("show"); }
-      $("doDone").onclick = () => { done.add(bi); seen.add(bi); $("doov").classList.remove("show"); if (bi < B.length - 1) { bi++; render(); } else updateNav(); };
+      /* ============ Keri ============ */
+      (function () {
+        const keri = $("#keri"), body = $("#keriBody"), chips = $("#keriChips"), input = $("#keriInput");
+        const QA = [["栈到底是什么?", "一块后进先出的内存。每进一层函数,就把返回地址、局部变量「压」上去;返回时再「弹」下来。sp 始终指着最顶那层。"],
+          ["为什么开机要先支栈?", "因为 C 函数一运行就要用栈放局部变量、记返回地址。boot 是第一段代码,此刻栈还没着落,所以第一件事就得把 sp 指到栈顶,后面的 C 代码才有处可用。"],
+          ["putchar 为什么不用我懂?", "它内部那条 ecall 陷入固件的汇编是「黑盒」—— 知道它「能把一个字符送上屏幕」就够了。真正要你吃透的,是上面那条主循环。"]];
+        chips.innerHTML = QA.map(([q], i) => `<button data-i="${i}">${q}</button>`).join("");
+        const push = (q, a) => { $(".intro", body)?.remove();
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "me", innerHTML: `<div>${q}</div>` }), chips);
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "ke", innerHTML: `<div class="av2">K</div><div>${a}</div>` }), chips);
+          body.scrollTop = body.scrollHeight; };
+        chips.querySelectorAll("button").forEach((b) => b.onclick = () => push(QA[+b.dataset.i][0], QA[+b.dataset.i][1]));
+        const send = () => { const v = input.value.trim(); if (!v) return; input.value = ""; push(v, "好问题。正式版我会结合你正读到的这一段给你针对性回答 —— 当前是结构 demo,先放个占位。记住一条:开机先支栈、打印靠 ecall,这一章就这两件事。"); };
+        $("#keriSend").onclick = send; input.addEventListener("keydown", (e) => e.key === "Enter" && send());
+        $("#keriOrb").onclick = () => keri.classList.add("open"); $("#keriX").onclick = () => keri.classList.remove("open");
+      })();
 
-      $("startBtn").onclick = () => { $("start").style.display = "none"; render(); };
+      /* 进度条 */
+      const prog = $("#prog");
+      addEventListener("scroll", () => { const h = document.documentElement, mx = h.scrollHeight - h.clientHeight; prog.style.width = (mx > 0 ? h.scrollTop / mx * 100 : 0) + "%"; }, { passive: true });
     </script>
   </body>
 </html>
