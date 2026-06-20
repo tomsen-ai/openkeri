@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>造核 · 第 02 章 趁手工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./os-design.css" />
+    <style>
+      /* 本章特有:内存分配可玩图 */
+      .ram{flex:none;width:230px;display:flex;flex-direction:column;gap:6px;}
+      .ram .cell{height:38px;border-radius:7px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--mute);transition:.18s;}
+      .ram .cell.used{border-style:solid;border-color:#cdd3f5;background:#eceefc;color:#2b3aa8;}
+      .ram .cell.next{border-color:var(--accent);box-shadow:0 0 0 2px rgba(58,78,214,.18);color:var(--accent);}
+      .alloclog{font-family:var(--mono);font-size:12px;line-height:1.9;color:var(--soft);margin-top:6px;min-height:60px;} .alloclog .a{color:var(--accent);} .alloclog .panic{color:#c0392b;font-weight:600;}
+      .allocbtns{display:flex;gap:9px;margin-top:auto;} .allocbtns button{font-family:var(--f);font-size:13px;font-weight:600;border-radius:8px;padding:9px 15px;border:none;} .allocbtns .go{color:#fff;background:var(--accent);} .allocbtns .rst{color:var(--soft);background:#fff;border:1px solid var(--line);}
+    </style>
+  </head>
+  <body>
+    <div class="progress"><i id="prog"></i></div>
+    <header class="top"><div class="in">
+      <div class="brand"><span class="mk"><i></i></span><b>造核</b><span class="en">Kernel From Scratch</span></div>
+      <div class="meta"><span>第 02 章 · 趁手工具</span><span class="sep"></span><span class="hl">2 处动手</span></div>
+    </div></header>
+
+    <main id="main"></main>
+
+    <!-- Keri -->
+    <div class="keri" id="keri">
+      <button class="orb" id="keriOrb"><span class="av">K</span><span class="t"><b>问 Keri</b><span>卡住了?随时叫我</span></span></button>
+      <div class="panel">
+        <div class="ph"><div style="display:flex;align-items:center;gap:10px"><span class="av">K</span><div style="line-height:1.25"><div><b>Keri</b></div><div class="st"><i></i>陪你读这一章</div></div></div><button class="x" id="keriX">×</button></div>
+        <div class="kbody" id="keriBody"><p class="intro">嗨,我是 Keri。这一章你给内核配三件工具 —— <b>printf · panic · 分配器</b>。先挑个话题,或直接打字问我。</p>
+          <div class="chips" id="keriChips"></div>
+        </div>
+        <div class="kin"><input id="keriInput" placeholder="问 Keri 任何问题…" /><button class="send" id="keriSend">↑</button></div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (s, r = document) => r.querySelector(s);
+      const main = $("#main");
+      const term = (w, lab, def) => `<span class="term">${w}<span class="tip"><span class="lab">${lab}</span>${def}</span></span>`;
+
+      main.innerHTML = `
+        <section class="hero">
+          <div class="kicker">Chapter 02 · The Toolbox</div>
+          <h1>给内核,配上<br>趁手的工具</h1>
+          <p class="lead">你能打印 Hello 了,可你其实是瞎的 —— 看不见变量的值、抓不住崩溃、连一块内存都要不到。这一章,你给内核亲手搭出三件工具:<b>printf</b>(眼睛)、<b>panic</b>(警报)、一个<b>内存分配器</b>(双手)。</p>
+          <div class="facts"><span>阅读 ~12 分钟</span><span>·</span><span>动手 2 处</span><span>·</span><span>难度 ●●○</span></div>
+        </section>
+        <div class="hr"></div>
+
+        <section class="txt">
+          <div class="sechead">§ 2.1 · 你现在是瞎的</div>
+          <p class="body">假设内核行为不对,你想打印一个变量看看 —— 伸手找 <span class="ko">printf</span>,没有。你只有上一章那个 <span class="ko">putchar</span>,<b>一次一个字符</b>。怎么办?自己拼一个 printf。它其实没什么神秘:<b>走一遍格式串,普通字符直接 putchar 出去;遇到 <span class="ko">%</span> 才交给格式处理</b>。</p>
+        </section>
+
+        <div class="scene"><div class="sb"><div class="sk">撞墙 · Dead End</div><div class="st">你想 <span class="ko">printf("count = %d", n)</span> 调试 —— 编译都过不去。</div><p>裸机上<b>没有标准库</b>,printf 本来就是别人(操作系统)提供的。现在没人提供,只能你来造。</p></div></div>
+
+        <aside class="note pit" style="margin-top:24px"><div class="bar"></div><div class="nb"><div class="nk">坑 · 反面教材</div><p>printf 里把 <span style="font-family:var(--mono)">%d</span> 的数字「倒序拼出来」那套、还有 <span style="font-family:var(--mono)">va_arg</span> 取变长参数 —— 都是<b>水管件</b>,照抄就行,千万别纠结。真正要你懂的,是「printf = 走一遍字符串」这个骨架。<i>(讲清楚这条线,是这门课最值钱的一刀。)</i></p></div></aside>
+
+        <section style="margin:30px 0 0">
+          <div class="playhead">动手 · 写下关键一行</div><h2 class="dh">第 1 步:给内核装上眼睛</h2>
+          <p class="dlead">格式化那套(<span style="font-family:var(--mono);color:#3a4ed6">%d/%x/%s</span>)已经给你了(黑盒)。<b>你只补高亮那一行</b> —— 把普通字符直接送出去。</p>
+          <div id="do1"></div>
+        </section>
+
+        <section class="txt" style="margin-top:40px">
+          <div class="sechead">§ 2.2 · 崩了,你却不知道</div>
+          <p class="body">有了眼睛还不够。内核一旦出错,默认会<b>默默跑飞</b> —— 你连它死在哪都不知道。你需要一个警报:出事就当场喊停,并报出「在哪个文件、第几行崩的」。这就是 ${term("PANIC", "PANIC 宏", "出致命错时打印 文件:行号 + 原因,然后停机。内核版的「拉闸喊停」。")} —— 它打印现场,然后停在原地,绝不带着错继续跑。</p>
+        </section>
+
+        <aside class="note metaphor"><div class="bar"></div><div class="nb"><div class="nk">比喻</div><p>把这章想成<b>给工地配装备</b>:printf 是<b>眼睛</b>(看得见数值),panic 是<b>警报</b>(出事拉闸),内存分配器是<b>双手</b>(要得到材料)。没有它们,后面每一章都寸步难行。</p></div></aside>
+
+        <section class="txt" style="margin-top:40px">
+          <div class="sechead">§ 2.3 · 要内存,得自己分</div>
+          <p class="body">下一步你会需要内存:存进程、存页表……可裸机上没有 <span class="ko">malloc</span>。最简单的分配器,就是一根指针 ${term("next_paddr", "分配指针", "指向「下一块还没分出去的内存」。分一次,它就往前挪几页。")}:从一大块空闲内存的开头起,<b>每分一次,就把指针往前挪 n 页</b>,把刚才那段交出去。它分得出、但收不回 —— 够内核早期用了。</p>
+        </section>
+
+        <section style="margin:34px 0 0">
+          <div class="playhead">动手 · 可玩图</div><h2 class="dh">点 alloc,看指针往前挪</h2>
+          <p class="dlead">每点一次 <span style="font-family:var(--mono);color:#3a4ed6">alloc_pages(1)</span>,就分出一页、把 <span style="font-family:var(--mono);color:#3a4ed6">next_paddr</span> 往前推 <span style="font-family:var(--mono)">0x1000</span>。分到底,它会替你拉响 panic。</p>
+          <div class="playbox">
+            <div class="ram" id="ram"></div>
+            <div class="readout">
+              <div class="lbl">next_paddr 现在</div><div class="zone-name" id="npVal" style="font-family:var(--mono);font-size:17px"></div>
+              <div class="alloclog" id="allocLog"></div>
+              <div class="allocbtns"><button class="go" id="allocBtn">▶ alloc_pages(1)</button><button class="rst" id="allocRst">重置</button></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="quiz" id="quiz">
+          <div class="qhead"><span class="badge">小测</span><span class="sub">单选 · 选完即时揭晓</span></div>
+          <p class="q">这个「挪指针」式分配器,有一个本事它天生就没有:</p>
+          <div class="opts" id="opts"></div>
+          <div class="qexp" id="qexp"><div class="l">解析</div><p>它只会一路往前挪,从不记「谁用了哪块」,所以<b>分得出、却还不回</b>(没有 free)。这对内核早期完全够用;真正能回收的分配器,等以后真有需要再上 —— 先简单、能跑,是这门课的一贯打法。</p></div>
+        </section>
+
+        <section style="margin:44px 0 0">
+          <div class="playhead">动手 · 写下关键一行</div><h2 class="dh">第 2 步:让分配器挪起来</h2>
+          <p class="dlead">分配器的框架都给好了。<b>你只补高亮那一行</b> —— 把 <span style="font-family:var(--mono);color:#3a4ed6">next</span> 往前挪 <span style="font-family:var(--mono);color:#3a4ed6">n</span> 个 <span style="font-family:var(--mono);color:#3a4ed6">PAGE_SIZE</span>,这一页才算分出去了。</p>
+          <div id="do2"></div>
+        </section>
+
+        <section style="margin:40px 0 0">
+          <div class="playhead" style="color:#1f8a5b">运行 · 见证成果</div><h2 class="dh">打印、分配,再 —— 故意崩一次</h2>
+          <div class="runwrap" style="margin-top:16px">
+            <div class="rbar"><span>terminal — build &amp; run</span><button class="run" id="runBtn"><span style="font-size:9px">▶</span><span id="runLabel">运行</span></button></div>
+            <div class="runterm" id="runTerm"><div class="idle">$ <span style="color:#8b93a1">两处承重墙写好后,点 ▶ 运行 —— 看 printf 吐数字、看分配地址前移、看 panic 当场喊停。</span></div></div>
+            <div id="runResult"></div>
+          </div>
+          <div id="achWrap"></div>
+        </section>
+
+        <aside class="note tip2"><div class="bar"></div><div class="nb"><div class="nk">提示</div><p>工具台搭好了。下一章我们让内核学会<b>接住意外</b>(陷阱与异常)—— 故意执行一条非法指令,看它被你接住而不是死机。你这章写的 <span style="font-family:var(--mono)">printf</span> 和 <span style="font-family:var(--mono)">panic</span>,马上派上大用场。</p></div></aside>
+
+        <div class="hr" style="margin:44px 0 0"></div>
+        <div class="pager"><span>← 第 01 章 · 内核引导</span><span class="next">第 03 章 · 接住意外 →</span></div>
+      `;
+
+      /* ============ 可玩图:挪指针分配器 ============ */
+      (function () {
+        const ram = $("#ram"), npVal = $("#npVal"), log = $("#allocLog");
+        const CAP = 6, BASE = 0x80221000, PAGE = 0x1000;
+        let used = 0;
+        const hex = (n) => "0x" + n.toString(16);
+        function render() {
+          ram.innerHTML = Array.from({ length: CAP }, (_, i) =>
+            `<div class="cell ${i < used ? "used" : ""} ${i === used && used < CAP ? "next" : ""}">${i < used ? "页 #" + (i + 1) + " · " + hex(BASE + i * PAGE) : (i === used ? "← next_paddr" : "空闲")}</div>`).join("");
+          npVal.textContent = used < CAP ? hex(BASE + used * PAGE) : "—— 越界 ——";
+        }
+        $("#allocBtn").onclick = () => {
+          if (used >= CAP) { log.innerHTML += `<div class="panic">PANIC: kalloc.c:9: out of memory</div>`; return; }
+          const addr = BASE + used * PAGE; used++; render();
+          log.innerHTML += `<div><span class="a">alloc_pages(1)</span> → 拿到 ${hex(addr)}</div>`;
+          if (used >= CAP) log.innerHTML += `<div style="color:#8b93a1">(内存用完了,再点一次就 panic)</div>`;
+          log.scrollTop = log.scrollHeight;
+        };
+        $("#allocRst").onclick = () => { used = 0; log.innerHTML = ""; render(); };
+        render();
+      })();
+
+      /* ============ 选择题 ============ */
+      (function () {
+        const opts = $("#opts"), exp = $("#qexp"), correct = 1;
+        const data = [["A", "分配一块内存"], ["B", "把内存还回去(free)"], ["C", "连续分配很多页"], ["D", "记住起始地址"]];
+        let done = false;
+        opts.innerHTML = data.map(([l, t], i) => `<button class="opt" data-i="${i}"><span class="lt">${l}</span><span class="ot">${t}</span><span class="bg"></span></button>`).join("");
+        opts.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+          if (done) return; done = true; const pick = +b.dataset.i;
+          opts.querySelectorAll(".opt").forEach((o) => { o.disabled = true; const i = +o.dataset.i;
+            if (i === correct) { o.classList.add("right"); o.querySelector(".bg").textContent = "✓ 正确"; o.querySelector(".bg").style.color = "#1f8a5b"; }
+            else if (i === pick) { o.classList.add("wrong"); o.querySelector(".bg").textContent = "你选的"; o.querySelector(".bg").style.color = "#b4541f"; }
+            else o.classList.add("dim"); });
+          exp.style.display = "block";
+        });
+      })();
+
+      /* ============ 动手写代码(两步)============ */
+      const doneSteps = new Set();
+      function editor(mount, { n, file, rt, lines, writeIdx, placeholder, answerRe, refAnswer, hint }) {
+        const code = lines.map((l, i) => {
+          if (i === writeIdx) return `<div class="ln writeln"><span class="no">✍</span><span class="src" style="color:#c9d2de">${l.indent || "    "}</span><input class="wallin" placeholder="${placeholder}" spellcheck="false" autocomplete="off"/><span class="src" style="color:#6b7688;margin-left:6px">${l.cmt || ""}</span></div>`;
+          return `<div class="ln"><span class="no">${l.no}</span><span class="src">${l.h}</span></div>`;
+        }).join("");
+        mount.innerHTML = `<div class="editor"><div class="ebar"><div class="dots"><i style="background:#e5484d"></i><i style="background:#e3b27c"></i><i style="background:#46c08a"></i><span class="fn">${file}</span></div><span class="rt">${rt}</span></div><div class="code">${code}</div></div>
+          <div class="ebtns"><button class="btn pri check">检查</button><button class="btn sec ref">看参考答案</button><span class="note">只有 ✍ 那一行需要你写</span></div>
+          <div class="fbslot"></div>`;
+        const inp = mount.querySelector(".wallin"), slot = mount.querySelector(".fbslot");
+        const done = () => { inp.disabled = true; doneSteps.add(n); slot.innerHTML = `<div class="fb ok"><span class="i">✓</span><span><b>写对了</b> —— 这一行已并入你的项目。${doneSteps.size >= 2 ? "两步都好了,去最下面点「运行」。" : "继续往下走。"}</span></div>`; };
+        mount.querySelector(".check").onclick = () => { if (answerRe.test(inp.value)) done(); else slot.innerHTML = `<div class="fb bad"><span class="i">!</span><span>还差一点 —— ${hint}</span></div>`; };
+        mount.querySelector(".ref").onclick = () => { inp.value = refAnswer; done(); };
+      }
+
+      editor($("#do1"), { n: 1, file: "lib/print.c", rt: "C · 脚手架已就绪", writeIdx: 6,
+        lines: [{ no: "01", h: `<span class="cm">// lib/print.c — 自己拼一个 printf</span>` },
+          { no: "02", h: `<span class="kw">void</span> <span class="fn2">printf</span>(<span class="kw">const char</span> *fmt, ...) {` },
+          { no: "03", h: `    <span class="kw">va_list</span> ap; va_start(ap, fmt);` },
+          { no: "04", h: `    <span class="kw">while</span> (*fmt) {` },
+          { no: "05", h: `        <span class="kw">if</span> (*fmt == <span class="st">'%'</span>) {` },
+          { no: "06", h: `            fmt++; <span class="fn2">print_fmt</span>(*fmt, &ap);  <span class="cm">// %d/%x/%s,已给(黑盒)</span>` },
+          { no: "07", h: ``, indent: "        } else ", cmt: `// 承重墙:普通字符直接送出去` },
+          { no: "08", h: `        fmt++;` }, { no: "09", h: `    }` }, { no: "10", h: `    va_end(ap);` }, { no: "11", h: `}` }],
+        placeholder: `← 你写这一行(把当前字符 *fmt 输出)`, answerRe: /putchar\s*\(\s*\*?\s*fmt\s*\)/, refAnswer: `putchar(*fmt);`, hint: `普通字符就交给上一章的 <span style="font-family:var(--mono)">putchar(*fmt)</span>。` });
+
+      editor($("#do2"), { n: 2, file: "kernel/kalloc.c", rt: "C · 脚手架已就绪", writeIdx: 4,
+        lines: [{ no: "01", h: `<span class="cm">// kernel/kalloc.c — 最简内存分配器(挪指针式)</span>` },
+          { no: "02", h: `<span class="kw">paddr_t</span> <span class="fn2">alloc_pages</span>(<span class="kw">uint32_t</span> n) {` },
+          { no: "03", h: `    <span class="kw">static paddr_t</span> next = (<span class="kw">paddr_t</span>) __free_ram;` },
+          { no: "04", h: `    <span class="kw">paddr_t</span> paddr = next;` },
+          { no: "05", h: ``, cmt: `// 承重墙:把分配指针往前挪 n 页` },
+          { no: "06", h: `    <span class="kw">if</span> (next > (<span class="kw">paddr_t</span>) __free_ram_end)` },
+          { no: "07", h: `        <span class="fn2">PANIC</span>(<span class="st">"out of memory"</span>);` },
+          { no: "08", h: `    <span class="kw">return</span> paddr;` }, { no: "09", h: `}` }],
+        placeholder: `← 你写这一行(next 往前挪 n 个 PAGE_SIZE)`, answerRe: /next\s*\+=\s*n\s*\*\s*PAGE_SIZE/, refAnswer: `next += n * PAGE_SIZE;`, hint: `用 <span style="font-family:var(--mono);background:#f7e6d6;padding:1px 5px;border-radius:4px">next += n * PAGE_SIZE;</span> 把指针往前推。` });
+
+      /* ============ 运行 / 成就 ============ */
+      (function () {
+        const btn = $("#runBtn"), label = $("#runLabel"), termEl = $("#runTerm"), result = $("#runResult"), achWrap = $("#achWrap");
+        let running = false;
+        btn.onclick = () => {
+          if (running) return;
+          if (doneSteps.size < 2) { termEl.innerHTML = `<div class="idle">$ <span style="color:#ff8a8a">还有承重墙没写(第 ${[1, 2].filter((x) => !doneSteps.has(x)).join("、")} 步)—— 回上面把它补上再运行。</span></div>`; return; }
+          running = true; label.textContent = "运行中…"; termEl.innerHTML = ""; result.innerHTML = ""; achWrap.innerHTML = "";
+          const seq = ["clang -target riscv32 -c lib/print.c kernel/kalloc.c …", "ld.lld -T kernel.ld -o kernel.elf", "qemu-system-riscv32 -kernel kernel.elf"];
+          seq.forEach((l, i) => setTimeout(() => termEl.insertAdjacentHTML("beforeend", `<div class="l"><span class="a">›</span> ${l}</div>`), 300 * (i + 1)));
+          setTimeout(() => {
+            running = false; label.textContent = "重新运行";
+            result.innerHTML = `<div class="vga" style="padding:20px"><div class="lab">CONSOLE OUTPUT · via SBI</div>
+              <div style="font-family:var(--mono);font-size:14px;line-height:2;color:#cbd5d0">
+              <div>[printf] count = 42  hex = 0x2a</div>
+              <div>[alloc]  page #1 → 0x80221000</div>
+              <div>[alloc]  page #2 → 0x80222000</div>
+              <div style="color:#ff8a8a">PANIC: kalloc.c:9: out of memory<span class="cur" style="height:18px;background:#ff8a8a"></span></div>
+              </div></div>`;
+            achWrap.innerHTML = `<div class="ach"><div class="ico">🛠️</div><div style="flex:1"><div class="k">成就解锁</div><div class="t">工具台搭好了</div><div class="d">你的内核长出了眼睛(printf)、警报(panic)、和双手(分配器)。第 02 章 · 进度 +1。</div></div><span class="xp">+10 XP</span></div>`;
+          }, 300 * (seq.length + 1));
+        };
+      })();
+
+      /* ============ Keri ============ */
+      (function () {
+        const keri = $("#keri"), body = $("#keriBody"), chips = $("#keriChips"), input = $("#keriInput");
+        const QA = [["为什么内核要自己写 printf?", "因为裸机上没有标准库 —— printf 本来就是操作系统提供的服务。你现在正是那个「提供服务的人」,所以连打印都得自己拼。好在它不难:走一遍格式串,普通字符 putchar 出去,%号才格式化。"],
+          ["挪指针的分配器为什么不能 free?", "它只记一个「下一块在哪」的指针,一路往前挪,从不记录谁用了哪一段。所以它分得出、却无从知道某块能不能回收。内核早期这完全够用;要真正的回收(free),得换更复杂的分配器,以后真需要再说。"],
+          ["%d 为什么要倒序拼?", "把整数转成十进制,是从最低位算起的(先得到个位、再十位…),所以数字是「倒着」生成的,得反过来再输出。这属于水管件 —— 知道它能把数字打出来就行,别在这耗。"]];
+        chips.innerHTML = QA.map(([q], i) => `<button data-i="${i}">${q}</button>`).join("");
+        const push = (q, a) => { $(".intro", body)?.remove();
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "me", innerHTML: `<div>${q}</div>` }), chips);
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "ke", innerHTML: `<div class="av2">K</div><div>${a}</div>` }), chips);
+          body.scrollTop = body.scrollHeight; };
+        chips.querySelectorAll("button").forEach((b) => b.onclick = () => push(QA[+b.dataset.i][0], QA[+b.dataset.i][1]));
+        const send = () => { const v = input.value.trim(); if (!v) return; input.value = ""; push(v, "好问题。正式版我会结合你正读到的这一段给你针对性回答 —— 当前是结构 demo,先放个占位。记住这章三件套:printf 看得见、panic 抓得住、分配器要得到。"); };
+        $("#keriSend").onclick = send; input.addEventListener("keydown", (e) => e.key === "Enter" && send());
+        $("#keriOrb").onclick = () => keri.classList.add("open"); $("#keriX").onclick = () => keri.classList.remove("open");
+      })();
+
+      const prog = $("#prog");
+      addEventListener("scroll", () => { const h = document.documentElement, mx = h.scrollHeight - h.clientHeight; prog.style.width = (mx > 0 ? h.scrollTop / mx * 100 : 0) + "%"; }, { passive: true });
+    </script>
+  </body>
+</html>
