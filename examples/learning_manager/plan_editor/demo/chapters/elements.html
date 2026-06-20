@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenKeri · 词元库</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg:#fafafb; --card:#ffffff; --ink:#15171e; --soft:#494f5b; --mute:#888e9b; --faint:#b4bac6;
+        --line:#ececf2; --line2:#f4f5f9; --shadow:0 1px 2px rgba(20,22,40,.04), 0 12px 28px -16px rgba(20,22,40,.16);
+        --indigo:#5b5bf0; --indigo-deep:#4444d6; --indigo-soft:#eeeefe;
+        --blue:#2c83e0; --blue-soft:#e9f3fe; --cyan:#0ca5c9; --cyan-soft:#e4f7fb;
+        --amber:#d68511; --amber-soft:#fdf2dd; --go:#16a34a; --go-soft:#e7f7ee; --go-line:#bfe7cd;
+        --violet:#8b5cf6; --violet-soft:#f3edfe; --pink:#db2777; --pink-soft:#fdecf5;
+        --red:#dc4733; --red-soft:#fdeeeb;
+        --f:-apple-system,"PingFang SC","Segoe UI",system-ui,sans-serif; --mono:"JetBrains Mono",monospace;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f); line-height: 1.75; -webkit-font-smoothing: antialiased; }
+      .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px 140px; }
+
+      /* 头 */
+      .masthead { padding: 56px 0 30px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+      .masthead .ey { font-size: 12px; font-weight: 700; letter-spacing: 2.5px; color: var(--indigo); text-transform: uppercase; }
+      .masthead h1 { font-size: 38px; line-height: 1.1; letter-spacing: -1.2px; margin: 12px 0 0; }
+      .masthead p { color: var(--soft); font-size: 17px; margin: 12px 0 0; max-width: 560px; }
+      .toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+      .toc a { font-size: 12.5px; color: var(--soft); text-decoration: none; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; transition: .14s; }
+      .toc a:hover { border-color: var(--indigo); color: var(--indigo-deep); background: var(--indigo-soft); }
+
+      /* 每个词元区块 */
+      .el { padding: 38px 0; border-bottom: 1px solid var(--line2); scroll-margin-top: 20px; }
+      .el-head { display: flex; align-items: baseline; gap: 13px; margin-bottom: 18px; flex-wrap: wrap; }
+      .chip { flex: 0 0 auto; font-size: 12px; font-weight: 700; letter-spacing: .3px; padding: 4px 11px; border-radius: 8px; }
+      .el-name { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+      .el-desc { color: var(--mute); font-size: 14px; }
+      .el-spec { margin-top: 14px; font-size: 12.5px; color: var(--mute); background: var(--line2); border-radius: 9px; padding: 9px 13px; }
+      .el-spec b { color: var(--soft); }
+
+      .c-read { background: #eef0f4; color: #3a4150; } .c-see { background: var(--blue-soft); color: #1b5fa6; }
+      .c-play { background: var(--cyan-soft); color: #0a7c97; } .c-think { background: var(--amber-soft); color: #9a5e08; }
+      .c-do { background: var(--go-soft); color: #117a39; } .c-aux { background: var(--violet-soft); color: #6d3ad1; }
+      .c-ask { background: var(--pink-soft); color: #b01e63; } .c-wall { background: var(--red-soft); color: #b53521; }
+      .c-run { background: var(--go-soft); color: #117a39; } .c-decide { background: #ece9fd; color: #5b3ad1; }
+
+      /* —— 通用零件样式 —— */
+      .prose { font-size: 16.5px; color: #2a2f3a; }
+      .prose .h { font-size: 19px; font-weight: 700; letter-spacing: -.3px; color: var(--ink); margin: 0 0 8px; }
+      .prose b { color: var(--ink); } .prose p { margin: 0; }
+      .term { color: var(--indigo-deep); border-bottom: 1.5px dotted #b9b9f3; cursor: help; position: relative; font-weight: 500; }
+      .term:hover::after { content: attr(data-tip); position: absolute; left: 0; top: 165%; width: 250px; background: #1c1e26; color: #fff; font-size: 12.5px; font-weight: 400; line-height: 1.6; padding: 10px 12px; border-radius: 10px; z-index: 30; box-shadow: 0 14px 30px rgba(0,0,0,.26); }
+
+      .fig { border: 1px solid var(--line); border-radius: 15px; padding: 20px 20px 13px; background: var(--card); box-shadow: var(--shadow); }
+      .fig svg { display: block; width: 100%; height: auto; max-height: 240px; }
+      .figcap { color: var(--mute); font-size: 12.5px; margin-top: 11px; padding-top: 9px; border-top: 1px solid var(--line2); }
+
+      .play { border: 1px solid #cdeaf3; background: linear-gradient(180deg,#f5fdff,#ecf9ff); border-radius: 15px; padding: 18px 20px; box-shadow: var(--shadow); }
+      .play .tag { font-size: 11px; font-weight: 700; color: var(--cyan); text-transform: uppercase; letter-spacing: .6px; }
+      .play-row { display: flex; align-items: center; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+      .play-row input[type=range] { flex: 1; min-width: 180px; accent-color: var(--cyan); }
+      .play-row .hint { font-size: 12.5px; color: #5b91ad; }
+      .status { margin-top: 13px; font-size: 14.5px; font-weight: 600; padding: 10px 14px; border-radius: 10px; }
+      .status.ok { background: var(--go-soft); color: #117a39; } .status.bad { background: #fdeceb; color: #c0392b; }
+
+      .quiz, .card { border: 1px solid var(--line); border-radius: 15px; padding: 20px; background: var(--card); box-shadow: var(--shadow); }
+      .q { font-weight: 600; font-size: 16px; } .q .badge { font-size: 11px; font-weight: 700; color: var(--amber); background: var(--amber-soft); border: 1px solid #f1d9a6; padding: 1px 8px; border-radius: 6px; margin-right: 8px; vertical-align: 2px; }
+      .choices { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+      .choices button { text-align: left; padding: 12px 15px; border: 1px solid var(--line); border-radius: 11px; background: #fff; cursor: pointer; font-size: 15px; font-family: inherit; color: var(--ink); transition: .13s; }
+      .choices button:hover:not(:disabled) { border-color: var(--indigo); background: var(--indigo-soft); }
+      .choices button.right { border-color: var(--go); background: var(--go-soft); font-weight: 600; }
+      .choices button.wrong { border-color: #e0796f; background: #fdeceb; }
+      .reveal { margin-top: 13px; padding: 12px 15px; background: var(--indigo-soft); border: 1px solid #dadafb; border-radius: 10px; font-size: 14.5px; color: #34346a; display: none; }
+
+      /* 做·承重墙 */
+      .do { border: 1.5px solid var(--go-line); border-radius: 16px; overflow: hidden; background: var(--card); box-shadow: 0 18px 38px -24px rgba(21,163,74,.5); }
+      .do .dh { display: flex; align-items: center; gap: 11px; padding: 13px 16px; background: var(--go-soft); border-bottom: 1px solid var(--go-line); }
+      .do .ic { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--go); color: #fff; font-size: 16px; }
+      .do .t { font-weight: 700; font-size: 15px; } .do .s { font-size: 12.5px; color: #2f8a55; }
+      .do .file { margin-left: auto; font-family: var(--mono); font-size: 12px; color: #117a39; background: #fff; border: 1px solid var(--go-line); padding: 3px 9px; border-radius: 7px; }
+      .do .db { padding: 16px; }
+      .leg { display: flex; gap: 16px; font-size: 12px; color: var(--mute); margin: 0 0 10px; flex-wrap: wrap; }
+      .leg i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; } .sw-wall { background: #f0cd6a; } .sw-box { background: #3a3d46; }
+      pre { background: #1b1d24; color: #e9ebf3; border-radius: 12px; padding: 15px 16px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.95; margin: 0; }
+      pre .cm { color: #828a96; } pre .kw { color: #ff8aa6; } pre .ty { color: #7cc0ff; } pre .fn { color: #cdacff; } pre .st { color: #93eda0; } pre .nu { color: #ffc07a; }
+      .do .task { font-size: 14.5px; color: #2a2f3a; margin: 0 0 14px; line-height: 1.7; }
+      .do .task .you { background: #fbeec0; color: #8a6500; border: 1px solid #ecd591; padding: 1px 8px; border-radius: 6px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+      .do .task .whatwall { border: 0; background: none; color: var(--indigo-deep); font-size: 13px; cursor: pointer; padding: 0; margin-left: 5px; font-family: inherit; border-bottom: 1px dashed currentColor; }
+      pre .yourline { display: block; background: rgba(240,205,106,.13); box-shadow: inset 3px 0 0 #e0b53a; border-radius: 5px; margin: 3px -6px; padding: 3px 6px 3px 2px; }
+      pre .yourline .gut { color: #f0cd6a; margin-right: 9px; }
+      pre .yourline .cmt { color: #8b929e; margin-left: 10px; }
+      .wallin { font-family: var(--mono); font-size: 13px; color: #ffe6a0; background: rgba(255,255,255,.05); border: 0; border-bottom: 1.5px dashed #e0b53a; border-radius: 4px; padding: 2px 9px; min-width: 230px; outline: none; caret-color: #f0cd6a; }
+      .wallin::placeholder { color: #7e8590; } .wallin:focus { background: rgba(255,255,255,.1); }
+      .wallin.ok { color: #93eda0; border-bottom-color: var(--go); background: rgba(22,163,74,.12); }
+      .do .wallpop { margin-top: 13px; font-size: 13px; color: var(--soft); background: var(--indigo-soft); border: 1px solid #dadafb; border-radius: 10px; padding: 12px 14px; line-height: 1.65; } .do .wallpop b { color: var(--ink); }
+      .do-bar { display: flex; align-items: center; gap: 11px; margin-top: 14px; flex-wrap: wrap; }
+      .btn { padding: 9px 17px; border: 0; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: .13s; }
+      .btn.go { background: var(--go); color: #fff; } .btn.go:hover { background: #117a39; }
+      .btn.ghost { background: #fff; color: var(--soft); border: 1px solid var(--line); } .btn.ghost:hover { border-color: var(--indigo); color: var(--indigo-deep); }
+      .btn.dark { background: var(--ink); color: #fff; } .btn.dark:hover { background: #000; }
+      .res { font-size: 13px; font-weight: 600; }
+
+      /* 旁注 */
+      .aside { display: flex; gap: 13px; align-items: flex-start; border-radius: 14px; padding: 15px 17px; border: 1px solid; }
+      .aside.metaphor { background: var(--amber-soft); border-color: #f1d9a6; } .aside.pit { background: var(--red-soft); border-color: #f3cabf; }
+      .aside .ico { font-size: 20px; } .aside .body { font-size: 14.5px; color: #2a2f3a; } .aside .body b { color: var(--ink); }
+      .aside + .aside { margin-top: 12px; }
+
+      /* 问 Keri */
+      .keri-card { border: 1px solid var(--line); border-radius: 15px; background: var(--card); box-shadow: var(--shadow); overflow: hidden; }
+      .keri-card .kh { display: flex; align-items: center; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--line); }
+      .keri-card .av { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(150deg,#7b7bf5,#4f4fde); color: #fff; }
+      .keri-card .av svg { width: 17px; height: 17px; } .keri-card .kh b { font-size: 14.5px; } .keri-card .kh .sub { font-size: 12px; color: var(--mute); }
+      .keri-card .kb { padding: 14px 16px; }
+      .kb .sugg { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+      .kb .sugg button { text-align: left; font-size: 13px; color: var(--soft); background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; cursor: pointer; font-family: inherit; }
+      .kb .sugg button:hover { border-color: var(--pink); color: #b01e63; background: var(--pink-soft); }
+      .kb .ask { display: flex; gap: 8px; } .kb .ask input { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; font-family: inherit; outline: none; } .kb .ask input:focus { border-color: var(--pink); }
+      .kb .ask button { padding: 0 16px; border: 0; border-radius: 10px; background: var(--pink); color: #fff; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+      .kb .ans { margin-top: 12px; font-size: 13px; line-height: 1.7; color: #6b2148; background: var(--pink-soft); border: 1px solid #fbcfe2; border-radius: 10px; padding: 11px 13px; display: none; }
+
+      /* 撞墙·情境 */
+      .scene { text-align: center; padding: 26px 22px; border-radius: 16px; background: linear-gradient(180deg,#fff7f4,#fdeee9); border: 1px solid #f3cabf; box-shadow: 0 16px 36px -24px rgba(220,71,51,.5); }
+      .scene .ic { font-size: 30px; } .scene .big { font-size: 21px; font-weight: 700; letter-spacing: -.3px; margin-top: 4px; } .scene .s { color: #c0392b; font-size: 14.5px; font-style: italic; margin-top: 6px; }
+
+      /* 运行·成就 */
+      .run { border: 1px solid var(--line); border-radius: 15px; overflow: hidden; box-shadow: var(--shadow); }
+      .run .rh { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--line); }
+      .run .rh code { font-size: 12.5px; color: var(--mute); font-family: var(--mono); }
+      .runout { background: #12141b; color: #cfe9d6; font-family: var(--mono); font-size: 12.5px; line-height: 1.75; padding: 15px 16px; margin: 0; white-space: pre-wrap; min-height: 30px; }
+
+      /* 决策弧 */
+      .dec .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+      @media (max-width: 560px) { .dec .opts { grid-template-columns: 1fr; } }
+      .dec .opt { border: 1px solid var(--line); border-radius: 13px; padding: 14px; cursor: pointer; transition: .13s; background: #fff; }
+      .dec .opt:hover { border-color: var(--indigo); box-shadow: var(--shadow); }
+      .dec .opt.picked { border-color: var(--indigo); background: var(--indigo-soft); }
+      .dec .opt .on { font-weight: 700; font-size: 15px; } .dec .opt .cost { font-size: 13px; color: var(--soft); margin-top: 6px; }
+      .dec .verdict { margin-top: 6px; padding: 13px 15px; background: #ece9fd; border: 1px solid #d8d0fb; border-radius: 11px; font-size: 14.5px; color: #44347e; display: none; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="masthead">
+        <div class="ey">OpenKeri · 设计系统</div>
+        <h1>词元库</h1>
+        <p>「故事性编程」学习文章的全部零件。每个一个精装样例 —— 既是规范,也是之后每章直接拼的积木。统一一套风格,定死在这。</p>
+        <nav class="toc" id="toc"></nav>
+      </header>
+      <main id="gallery"></main>
+    </div>
+
+    <script src="./ch1_content.js"></script>
+    <script>
+      const FIG = window.CH1.FIG;
+      const KERI_SVG = `<svg viewBox="0 0 64 64" fill="none"><path d="M50.7 18.5A23.8 23.8 0 1 0 51 45.8" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/><path d="M23 44V24M23 32.5l17.5-13M23 32.5l17.5 13" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      const gallery = document.getElementById("gallery"), toc = document.getElementById("toc");
+      const el = (h) => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+
+      // 每个词元 = 头(chip+名+说明)+ 样例 demo + 规范一行
+      function block({ id, cls, kind, name, desc, demo, spec }) {
+        const sec = el(`<section class="el" id="${id}">
+          <div class="el-head"><span class="chip ${cls}">${kind}</span><span class="el-name">${name}</span><span class="el-desc">${desc}</span></div>
+          <div class="el-demo"></div>
+          <div class="el-spec"><b>规范 ·</b> ${spec}</div>
+        </section>`);
+        sec.querySelector(".el-demo").appendChild(typeof demo === "string" ? el(demo) : demo);
+        gallery.appendChild(sec);
+        toc.appendChild(el(`<a href="#${id}">${kind}</a>`));
+      }
+
+      /* 1. 文字 */
+      block({ id: "txt", cls: "c-read", kind: "读 · 文字", name: "叙述", desc: "全篇的脊柱,其它都挂它旁边",
+        demo: `<div class="prose"><div class="h">第一关 · 启动</div><p>开机那一刻,先跑的根本不是你的代码。在你之前,有段叫<span class="term" data-tip="比你先运行的小程序(OpenSBI),把硬件弄好再交棒给你。">固件</span>的小程序比你先醒;它准备好后,把接力棒交给你的 <b>boot</b>。</p></div>`,
+        spec: "标题 / 分节标签 / 正文段 / 撞墙大字 / 收束金句 / 行内术语。标题只在概念首处出现,不当页眉。" });
+
+      /* 2. 图 */
+      block({ id: "fig", cls: "c-see", kind: "看 · 图", name: "讲解图", desc: "手写 SVG,把一段话压成一张图",
+        demo: `<div class="fig">${FIG.boot()}<div class="figcap">图 1 · 开机接力:固件先醒,再把棒交给你</div></div>`,
+        spec: "手写 SVG(非 D3),元素可寻址以便高亮。落款「图 N · 一句话」。数据:描述状态,渲染器写死长相。" });
+
+      /* 3. 可玩图 */
+      const play = el(`<div class="play"><div class="tag">🎮 可玩 · 拖 sp 看崩不崩</div>
+        <svg viewBox="0 0 320 180" style="max-height:180px;margin-top:6px">
+          <rect x="120" y="12" width="150" height="50" rx="5" fill="#dcfce7" stroke="#86efac"/><text x="195" y="33" text-anchor="middle" font-size="12" fill="#15803d">栈区(已预留)</text><text x="195" y="50" text-anchor="middle" font-size="10" fill="#16a34a">sp 落这才正常</text>
+          <rect x="120" y="70" width="150" height="98" rx="5" fill="#f3f4f6" stroke="#d1d5db"/><text x="195" y="120" text-anchor="middle" font-size="11" fill="#9ca3af">没铺的乱地址区</text>
+          <g id="spM"><line x1="64" y1="38" x2="116" y2="38" stroke="#dc2626" stroke-width="2" marker-end="url(#ah)"/><text x="60" y="42" text-anchor="end" font-size="13" font-family="monospace" fill="#dc2626">sp</text></g>
+          <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="5" refY="4.5" orient="auto"><path d="M1,1 L8,4.5 L1,8" fill="none" stroke="#dc2626" stroke-width="1.5"/></marker></defs>
+        </svg>
+        <div class="play-row"><span class="hint">拖动 →</span><input type="range" id="spR" min="12" max="166" value="120"/></div>
+        <div class="status bad" id="spS"></div></div>`);
+      block({ id: "playfig", cls: "c-play", kind: "玩 · 可玩图", name: "可玩图", desc: "图能拖/点,自己驱动,即时反馈",
+        demo: play, spec: "在「图」基础上加可操作 + 即时反馈(拖、点、步进)。交互即学习,不是看视频。" });
+
+      /* 4. 练·选择 */
+      block({ id: "quiz", cls: "c-think", kind: "想 · 练", name: "练(选择/判断)", desc: "学到的当口立刻自检,主动回忆",
+        demo: `<div class="quiz" data-ok="1"><div class="q"><span class="badge">练 · 选择</span>开机时,屏幕上第一个「醒来」运行的是谁?</div>
+          <div class="choices"><button data-i="0">你写的内核</button><button data-i="1">固件 OpenSBI</button><button data-i="2">操作系统</button></div>
+          <div class="reveal">对 —— 固件比你先跑,准备好后才跳到 0x80200000 把控制权交给你。</div></div>`,
+        spec: "题干 + 选项 + 正解 + 揭晓点评。在学到的当口出现(不抽成单独练习区)。可扩展:判断 / 填空。" });
+
+      /* 5. 做·承重墙 */
+      const doEl = el(`<div class="do" data-n="1"><div class="dh"><span class="ic">🔧</span><div><div class="t">动手 · 项目第 1 步</div><div class="s">把 sp 指到栈顶</div></div><span class="file">arch/boot.c</span></div>
+        <div class="db">
+          <div class="task"><b>该你写一行了。</b>整份文件已经给好,只有标 <span class="you">✍ 你写</span> 的那行空着 —— 把它补上,其余都是脚手架,不用你敲。<button class="whatwall">这行为什么要你写?</button></div>
+<pre><span class="cm">// arch/boot.c —— 开机第一段,此刻还没有栈</span>
+<span class="kw">__attribute__</span>((<span class="kw">naked</span>)) <span class="kw">void</span> <span class="fn">boot</span>(<span class="kw">void</span>) {
+    <span class="kw">__asm__</span> <span class="kw">__volatile__</span>(
+<span class="yourline"><span class="gut">✍</span><input class="wallin" placeholder="在这写一行汇编…" spellcheck="false"/><span class="cmt">// 把栈指针 sp 指到栈顶 __stack_top</span></span>
+        <span class="st">"j  kernel_main\\n"</span>
+    );
+}</pre>
+          <div class="do-bar"><button class="btn go check">✓ 我写好了</button><button class="btn ghost ref">看参考答案</button><span class="res"></span></div>
+          <div class="wallpop" hidden>这行是这一章<b>真正要你亲手写、必须吃透</b>的关键代码(我们内部叫它「<b>承重墙</b>」)—— 因为"开机先支栈"是整个内核能跑的地基。其余代码是脚手架,沙箱已经替你搭好,照抄就行,不必纠结。</div>
+        </div></div>`);
+      block({ id: "do", cls: "c-do", kind: "做 · 承重墙", name: "动手(写关键代码)", desc: "完整文件给上下文,只「你写」那行就地填 → 自动并入暗线项目",
+        demo: doEl, spec: "完整文件 + 注释做上下文;只关键行(承重墙)是空槽,融进编辑器、整行高亮 + ✍ 标记。其余脚手架已给。写对自动并入项目;「看参考答案」= 省事档。「承重墙」这内部词不直接甩给学习者,降级成可点的小注。" });
+
+      /* 6. 术语 */
+      block({ id: "term", cls: "c-aux", kind: "查 · 术语", name: "术语点出", desc: "关键词划上去给一句定义,不打断阅读",
+        demo: `<div class="prose"><p>你用一条 <span class="term" data-tip="RISC-V 指令:主动陷入更高权限层(固件),请它代办一件事,比如往屏幕写字符。">ecall</span> 把字符托给固件,它替你写到屏幕。把鼠标放上去看定义 →</p></div>`,
+        spec: "行内词 + hover 弹一句定义。轻量,不占版面;深挖留给旁注。" });
+
+      /* 7. 旁注 */
+      block({ id: "aside", cls: "c-aux", kind: "查 · 旁注", name: "旁注(比喻 / 坑)", desc: "比喻、坑、黑盒说明,给正文加层次",
+        demo: `<div><div class="aside metaphor"><div class="ico">💡</div><div class="body"><b>打个比方:</b>OpenSBI 像大楼<b>物业前台</b> —— 比你先到岗,把水电弄好,再把钥匙交给刚搬进来的你。</div></div>
+          <div class="aside pit"><div class="ico">⚠️</div><div class="body"><b>坑:</b>QEMU 默认给 virtio v2,这套驱动要 v1 —— 不加 <code>force-legacy=true</code> 会静默失败。</div></div></div>`,
+        spec: "小侧卡,三型:比喻 / 坑 / 黑盒说明。挂在正文「正要用到」那句旁,默认可收。" });
+
+      /* 8. 问·Keri */
+      const keri = el(`<div class="keri-card"><div class="kh"><span class="av">${KERI_SVG}</span><div><b>问 Keri</b><div class="sub">就近问,它知道你读到哪</div></div></div>
+        <div class="kb"><div class="sugg"><button>固件到底干了啥?</button><button>为什么偏偏是 0x80200000?</button></div>
+          <div class="ask"><input type="text" placeholder="输入你的问题..."/><button>问</button></div>
+          <div class="ans"></div></div></div>`);
+      block({ id: "ask", cls: "c-ask", kind: "问 · Keri", name: "Keri 问答", desc: "每个点就近提问,默认折叠/浮动,不占主区",
+        demo: keri, spec: "选模块/就近 → 输入 → Keri 结合所在位置回答。全局浮动版 + 行内入口。辅助层,不进正文主线。" });
+
+      /* 9. 撞墙·情境 */
+      block({ id: "scene", cls: "c-wall", kind: "撞墙 · 情境", name: "撞墙 / 情境", desc: "戏剧性打断,扛「先撞墙再揭晓」教法",
+        demo: `<div class="scene"><div class="ic">⚡</div><div class="big">你写个普通 C 函数 —— 直接崩了</div><div class="s">语法明明没错,为什么?</div></div>`,
+        spec: "把人放回发明现场:先让他撞墙(亲历痛点),再揭晓机制。独立大字,不绑标题。" });
+
+      /* 10. 运行·成就 */
+      const run = el(`<div class="run"><div class="rh"><button class="btn dark" id="runBtn">▶ 运行项目</button><code>bash run.sh</code></div><pre class="runout" id="runOut">（点运行看成果)</pre></div>`);
+      block({ id: "run", cls: "c-run", kind: "成就 · 运行", name: "运行 / 成就", desc: "暗线项目浮出水面,当场可见的成就锚点",
+        demo: run, spec: "章末把承重墙们攒成的项目一键真跑,出可见成果(Hello / ABAB)。每步以成就收尾(原则 4)。" });
+
+      /* 11. 决策弧(未来) */
+      const dec = el(`<div class="card dec"><div class="q"><span class="badge" style="color:#5b3ad1;background:#ece9fd;border-color:#d8d0fb">决策 · 待做</span>两个程序在一颗 CPU 上轮流跑,谁决定何时切走?</div>
+        <div class="opts"><div class="opt" data-k="a"><div class="on">方案 A · 合作式</div><div class="cost">谁跑完自觉让位。简单,但一个不让位就饿死另一个。</div></div>
+          <div class="opt" data-k="b"><div class="on">方案 B · 抢占式</div><div class="cost">定时器强行切走。公平,但要存/复现场、更复杂。</div></div></div>
+        <div class="verdict"></div></div>`);
+      block({ id: "decide", cls: "c-decide", kind: "决策 · 决策弧", name: "决策弧(有真取舍的章才用)", desc: "给方案 → 摆代价 → 你来定 → 揭晓",
+        demo: dec, spec: "ch1 无真取舍,空着。有真决策点的章(如 ch4 合作 vs 抢占)才上:先撞墙、再摆候选与代价、让他权衡。" });
+
+      /* ===== 交互 ===== */
+      (function () { const r = document.getElementById("spR"), m = document.getElementById("spM"), s = document.getElementById("spS");
+        const u = () => { const y = +r.value; m.querySelector("line").setAttribute("y1", y); m.querySelector("line").setAttribute("y2", y); m.querySelector("text").setAttribute("y", y + 4);
+          const ok = y >= 12 && y <= 62; s.className = "status " + (ok ? "ok" : "bad"); s.textContent = ok ? "✅ sp 在栈区 → 有草稿区,正常运行" : "❌ sp 指向乱地址 → 函数一动笔就崩"; };
+        r.oninput = u; u(); })();
+      document.querySelectorAll(".quiz").forEach((q) => { const ok = q.dataset.ok; q.querySelectorAll(".choices button").forEach((b) => b.onclick = () => {
+        q.querySelectorAll(".choices button").forEach((x) => { x.disabled = true; if (x.dataset.i === ok) x.classList.add("right"); });
+        if (b.dataset.i !== ok) b.classList.add("wrong"); q.querySelector(".reveal").style.display = "block"; }); });
+      document.querySelectorAll(".do").forEach((step) => { const inp = step.querySelector(".wallin"), res = step.querySelector(".res"), wp = step.querySelector(".wallpop");
+        const done = () => { inp.classList.add("ok"); inp.readOnly = true; res.style.color = "#16a34a"; res.textContent = "✓ 已并入你的项目 · 第 1 步完成"; };
+        step.querySelector(".check").onclick = () => { if (/la\s*sp\s*,\s*__stack_top/i.test(inp.value)) done(); else { res.style.color = "#c0392b"; res.textContent = "✗ 还不对,或看参考答案。"; } };
+        step.querySelector(".ref").onclick = () => { inp.value = "la sp, __stack_top"; done(); };
+        step.querySelector(".whatwall").onclick = () => { wp.hidden = !wp.hidden; }; });
+      document.querySelectorAll(".keri-card").forEach((k) => { const ans = k.querySelector(".ans");
+        const show = () => { ans.style.display = "block"; ans.innerHTML = "（正式版:Keri 结合你正读到的位置给针对性回答。当前为占位。)"; };
+        k.querySelector(".ask button").onclick = show; k.querySelectorAll(".sugg button").forEach((b) => b.onclick = show); });
+      document.getElementById("runBtn").onclick = () => { document.getElementById("runOut").textContent = "$ bash run.sh\n编译 arch/*.c kernel/*.c ...\n启动 qemu-system-riscv32 ...\n\nHello from my kernel!\n\n✅ 跑通了 —— 你的 OS 说出了第一句话。"; };
+      document.querySelectorAll(".dec").forEach((d) => { const v = d.querySelector(".verdict");
+        d.querySelectorAll(".opt").forEach((o) => o.onclick = () => { d.querySelectorAll(".opt").forEach((x) => x.classList.toggle("picked", x === o)); v.style.display = "block";
+          v.innerHTML = o.dataset.k === "a" ? "你选了<b>合作式</b> —— 先这么做,等会儿你会亲手撞到「A 不让位就饿死 B」那堵墙,再引出抢占。<i>取舍从旅程里长出来,不是干列对比表。</i>" : "你选了<b>抢占式</b> —— 想得超前!但先别急,合作式更简单、能让你先看见 ABAB;它的墙撞过你才真懂抢占为什么值得那份复杂。"; }); });
+    </script>
+  </body>
+</html>
