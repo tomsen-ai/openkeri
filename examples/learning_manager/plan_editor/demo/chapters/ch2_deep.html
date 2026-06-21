@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>造核 · 第 02 章 趁手工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./os-design.css" />
+    <style>
+      /* —— 同 ch1:仿 Distill,窄居中正文 + 居中留白的配图 —— */
+      main{max-width:1080px;padding:0 40px 150px;}
+      .top .in{max-width:1080px;}
+      .sechead{max-width:680px;margin-left:auto;margin-right:auto;}
+      .lead2{max-width:680px;margin:22px auto;font-size:17px;line-height:1.85;color:var(--body);}
+      .lead2 code,.lead2 .ko{font-family:var(--mono);font-size:.9em;}
+      figure.f{margin:54px auto;display:flex;flex-direction:column;align-items:center;}
+      figure.f figcaption{font-size:13px;color:var(--mute);text-align:center;margin-top:14px;max-width:560px;line-height:1.55;}
+      .scene,.playbox,.doblk,.quiz,.runwrap,.pager,.hr,.bridge,.playhead,.dh{max-width:700px;margin-left:auto;margin-right:auto;}
+      .hero{text-align:center;padding:64px 0 8px;}
+      .hero h1{font-size:46px;max-width:860px;margin-left:auto;margin-right:auto;}
+      .hero .lead{max-width:660px;margin-left:auto;margin-right:auto;}
+      .hero .facts{justify-content:center;}
+
+      /* 代码块(配图) */
+      .cb{max-width:540px;margin:0 auto;border-radius:10px;overflow:hidden;border:1px solid #1c2230;box-shadow:0 8px 26px -16px rgba(14,17,23,.4);}
+      .cb .cbh{background:var(--code-bar);padding:8px 13px;font-family:var(--mono);font-size:11px;color:var(--mute);border-bottom:1px solid var(--code-line);display:flex;justify-content:space-between;}
+      .cb pre{margin:0;background:var(--code-bg);color:#c9d2de;font-family:var(--mono);font-size:12.5px;line-height:1.9;padding:14px 16px;overflow-x:auto;}
+      .cb .cm{color:#6b7688;} .cb .kw{color:#8aa0ff;} .cb .fn{color:#79d3c6;} .cb .st{color:#e3b27c;} .cb .nu{color:#d8a76a;} .cb .rg{color:#c8a6ff;}
+
+      /* printf 解析示意 */
+      .parse{max-width:460px;margin:0 auto;border:1px solid var(--line);border-radius:11px;background:var(--card);overflow:hidden;font-family:var(--mono);}
+      .parse .pr{display:flex;align-items:center;gap:10px;padding:11px 15px;border-top:1px solid var(--line-2);font-size:13px;} .parse .pr:first-child{border-top:0;}
+      .parse .pr .tag{flex:none;width:64px;color:var(--mute);font-size:10.5px;letter-spacing:.06em;}
+      .parse .lit{color:var(--soft);} .parse .pct{color:#b4541f;font-weight:600;background:#fbece2;border-radius:4px;padding:0 4px;} .parse .out{color:var(--accent);font-weight:600;}
+
+      /* bump 分配器 可玩图 */
+      .bump{max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(20,24,29,.04);}
+      .bumpbar{position:relative;height:46px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd;display:flex;overflow:hidden;}
+      .bumpseg{height:100%;border-right:1px solid #fff;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:#fff;}
+      .bumpfree{flex:1;display:flex;align-items:center;justify-content:center;color:var(--mute);font-family:var(--mono);font-size:11px;}
+      .bumpnext{position:absolute;top:-7px;width:2px;height:60px;background:var(--accent);transition:left .25s;}
+      .bumpnext::after{content:'next';position:absolute;top:-15px;left:-12px;font-family:var(--mono);font-size:10px;color:var(--accent);}
+      .bumpctl{display:flex;align-items:center;gap:12px;margin-top:24px;}
+      .bumpctl button{font-family:inherit;font-size:13.5px;border-radius:8px;padding:8px 15px;cursor:pointer;border:1px solid var(--accent-line);}
+      .bumpctl .a{background:var(--accent);color:#fff;border-color:var(--accent);} .bumpctl .r{background:#fff;color:var(--soft);}
+      .bumpctl .nx{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--soft);}
+      .bumplog{margin-top:14px;font-family:var(--mono);font-size:12px;color:var(--soft);line-height:1.7;min-height:20px;}
+      .bumplog .free{color:#b4541f;}
+
+      /* panic 流程 */
+      .flow{max-width:380px;margin:0 auto;display:flex;flex-direction:column;}
+      .node{border:1px solid var(--line);border-radius:11px;padding:11px 15px;background:var(--card);font-size:14px;color:var(--ink);}
+      .node em{display:block;font-style:normal;font-size:11.5px;color:var(--soft);margin-top:3px;}
+      .node.bad{border-color:#e6cdc1;background:#fbf4f0;} .node.stop{border-color:#cdd3f5;background:#f3f4fe;}
+      .step{display:flex;align-items:center;gap:9px;color:var(--mute);font-family:var(--mono);font-size:11px;padding:6px 10px;}
+      .step .v{color:var(--accent);font-size:14px;}.step .ln{flex:1;border-top:1px dashed var(--line-2);}
+
+      /* 承上启下 */
+      .bridge{margin:30px auto;display:flex;gap:11px;align-items:flex-start;padding:14px 18px;border-radius:10px;background:#f3f6f4;border:1px solid #d9e6df;}
+      .bridge .ic{color:var(--go);font-weight:700;flex:none;}
+      .bridge p{margin:0;font-size:14.5px;color:#3a5a4a;line-height:1.6;}
+
+      .doblk{margin:28px auto;}
+      .fb.run{background:#eef1f6;color:#586070;}
+      .doblk .dohd{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--go);font-weight:600;margin-bottom:4px;text-transform:uppercase;}
+      .doblk .dot{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:12px;}
+      .doblk p.note{font-size:14px;color:var(--soft);margin:0 0 12px;line-height:1.6;}
+      /* —— 轻量 IDE:看你的真实工程 —— */
+      .projbtn{background:var(--accent-soft);color:var(--accent);border:0;border-radius:7px;font-size:12px;padding:5px 9px;cursor:pointer;font-family:inherit;margin-right:8px;}
+      .ide{position:fixed;inset:0;z-index:200;display:none;} .ide.open{display:block;}
+      .ideback{position:absolute;inset:0;background:rgba(20,24,29,.5);}
+      .idewin{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(920px,92vw);height:min(620px,86vh);background:#0e1117;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);}
+      .idebar{display:flex;align-items:center;gap:7px;padding:11px 15px;background:#0b0e14;border-bottom:1px solid #1c2230;}
+      .idebar .d{width:11px;height:11px;border-radius:50%;}
+      .idebar .idetitle{font-family:var(--mono);font-size:12px;color:#8b93a1;margin-left:8px;}
+      .idebar .idex{margin-left:auto;background:none;border:0;color:#8b93a1;font-size:20px;cursor:pointer;line-height:1;}
+      .idemain{flex:1;display:flex;min-height:0;}
+      .idetree{width:220px;flex:none;background:#0d1118;border-right:1px solid #1c2230;padding:10px 0;overflow:auto;}
+      .idetree .grp{font-family:var(--mono);font-size:10.5px;color:#5a6473;padding:6px 16px;}
+      .idetree .file{display:flex;align-items:center;padding:6px 14px 6px 24px;font-family:var(--mono);font-size:12px;color:#aeb7c4;cursor:pointer;}
+      .idetree .file:hover{background:#141a24;} .idetree .file.on{background:#1b2330;color:#fff;}
+      .idetree .file .yt{margin-left:auto;font-size:9px;color:#46c08a;}
+      .idecode{flex:1;min-width:0;display:flex;flex-direction:column;}
+      .idefn{font-family:var(--mono);font-size:11.5px;color:#6b7688;padding:9px 16px;border-bottom:1px solid #1c2230;}
+      .idesrc{flex:1;overflow:auto;padding:12px 0;}
+      .idesrc .cl{white-space:pre;padding:0 16px;font-family:var(--mono);font-size:12.5px;line-height:1.95;color:#c9d2de;}
+      .idesrc .cl.yl{background:rgba(70,192,138,.13);border-left:2px solid #46c08a;padding-left:14px;}
+      .idesrc .yt{color:#46c08a;font-size:10px;} .idesrc .dim{color:#5a6473;font-style:italic;}
+      .idesrc .cm{color:#6b7688;}.idesrc .kw{color:#8aa0ff;}.idesrc .fn{color:#79d3c6;}.idesrc .st{color:#e3b27c;}.idesrc .nu{color:#d8a76a;}.idesrc .rg{color:#c8a6ff;}
+      .idefoot{font-family:var(--mono);font-size:11px;color:#6b7688;padding:9px 16px;border-top:1px solid #1c2230;}
+      .idefeed{height:118px;flex:none;background:#080a0f;border-top:1px solid #1c2230;overflow:auto;padding:9px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.8;}
+      .idefeed .fl{white-space:pre;color:#aeb7c4;}
+      .idefeed .fl.cmd{color:#6b7688;} .idefeed .fl.create{color:#79d3c6;} .idefeed .fl.write{color:#e3b27c;} .idefeed .fl.ok{color:#46c08a;} .idefeed .fl.run{color:#8aa0ff;}
+      .idetree .emptyhint{color:#5a6473;font-size:11.5px;padding:14px 16px;line-height:1.7;}
+      .idetree .dir{font-family:var(--mono);font-size:12px;color:#8b93a1;padding:6px 14px 6px 28px;}
+      .idetree .dir.root{padding-left:14px;color:#aeb7c4;}
+      .idetree .file.lvl1{padding-left:30px;} .idetree .file.lvl2{padding-left:48px;}
+      .idetree .yt.bx{color:#5a6473;}
+      .projbtn.act{box-shadow:0 0 0 2px rgba(70,192,138,.5);}
+    </style>
+  </head>
+  <body>
+    <div class="progress"><i id="prog"></i></div>
+    <header class="top"><div class="in">
+      <div class="brand"><span class="mk"><i></i></span><b>造核</b><span class="en">Kernel From Scratch</span></div>
+      <div class="meta"><span>第 02 章 · 趁手工具</span><span class="sep"></span><span class="hl">深度 · 3 处动手</span></div>
+    </div></header>
+
+    <main id="main"></main>
+
+    <div class="keri" id="keri">
+      <button class="orb" id="keriOrb"><span class="av">K</span><span class="t"><b>问 Keri</b><span>卡住了?随时叫我</span></span></button>
+      <div class="panel">
+        <div class="ph"><div style="display:flex;align-items:center;gap:10px"><span class="av">K</span><div style="line-height:1.25"><div><b>Keri</b></div><div class="st"><i></i>陪你读这一章</div></div></div><button class="projbtn" id="keriProj">📁 看项目</button><button class="x" id="keriX">×</button></div>
+        <div class="kbody" id="keriBody"><p class="intro">嗨,这一章你给自己造三件趁手工具:<b>printf</b>、<b>分配器</b>、<b>panic</b> —— 挑个话题问我。</p>
+          <div class="chips" id="keriChips"></div>
+        </div>
+        <div class="kin"><input id="keriInput" placeholder="问 Keri 任何问题…" /><button class="send" id="keriSend">↑</button></div>
+      </div>
+    </div>
+
+    <div class="ide" id="ide">
+      <div class="ideback" id="ideBack"></div>
+      <div class="idewin">
+        <div class="idebar"><span class="d" style="background:#e5484d"></span><span class="d" style="background:#e3b27c"></span><span class="d" style="background:#46c08a"></span><span class="idetitle">你的内核工程 · kernel-ch2</span><button class="idex" id="ideX">×</button></div>
+        <div class="idemain">
+          <div class="idetree" id="ideTree"></div>
+          <div class="idecode"><div class="idefn" id="ideFn"></div><div class="idesrc" id="ideSrc"></div></div>
+        </div>
+        <div class="idefeed" id="ideFeed"></div>
+        <div class="idefoot">工程随你做承重墙<b style="color:#46c08a">按需长出来</b> · 上面是创建/写入的过程</div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (s, r = document) => r.querySelector(s);
+      const main = $("#main");
+      const term = (w, lab, def) => `<span class="term">${w}<span class="tip"><span class="lab">${lab}</span>${def}</span></span>`;
+
+      main.innerHTML = `
+        <section class="hero">
+          <div class="kicker">里程碑 2 / 8 · 趁手工具</div>
+          <h1>给内核装上 printf、分配器、panic</h1>
+          <p class="lead">上一章你的内核能说出第一句话了 —— 但只能照着念死字符串。真要往下调试一个内核,你得先给自己打几件趁手的家伙:能打印变量的 <b>printf</b>、能动态要内存的<b>分配器</b>、出事时体面停下的 <b>panic</b>。这一章你一件件把它们造出来,而且后一件会用上前一件。</p>
+          <div class="facts"><span>~15 分钟</span><span>·</span><span>动手 3 处</span><span>·</span><span>三件工具,环环相扣</span></div>
+        </section>
+        <div class="hr"></div>
+
+        <!-- 1 printf -->
+        <section class="txt">
+          <div class="sechead">§ 1 · printf:让内核学会"说人话"</div>
+          <p class="lead2">你现在手里只有 <code>putchar</code> —— 一次一个字符。打死字符串还行,可调试时你想知道的是<b>变量的值</b>:那个指针现在指哪了?分配到的地址是多少?这些没法预先写死,得在运行时把数字"翻译"成字符。</p>
+          <p class="lead2">这正是 <code>printf</code> 干的活。它扫一遍格式串:普通字符照原样 <code>putchar</code> 出去;一旦遇到 <code>%</code>,就看后面那个字母 —— <code>%d</code> 十进制、<code>%x</code> 十六进制、<code>%s</code> 字符串 —— 从参数里取一个值,转成字符,再吐出去。</p>
+          <figure class="f">
+            <div class="parse">
+              <div class="pr"><span class="tag">格式串</span><span><span class="lit">addr = 0x</span><span class="pct">%x</span><span class="lit">\\n</span></span></div>
+              <div class="pr"><span class="tag">扫描</span><span><span class="lit">普通字符直接吐</span> · 命中 <span class="pct">%x</span> → 取参数</span></div>
+              <div class="pr"><span class="tag">取参数</span><span>0x80204000 → 转成十六进制字符</span></div>
+              <div class="pr"><span class="tag">输出</span><span class="out">addr = 0x80204000</span></div>
+            </div>
+            <figcaption>图 1 · printf 把格式串和参数"拼"成最终输出</figcaption>
+          </figure>
+          <p class="lead2">所有花哨的格式(<code>%d</code>/<code>%x</code>/<code>%s</code>)都是在这条主循环上长出来的分支。最核心、也最该你写的那一笔,其实是最朴素的那条:<b>遇到普通字符,原样送出去</b>。</p>
+          <div class="doblk">
+            <div class="dohd">动手 ① · 承重墙</div>
+            <div class="dot">printf 的主循环</div>
+            <p class="note">格式分支都给好了。补上"普通字符直接输出"这一行 —— 整个 printf 就转起来了。</p>
+            <div id="do1"></div>
+          </div>
+        </section>
+
+        <div class="bridge"><span class="ic">✓ 承上启下</span><p>有了 printf,内核终于能把心里话"说"给你听了。下一件工具一造出来,我们就用 printf 把它的成果打印出来 —— 它要动态地<b>要内存</b>。</p></div>
+
+        <!-- 2 allocator -->
+        <section class="txt" style="margin-top:30px">
+          <div class="sechead">§ 2 · 一个最简单的内存分配器</div>
+          <p class="lead2">内核很快会需要动态地拿内存 —— 放进程、建页表都得要。可裸机上没有 <code>malloc</code>,这东西也得你自己造。我们先造最简单的一种:<b>bump allocator</b>(碰撞分配器)。</p>
+          <p class="lead2">它的全部聪明,就是一个 <code>next</code> 指针,指着"下一块空闲内存的开头"。每次有人要 n 页,它就把 <code>next</code> 往前<b>撞</b> n 页那么远,然后把撞之前的位置交出去。下面这个你可以亲手点:</p>
+          <figure class="f">
+            <div class="bump">
+              <div class="bumpbar" id="bumpbar"><div class="bumpfree" id="bumpfree">全是空闲内存 →</div><div class="bumpnext" id="bumpptr" style="left:0"></div></div>
+              <div class="bumpctl">
+                <button class="a" id="allocBtn">分配一页 (4KB)</button>
+                <button class="r" id="bumpReset">重置</button>
+                <span class="nx" id="bumpNext">next = 0x80204000</span>
+              </div>
+              <div class="bumplog" id="bumplog">点"分配一页",看 next 往前撞。</div>
+            </div>
+            <figcaption>图 2 · bump 分配器:每分配一次,next 指针就往前撞一段</figcaption>
+          </figure>
+          <p class="lead2">看明白了吧 —— 它做的事就一行:<b>把 <code>next</code> 往前推 n 页</b>。这一笔,该你写。</p>
+          <div class="doblk">
+            <div class="dohd">动手 ② · 承重墙</div>
+            <div class="dot">让 next 往前撞</div>
+            <p class="note">记下当前 next 当作返回值,然后把 next 推过 n 页。</p>
+            <div id="do2"></div>
+          </div>
+          <div class="scene"><div class="sb"><div class="sk">撞墙 · Dead End</div><div class="st">你试着把一页"还"回去 —— 发现根本没有这个函数。</div><p>bump 分配器只会往前撞,<b>只增不减</b>:一旦分出去,就再也收不回来了。</p></div></div>
+          <p class="lead2">这听着像个残废。但内核刚启动那会儿,要的内存基本只增不减、生命周期跟内核一样长 —— 这种场景,bump 反而<b>又快又不会错</b>(没有 free,就没有 use-after-free)。等真需要能回收的内存,我们后面再上带 free-list 的分配器。先用趁手的,别一上来就背最重的包袱。</p>
+        </section>
+
+        <div class="bridge"><span class="ic">✓ 承上启下</span><p>现在内核能动态要内存了。可万一<b>要不到</b>、或者哪一步出了无法挽回的错呢?用户程序崩了有内核收尸,而内核自己就是收尸的那个 —— 它得有一套自己出事时的体面做法。</p></div>
+
+        <!-- 3 panic -->
+        <section class="txt" style="margin-top:30px">
+          <div class="sechead">§ 3 · panic:出事了,就地体面停下</div>
+          <p class="lead2">用户程序崩溃,操作系统会替它收拾、打印个段错误。可你的内核,就是那个"收拾的人"。它要是自己撞上了无法继续的错误,<b>没有上层能接住它</b>。</p>
+          <p class="lead2">所以内核之间有个约定,叫 ${term("panic", "PANIC", "内核遇到无法继续的错误时,主动打印诊断信息并停机,而不是带着错乱状态继续跑。")}:一旦遇到这种错,就主动用刚造好的 <code>printf</code> 打出"哪个文件、哪一行、什么原因",然后<b>停进一个死循环</b> —— 别让 CPU 带着错乱的状态继续往下跑,把现场踩得更烂、更难查。</p>
+          <figure class="f">
+            <div class="flow">
+              <div class="node bad">遇到无法继续的错误<em>(比如内存要不到了)</em></div>
+              <div class="step"><span class="v">↓</span> 调用 PANIC(...) <span class="ln"></span></div>
+              <div class="node">printf 打印 <span style="font-family:var(--mono);color:#b4541f">文件:行号: 原因</span></div>
+              <div class="step"><span class="v">↓</span> 留住现场,别再动 <span class="ln"></span></div>
+              <div class="node stop">for (;;) —— 就地停住</div>
+            </div>
+            <figcaption>图 3 · panic:打印清楚,然后停在原地</figcaption>
+          </figure>
+
+          <section class="quiz" id="quiz" style="margin-top:22px">
+            <div class="qhead"><span class="badge">自检</span><span class="sub">选完即时揭晓</span></div>
+            <p class="q">panic 打印完信息后,为什么是死循环停住,而不是 return?</p>
+            <div class="opts" id="opts"></div>
+            <div class="qexp" id="qexp"><div class="l">解析</div><p>内核是最底层,<b>没有"上层"可以 return 回去</b>。带着错乱状态继续跑只会把现场踩烂。就地停住,是此刻最负责任的动作。</p></div>
+          </section>
+
+          <p class="lead2" style="margin-top:26px">打印那部分用的就是你刚造的 printf。剩下最后一笔,是那个"停住" —— 也该你写。</p>
+          <div class="doblk">
+            <div class="dohd">动手 ③ · 承重墙</div>
+            <div class="dot">让内核就地停住</div>
+            <p class="note">打印已经给好了,补上"停在原地、别再往下跑"这一行。</p>
+            <div id="do3"></div>
+          </div>
+        </section>
+
+        <!-- run -->
+        <section class="txt" style="margin-top:34px">
+          <div class="playhead" style="color:#1f8a5b">运行 · 见证成果</div><h2 class="dh">三件工具,串起来跑一遍</h2>
+          <p class="lead2" style="margin-top:6px">编译运行:内核用<b>分配器</b>要一页内存,用 <b>printf</b> 把拿到的地址打出来,再故意触发一次 <b>panic</b> 给你看它怎么体面地停。</p>
+          <div class="runwrap" style="margin-top:14px">
+            <div class="rbar"><span>terminal — build &amp; run</span><button class="run" id="runBtn"><span style="font-size:9px">▶</span><span id="runLabel">运行</span></button></div>
+            <div class="runterm" id="runTerm"><div class="idle">$ <span style="color:#8b93a1">三处承重墙写好后,点 ▶ 真编译并启动内核…</span></div></div>
+            <div id="runResult"></div>
+          </div>
+          <div id="achWrap"></div>
+        </section>
+
+        <!-- 收尾 -->
+        <section class="txt" style="margin-top:40px">
+          <div class="sechead">§ 4 · 你带走的</div>
+          <p class="lead2">这三件,是你之后每一章都离不开的趁手工具:<b>printf</b> 让你随时看见内核里到底发生了什么、<b>分配器</b>给你动态内存、<b>panic</b> 在出事的第一时间告诉你哪挂了、在哪一行。</p>
+          <p class="lead2">还有一个更隐蔽的收获:你已经习惯了"缺什么就自己造什么"。下一章会更刺激 —— 内核要学会<b>接住意外</b>(陷阱与异常),而接住意外之后第一件想做的事,往往就是 <code>printf</code> 出来看看、必要时 <code>panic</code>。工具,已经备好了。</p>
+        </section>
+
+        <div class="hr" style="margin:34px 0 0"></div>
+        <div class="pager"><span>← 第 01 章 · 内核引导</span><span class="next">第 03 章 · 接住意外 →</span></div>
+      `;
+
+      /* ============ printf 主循环 / 分配器 / panic ============ */
+      const doneSteps = new Set(); const TOTAL = 3;
+      const SANDBOX_URL = "http://127.0.0.1:5177/api/run", EXPECT = "p2=0x80205000";
+      function editor(mount, { n, slotKey, file, rt, lines, writeIdx, placeholder, answerRe, refAnswer, hint }) {
+        const code = lines.map((l, i) => {
+          if (i === writeIdx) return `<div class="ln writeln"><span class="no">✍</span><span class="src" style="color:#c9d2de">    </span><input class="wallin" placeholder="${placeholder}" spellcheck="false" autocomplete="off"/><span class="src" style="color:#6b7688;margin-left:6px">${l.cmt || ""}</span></div>`;
+          return `<div class="ln"><span class="no">${l.no}</span><span class="src">${l.h}</span></div>`;
+        }).join("");
+        mount.innerHTML = `<div class="editor"><div class="ebar"><div class="dots"><i style="background:#e5484d"></i><i style="background:#e3b27c"></i><i style="background:#46c08a"></i><span class="fn">${file}</span></div><span class="rt">${rt}</span></div><div class="code">${code}</div></div>
+          <div class="ebtns"><button class="btn pri check">检查</button><button class="btn sec ref">看参考答案</button><span class="note">只有 ✍ 那一行需要你写</span></div>
+          <div class="fbslot"></div>`;
+        const inp = mount.querySelector(".wallin"), slot = mount.querySelector(".fbslot");
+        const fb = (cls, html) => { slot.innerHTML = `<div class="fb ${cls}"><span class="i">${cls === "ok" ? "✓" : cls === "bad" ? "!" : "…"}</span><span>${html}</span></div>`; };
+        const merge = () => { inp.disabled = true; doneSteps.add(n); if (window.__kfsRecord) window.__kfsRecord(slotKey, inp.value.trim()); };
+        async function doCheck() {
+          const val = inp.value.trim();
+          if (!val) { fb("bad", "先写点东西再检查。"); return; }
+          fb("run", "真编译、真跑一遍 qemu…(约 1–2 秒)");
+          try {
+            const answers = {}; answers[slotKey] = val;
+            const r = await fetch(SANDBOX_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chapter: 2, answers }) });
+            const data = await r.json();
+            if (data.ok && (data.console || "").includes(EXPECT)) {
+              merge(); fb("ok", `<b>对了 —— 真编译、真跑通了。</b>这一行已并入项目。${doneSteps.size >= TOTAL ? "三件工具都好了,去下面点「运行」。" : "继续往下走。"}`); return;
+            }
+            if (!data.ok) {
+              const e = (data.stderr || data.error || "").split("\n").find((l) => /error/i.test(l)) || "编译没通过";
+              fb("bad", "真编译器报错 — <code style='font-family:var(--mono)'>" + e.replace(/</g, "&lt;").slice(0, 170) + "</code>"); return;
+            }
+            fb("bad", "编译、运行都过了,但输出不对 —— 再看看这一行。");
+          } catch (e) {
+            if (answerRe.test(val)) { merge(); fb("ok", `<b>规则校验通过。</b>(沙箱没启动;想看真编译真跑,先启动 run-server。)已并入项目。${doneSteps.size >= TOTAL ? "三件都好了,去点「运行」。" : "继续往下走。"}`); }
+            else fb("bad", "还差一点 —— " + hint);
+          }
+        }
+        mount.querySelector(".check").onclick = doCheck;
+        mount.querySelector(".ref").onclick = () => { inp.value = refAnswer; doCheck(); };
+      }
+      editor($("#do1"), { n: 1, slotKey: "printf", file: "lib/printf.c", rt: "C · 脚手架已就绪", writeIdx: 4,
+        lines: [{ no: "01", h: `<span class="kw">void</span> <span class="fn2">printf</span>(<span class="kw">const char</span> *fmt, ...) {` },
+          { no: "02", h: `    <span class="kw">while</span> (*fmt) {` },
+          { no: "03", h: `        <span class="kw">if</span> (*fmt == <span class="st">'%'</span>) { <span class="cm">/* 处理 %d %x %s,已给好 */</span> }` },
+          { no: "04", h: `        <span class="kw">else</span>` },
+          { no: "05", h: ``, cmt: `// 承重墙:普通字符,原样输出` },
+          { no: "06", h: `        fmt++;` }, { no: "07", h: `    }` }, { no: "08", h: `}` }],
+        placeholder: `← 把当前字符 *fmt 输出`, answerRe: /putchar\s*\(\s*\*\s*fmt\s*\)/, refAnswer: `putchar(*fmt);`, hint: `把当前字符 <span style="font-family:var(--mono)">*fmt</span> 交给 <span style="font-family:var(--mono)">putchar</span>。` });
+      editor($("#do2"), { n: 2, slotKey: "alloc", file: "kernel/alloc.c", rt: "C · 脚手架已就绪", writeIdx: 3,
+        lines: [{ no: "01", h: `<span class="kw">paddr_t</span> <span class="fn2">alloc_pages</span>(<span class="kw">uint32_t</span> n) {` },
+          { no: "02", h: `    <span class="kw">static paddr_t</span> next = RAM_START;` },
+          { no: "03", h: `    <span class="kw">paddr_t</span> cur = next;  <span class="cm">// 记下当前位置当返回值</span>` },
+          { no: "04", h: ``, cmt: `// 承重墙:把 next 往前撞 n 页` },
+          { no: "05", h: `    <span class="kw">return</span> cur;` }, { no: "06", h: `}` }],
+        placeholder: `← 把 next 往前推 n 页`, answerRe: /next\s*\+=\s*n\s*\*\s*PAGE_SIZE/, refAnswer: `next += n * PAGE_SIZE;`, hint: `一页是 <span style="font-family:var(--mono)">PAGE_SIZE</span>,n 页就是 <span style="font-family:var(--mono)">n * PAGE_SIZE</span>。` });
+      editor($("#do3"), { n: 3, slotKey: "panic", file: "kernel/panic.h", rt: "C 宏 · 脚手架已就绪", writeIdx: 3,
+        lines: [{ no: "01", h: `<span class="cm">#define PANIC(msg) do {                       \\</span>` },
+          { no: "02", h: `    <span class="fn2">printf</span>(<span class="st">"PANIC: %s:%d: %s\\n"</span>,        <span class="cm">\\</span>` },
+          { no: "03", h: `           __FILE__, __LINE__, msg);          <span class="cm">\\</span>` },
+          { no: "04", h: ``, cmt: `/* 承重墙:就地停住,别再往下跑 */  \\` },
+          { no: "05", h: `} <span class="kw">while</span> (0)` }],
+        placeholder: `← 让内核停在原地`, answerRe: /for\s*\(\s*;\s*;\s*\)/, refAnswer: `for (;;);`, hint: `一个永远不退出的空循环:<span style="font-family:var(--mono)">for (;;);</span>` });
+
+      /* ============ bump 分配器 可玩图 ============ */
+      (function () {
+        const bar = $("#bumpbar"), free = $("#bumpfree"), ptr = $("#bumpptr"), nx = $("#bumpNext"), log = $("#bumplog");
+        const START = 0x80204000, PAGE = 0x1000, MAX = 8;
+        let count = 0;
+        const colors = ["#3a4ed6", "#1f8a5b", "#b4541f", "#7a5bd1", "#2b7a9b", "#c0863a", "#5b7a2b", "#9b4a6b"];
+        const hex = (v) => "0x" + v.toString(16);
+        function render() {
+          bar.querySelectorAll(".bumpseg").forEach((e) => e.remove());
+          for (let i = 0; i < count; i++) {
+            const seg = document.createElement("div");
+            seg.className = "bumpseg"; seg.style.width = (100 / MAX) + "%"; seg.style.background = colors[i];
+            seg.textContent = "p" + (i + 1); bar.insertBefore(seg, free);
+          }
+          const pct = (count / MAX) * 100;
+          ptr.style.left = pct + "%"; free.style.display = count >= MAX ? "none" : "flex";
+          nx.textContent = "next = " + hex(START + count * PAGE);
+        }
+        $("#allocBtn").onclick = () => {
+          if (count >= MAX) { log.innerHTML = `已经撞到尽头 —— bump 只增不减,要更多就得重置。`; return; }
+          const addr = START + count * PAGE; count++; render();
+          log.innerHTML = `<span style="color:#1f8a5b">alloc_pages(1)</span> → 返回 <b>${hex(addr)}</b> · next 撞到 ${hex(START + count * PAGE)}`;
+        };
+        $("#bumpReset").onclick = () => { count = 0; render(); log.innerHTML = `点"分配一页",看 next 往前撞。`; };
+        render();
+      })();
+
+      /* ============ 自检 ============ */
+      (function () {
+        const opts = $("#opts"), exp = $("#qexp"), correct = 1;
+        const data = [["A", "return 更省事,效果一样"], ["B", "内核是最底层,没有上层可返回"], ["C", "死循环能省电"], ["D", "为了让编译器不报警告"]];
+        let done = false;
+        opts.innerHTML = data.map(([l, t], i) => `<button class="opt" data-i="${i}"><span class="lt">${l}</span><span class="ot">${t}</span><span class="bg"></span></button>`).join("");
+        opts.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+          if (done) return; done = true; const pick = +b.dataset.i;
+          opts.querySelectorAll(".opt").forEach((o) => { o.disabled = true; const i = +o.dataset.i;
+            if (i === correct) { o.classList.add("right"); o.querySelector(".bg").textContent = "✓ 正确"; o.querySelector(".bg").style.color = "#1f8a5b"; }
+            else if (i === pick) { o.classList.add("wrong"); o.querySelector(".bg").textContent = "你选的"; o.querySelector(".bg").style.color = "#b4541f"; }
+            else o.classList.add("dim"); });
+          exp.style.display = "block";
+        });
+      })();
+
+      /* ============ 运行 / 成就 ============ */
+      (function () {
+        const btn = $("#runBtn"), label = $("#runLabel"), termEl = $("#runTerm"), result = $("#runResult"), achWrap = $("#achWrap");
+        let running = false;
+        btn.onclick = () => {
+          if (running) return;
+          if (doneSteps.size < TOTAL) { termEl.innerHTML = `<div class="idle">$ <span style="color:#ff8a8a">还有承重墙没写(第 ${[1, 2, 3].filter((x) => !doneSteps.has(x)).join("、")} 件)—— 回上面补上再运行。</span></div>`; return; }
+          running = true; label.textContent = "运行中…"; termEl.innerHTML = ""; result.innerHTML = ""; achWrap.innerHTML = "";
+          const seq = ["clang -target riscv32 -ffreestanding -nostdlib -c lib/printf.c kernel/alloc.c *.c", "ld.lld -T kernel.ld -o kernel.elf", "qemu-system-riscv32 -kernel kernel.elf", "→ kernel_main:alloc_pages(1) → printf 输出地址", "→ 故意触发 PANIC,演示停机"];
+          seq.forEach((l, i) => setTimeout(() => termEl.insertAdjacentHTML("beforeend", `<div class="l"><span class="a">›</span> ${l}</div>`), 300 * (i + 1)));
+          setTimeout(async () => {
+            running = false; label.textContent = "重新运行";
+            let out = "p1=0x80204000 p2=0x80205000\nPANIC: kernel/main.c:86: out of memory", mode = "sim";
+            try {
+              const answers = { printf: $("#do1")?.querySelector(".wallin")?.value?.trim(), alloc: $("#do2")?.querySelector(".wallin")?.value?.trim(), panic: $("#do3")?.querySelector(".wallin")?.value?.trim() };
+              const r = await fetch(SANDBOX_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chapter: 2, answers }) });
+              const data = await r.json();
+              if (data.ok && data.console) { out = data.console; mode = "live"; }
+              else { out = (data.stderr || data.error || "build failed").slice(0, 400); mode = "err"; }
+            } catch (e) { mode = "sim"; }
+            const tag = mode === "live" ? `<span style="color:#46c08a">● 本地 qemu 真实输出</span>` : mode === "err" ? `<span style="color:#e3b27c">● 编译/运行报错</span>` : `<span style="color:#8b93a1">● 沙箱未启动,模拟输出</span>`;
+            const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>");
+            result.innerHTML = `<div class="vga"><div class="lab">CONSOLE OUTPUT · via SBI &nbsp;&nbsp; ${tag}</div><div class="out">${esc(out)}<span class="cur" style="height:22px;width:11px"></span></div></div>`;
+            achWrap.innerHTML = `<div class="ach"><div class="ico">🛠️</div><div style="flex:1"><div class="k">成就解锁</div><div class="t">三件趁手工具,到手</div><div class="d">printf + 分配器 + panic,后面每一章都用得上。第 02 章 · 进度 +1。</div></div><span class="xp">+15 XP</span></div>`;
+          }, 300 * (seq.length + 1));
+        };
+      })();
+
+      /* ============ 问 Keri ============ */
+      (function () {
+        const keri = $("#keri"), body = $("#keriBody"), chips = $("#keriChips"), input = $("#keriInput");
+        const QA = [["printf 为什么要自己写?", "因为裸机没有标准库。你手里只有上一章造的 putchar(一次一个字符)。printf 就是在它之上加一层:扫格式串、把变量按 %d/%x/%s 转成字符再吐出去。它是你之后调试内核最依赖的眼睛。"],
+          ["bump 分配器不能 free,不会出事吗?", "在内核早期启动阶段不会 —— 那会儿要的内存基本只增不减、活得跟内核一样久。bump 又快又不会有 use-after-free。等到真需要回收内存(比如进程退出),我们后面再上带 free-list 的分配器。先用趁手的。"],
+          ["panic 为什么非得死循环?", "内核是最底层,出了无法继续的错,没有上层能接住它、也没地方可 return。继续往下跑只会带着错乱状态把现场踩烂。就地停住、把诊断信息留在屏幕上,是此刻最负责任的做法。"]];
+        chips.innerHTML = QA.map(([q], i) => `<button data-i="${i}">${q}</button>`).join("");
+        const push = (q, a) => { $(".intro", body)?.remove();
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "me", innerHTML: `<div>${q}</div>` }), chips);
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "ke", innerHTML: `<div class="av2">K</div><div>${a}</div>` }), chips);
+          body.scrollTop = body.scrollHeight; };
+        chips.querySelectorAll("button").forEach((b) => b.onclick = () => push(QA[+b.dataset.i][0], QA[+b.dataset.i][1]));
+        const send = () => { const v = input.value.trim(); if (!v) return; input.value = ""; push(v, "好问题。正式版我会结合你读到的位置回答 —— 当前是结构 demo。这一章记住三件工具:printf 看内核、分配器要内存、panic 出事报位置。"); };
+        $("#keriSend").onclick = send; input.addEventListener("keydown", (e) => e.key === "Enter" && send());
+        $("#keriOrb").onclick = () => keri.classList.add("open"); $("#keriX").onclick = () => keri.classList.remove("open");
+      })();
+
+      /* —— 轻量 IDE:工程随你做承重墙「按需长出来」+ 层级文件树 + agent 过程(mock)—— */
+      (function () {
+        const ide = $("#ide"), tree = $("#ideTree"), fnEl = $("#ideFn"), src = $("#ideSrc"), feed = $("#ideFeed"), proj = $("#keriProj");
+        const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        const slotInput = { printf: "#do1", alloc: "#do2", panic: "#do3" };
+        const slotVal = (slot) => { const m = $(slotInput[slot]); const w = m && m.querySelector(".wallin"); return w ? w.value.trim() : ""; };
+        const FILES = {
+          "kernel.ld": { bb: true, note: "链接脚本:内存布局(分配器的 RAM_START 就来自这,黑盒)", lines: [
+            `<span class="rg">ENTRY</span>(boot)`,
+            `<span class="rg">SECTIONS</span> { . = <span class="nu">0x80200000</span>; ... __stack_top = .; }`,
+          ] },
+          "arch/sbi.c": { bb: true, note: "黑盒:用一条 ecall 求固件打印字符,封装成 putchar", lines: [
+            `<span class="cm">// 黑盒:ecall 陷入 OpenSBI</span>`,
+            `<span class="kw">void</span> <span class="fn">putchar</span>(<span class="kw">char</span> ch) {`,
+            `    sbi_call(ch, 0,0,0,0,0,0, <span class="nu">1</span>);`, `}`,
+          ] },
+          "lib/printf.c": { slot: "printf", note: "格式化输出 · 关键的「普通字符原样输出」那行由你写(承重墙 ①)", lines: [
+            `<span class="kw">void</span> <span class="fn">printf</span>(<span class="kw">const char</span> *fmt, ...) {`,
+            `    <span class="kw">while</span> (*fmt) {`,
+            `        <span class="kw">if</span> (*fmt == <span class="st">'%'</span>) { <span class="cm">/* %d %x %s 已给好 */</span> }`,
+            `        <span class="kw">else</span>`,
+            { you: "printf", indent: "            " },
+            `        fmt++;`, `    }`, `}`,
+          ] },
+          "kernel/alloc.c": { slot: "alloc", note: "bump 分配器 · 关键的「next 往前撞」那行由你写(承重墙 ②)", lines: [
+            `<span class="kw">paddr_t</span> <span class="fn">alloc_pages</span>(<span class="kw">uint32_t</span> n) {`,
+            `    <span class="kw">static paddr_t</span> next = RAM_START;`,
+            `    <span class="kw">paddr_t</span> cur = next;`,
+            { you: "alloc", indent: "    " },
+            `    <span class="kw">return</span> cur;`, `}`,
+          ] },
+          "kernel/panic.h": { slot: "panic", note: "panic 宏 · 关键的「就地停住」那行由你写(承重墙 ③)", lines: [
+            `<span class="cm">#define</span> PANIC(msg) do {`,
+            `    <span class="fn">printf</span>(<span class="st">"PANIC: %s:%d: %s\\n"</span>, __FILE__, __LINE__, msg);`,
+            { you: "panic", indent: "    " },
+            `} <span class="kw">while</span> (0)`,
+          ] },
+        };
+        const DEPS = { printf: ["arch/sbi.c"], alloc: ["kernel.ld"], panic: [] };
+        const ORDER = ["kernel.ld", "arch/sbi.c", "lib/printf.c", "kernel/alloc.c", "kernel/panic.h"];
+        const SLOT_FILE = { printf: "lib/printf.c", alloc: "kernel/alloc.c", panic: "kernel/panic.h" };
+        const created = new Set(); const merged = new Set(); const log = [];
+        let cur = null;
+
+        const tagFor = (f) => f.slot ? `<span class="yt">● 你写的</span>` : `<span class="yt bx">黑盒</span>`;
+        function renderFeed() { feed.innerHTML = log.map((e) => `<div class="fl ${e.k}">${e.t}</div>`).join(""); feed.scrollTop = feed.scrollHeight; }
+        function renderTree() {
+          if (!created.size) { tree.innerHTML = `<div class="emptyhint">工程还是空的 —— 跟着正文做承重墙,文件会一个个长出来:不重要的我一句话说明用途,关键的那行你来写。</div>`; return; }
+          const shown = ORDER.filter((p) => created.has(p));
+          const dirs = {}, roots = [];
+          shown.forEach((p) => { const i = p.indexOf("/"); if (i < 0) roots.push(p); else (dirs[p.slice(0, i)] = dirs[p.slice(0, i)] || []).push(p); });
+          let html = `<div class="dir root">▾ kernel-ch2/</div>`;
+          Object.keys(dirs).forEach((d) => {
+            html += `<div class="dir">▾ ${d}/</div>`;
+            dirs[d].forEach((p) => { const f = FILES[p]; html += `<div class="file lvl2 ${p === cur ? "on" : ""}" data-p="${p}">${p.slice(p.indexOf("/") + 1)}${tagFor(f)}</div>`; });
+          });
+          roots.forEach((p) => { const f = FILES[p]; html += `<div class="file lvl1 ${p === cur ? "on" : ""}" data-p="${p}">${p}${tagFor(f)}</div>`; });
+          tree.innerHTML = html;
+          tree.querySelectorAll(".file[data-p]").forEach((el) => el.onclick = () => { cur = el.dataset.p; renderAll(); });
+        }
+        function renderCode() {
+          if (!cur || !created.has(cur)) { fnEl.textContent = "—"; src.innerHTML = `<div class="cl dim">// 还没有文件。跟着正文往下做,文件会被创建出来。</div>`; return; }
+          const f = FILES[cur]; fnEl.textContent = cur + "   ·   " + f.note;
+          src.innerHTML = f.lines.map((l) => {
+            if (typeof l === "string") return `<div class="cl">${l}</div>`;
+            const v = slotVal(l.you);
+            const inner = v ? `${l.indent}${esc(v)}<span class="yt"> ← 你写的</span>`
+              : `${l.indent}<span class="dim">// 待你在正文里填这一行</span>`;
+            return `<div class="cl yl">${inner}</div>`;
+          }).join("");
+        }
+        function renderAll() { renderTree(); renderCode(); renderFeed(); }
+        function push(k, t) { log.push({ k, t }); if (ide.classList.contains("open")) renderFeed(); }
+
+        window.__kfsRecord = async function (slot, value) {
+          if (!SLOT_FILE[slot] || merged.has(slot)) return;
+          merged.add(slot); proj.classList.add("act");
+          (DEPS[slot] || []).forEach((dep) => {
+            if (created.has(dep)) return;
+            created.add(dep);
+            push("create", "create  " + dep + "  —— " + FILES[dep].note);
+          });
+          const file = SLOT_FILE[slot];
+          created.add(file); cur = file;
+          push("cmd", "$ 交给 agent:把你写的关键行写进 " + file);
+          const idx = log.length;
+          log.push({ k: "run", t: "· agent 正在把这行写进文件…" });
+          if (ide.classList.contains("open")) renderAll();
+          await new Promise((res) => setTimeout(res, 800));
+          log[idx] = { k: "ok", t: "✓ 写好 " + file + "   " + esc(value) };
+          if (ide.classList.contains("open")) renderAll(); else renderFeed();
+        };
+        proj.onclick = () => { proj.classList.remove("act"); renderAll(); ide.classList.add("open"); };
+        $("#ideX").onclick = () => ide.classList.remove("open");
+        $("#ideBack").onclick = () => ide.classList.remove("open");
+      })();
+
+      const prog = $("#prog");
+      addEventListener("scroll", () => { const h = document.documentElement, mx = h.scrollHeight - h.clientHeight; prog.style.width = (mx > 0 ? h.scrollTop / mx * 100 : 0) + "%"; }, { passive: true });
+    </script>
+  </body>
+</html>

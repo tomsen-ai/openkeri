@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>造核 · 第 04 章 让 CPU 轮流干活</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./os-design.css" />
+    <style>
+      /* 决策词元(本章特有) */
+      .decide{border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:0 1px 2px rgba(20,24,29,.04);padding:22px;margin:26px 0;}
+      .decide .dq{font-size:17px;font-weight:600;color:var(--ink);line-height:1.5;}
+      .decide .dq .badge{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5b3ad1;background:#ece9fd;border:1px solid #d8d0fb;padding:2px 8px;border-radius:5px;margin-right:8px;vertical-align:2px;}
+      .decide .opts2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:16px;}
+      @media(max-width:640px){.decide .opts2{grid-template-columns:1fr;}}
+      .decide .opt2{border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;background:#fff;transition:.13s;text-align:left;font-family:inherit;}
+      .decide .opt2:hover:not(:disabled){border-color:var(--accent);box-shadow:0 8px 20px -12px rgba(58,78,214,.4);}
+      .decide .opt2.picked{border-color:var(--accent);background:var(--accent-soft);}
+      .decide .opt2:disabled{cursor:default;opacity:.55;}
+      .decide .opt2.picked:disabled{opacity:1;}
+      .decide .opt2 .on2{font-weight:700;font-size:15.5px;color:var(--ink);}
+      .decide .opt2 .cost2{font-size:13.5px;color:var(--soft);margin-top:7px;line-height:1.6;}
+      .decide .opt2 .tag2{font-family:var(--mono);font-size:10px;color:var(--mute);margin-top:9px;letter-spacing:.05em;}
+      .decide .hint{margin-top:14px;font-size:13px;color:var(--mute);}
+      .gen-loading{display:flex;align-items:center;gap:11px;color:var(--soft);font-size:14.5px;padding:20px 0;}
+      .spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;flex:none;}
+      @keyframes sp{to{transform:rotate(360deg);}}
+      .branch{margin-top:8px;}
+      .branch .bhead{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:6px 0 2px;}
+      .branch h2{font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-.3px;margin:0 0 4px;}
+      .gen-note{margin-top:20px;font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--mute);border-top:1px dashed var(--line);padding-top:13px;}
+      .gen-note b{color:var(--soft);} .gen-note .live{color:var(--go);} .gen-note .canned{color:var(--warn);}
+      .reselect{margin-top:16px;font-size:13.5px;color:var(--accent-deep);background:#fff;border:1px solid var(--accent-line);border-radius:8px;padding:8px 15px;cursor:pointer;font-family:inherit;}
+    </style>
+  </head>
+  <body>
+    <div class="progress"><i id="prog"></i></div>
+    <header class="top"><div class="in">
+      <div class="brand"><span class="mk"><i></i></span><b>造核</b><span class="en">Kernel From Scratch</span></div>
+      <div class="meta"><span>第 04 章 · 让 CPU 轮流干活</span><span class="sep"></span><span class="hl">★ 决策 · 动态生成</span></div>
+    </div></header>
+
+    <main id="main"></main>
+
+    <div class="keri" id="keri">
+      <button class="orb" id="keriOrb"><span class="av">K</span><span class="t"><b>问 Keri</b><span>卡住了?随时叫我</span></span></button>
+      <div class="panel">
+        <div class="ph"><div style="display:flex;align-items:center;gap:10px"><span class="av">K</span><div style="line-height:1.25"><div><b>Keri</b></div><div class="st"><i></i>陪你读这一章</div></div></div><button class="x" id="keriX">×</button></div>
+        <div class="kbody" id="keriBody"><p class="intro">嗨,我是 Keri。这一章你会做一个<b>真正的设计取舍</b> —— 没有标准答案,选了就往下走。</p><div class="chips" id="keriChips"></div></div>
+        <div class="kin"><input id="keriInput" placeholder="问 Keri 任何问题…" /><button class="send" id="keriSend">↑</button></div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (s, r = document) => r.querySelector(s);
+      const main = $("#main");
+      const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const term = (w, lab, def) => `<span class="term">${w}<span class="tip"><span class="lab">${lab}</span>${def}</span></span>`;
+      const GEN_URL = "http://127.0.0.1:5176/api/decide";
+
+      main.innerHTML = `
+        <section class="hero">
+          <div class="kicker">Chapter 04 · Scheduling</div>
+          <h1>让两个程序,<br>在一颗 CPU 上轮流跑</h1>
+          <p class="lead">上一章你学会了接住意外:存现场 → 处理 → 复现场。这一章,你把那块肌肉用来干件大事 —— 让两个程序在同一颗 CPU 上交替跑,屏幕吐出 <span class="ko">ABABAB…</span>。但在那之前,你要先替 1950 年代的工程师,做一个到今天还在吵的设计决定。</p>
+          <div class="facts"><span>阅读 ~12 分钟</span><span>·</span><span>1 个真决策</span><span>·</span><span>难度 ●●●</span></div>
+        </section>
+        <div class="hr"></div>
+
+        <section class="txt">
+          <div class="sechead">§ 4.1 · 一颗 CPU,两个想跑的程序</div>
+          <p class="body">${term("进程", "PROCESS", "一个正在跑的程序 + 它被保存下来的现场(寄存器、栈、下一条指令)。")}就是「一个被保存下来的现场」。有了上一章的存/复现场,你已经能把一个进程冻起来、再原样唤醒。现在你想让<b>两个</b>进程在一颗 CPU 上交替跑 —— 可一颗 CPU 一次只能跑一个。</p>
+          <p class="body">于是冒出一个绕不过去的问题:<b>谁来决定,什么时候把 CPU 从一个进程手里切走、交给另一个?</b>这没有唯一正确答案 —— 它是一个真正的<b>设计取舍</b>,不同的选择,后面会走出不同的路。该你定。</p>
+        </section>
+
+        <div class="decide" id="decide">
+          <div class="dq"><span class="badge">决策 · 你来定</span>两个进程都想用 CPU。把 CPU「切走」的权力,你交给谁?</div>
+          <div class="opts2">
+            <button class="opt2" data-k="coop"><div class="on2">方案 A · 合作式</div><div class="cost2">谁跑完自己一段,<b>自觉</b>调用 yield 让出 CPU。实现简单到几行就行。</div><div class="tag2">代价:全靠自觉</div></button>
+            <button class="opt2" data-k="preempt"><div class="on2">方案 B · 抢占式</div><div class="cost2">不信任自觉,用<b>定时器</b>到点强行夺走 CPU。公平、谁也别想霸占。</div><div class="tag2">代价:更复杂</div></button>
+          </div>
+          <div class="hint">选一个,Keri 会按你的选择往下写这一段 —— 让你亲历这条路上的墙。</div>
+        </div>
+
+        <div id="branch"></div>
+      `;
+
+      /* ===== 决策词元 → 带栏杆的动态生成 ===== */
+      // 服务器没启动时的客户端兜底(跟 gen-server 的预制岔路一致)
+      const FALLBACK = {
+        coop: { headline: "你选了合作式 —— 先尝甜头,再撞墙", _mode: "offline", beats: [
+          { kind: "narrative", title: "", text: "你让每个进程跑完自己一段,就自觉调用 yield 让位。代码简单得不可思议 —— 两个程序乖乖交替,屏幕吐出 ABABAB,你笑了。" },
+          { kind: "wall", title: "程序 A 不让位了 —— B 再也没醒过来", text: "你写的程序 A 进了个死循环,从不调用 yield。合作式全靠自觉,A 不让,调度器毫无办法。B 被永远饿死,屏幕停在 AAAA…" },
+          { kind: "reveal", title: "自觉靠不住", text: "问题不在 A 写错了 —— 而在「让不让位」这件事,绝不能交给进程自己决定。你需要一个不讲情面的力量,到点就强行收回 CPU。这就是抢占。" },
+        ] },
+        preempt: { headline: "你选了抢占式 —— 想得超前,但先还债", _mode: "offline", beats: [
+          { kind: "narrative", title: "", text: "你不信任自觉,直接上定时器中断:每隔一小段,硬把 CPU 从当前进程手里夺走,交给下一个。公平,谁也别想霸占。" },
+          { kind: "wall", title: "切回来时,A 的现场全乱了", text: "定时器随时打断 A —— 可能正算到一半。你没把它的寄存器、栈完整存下就切走;轮回 A 时,它从一个错乱的现场继续,当场崩。" },
+          { kind: "reveal", title: "抢占的代价:现场必须存得干净", text: "抢占强大,但要求你在任意一刻都能把一个进程的完整现场存下、再原样复原 —— 这正是上一章 trap 那块肌肉。抢占 = 随时存现场 → 换人 → 复现场。" },
+        ] },
+      };
+
+      function renderBranch(data) {
+        const br = $("#branch");
+        const beats = (data.beats || []).map((b) => {
+          const t = esc(b.text), title = esc(b.title || "");
+          if (b.kind === "wall") return `<div class="scene"><div class="sb"><div class="sk">撞墙 · Dead End</div><div class="st">${title}</div><p>${t}</p></div></div>`;
+          if (b.kind === "reveal") return `<aside class="note metaphor"><div class="bar"></div><div class="nb"><div class="nk">揭晓</div><p>${title ? "<b>" + title + "</b> " : ""}${t}</p></div></aside>`;
+          if (b.kind === "aside") return `<aside class="note tip2"><div class="bar"></div><div class="nb"><div class="nk">${title || "旁注"}</div><p>${t}</p></div></aside>`;
+          return `<p class="body">${title ? "<b>" + title + " —— </b>" : ""}${t}</p>`;
+        }).join("");
+        const modeTag = data._mode === "live" ? `<span class="live">● 真接 Claude 现场生成</span>`
+          : data._mode === "canned" ? `<span class="canned">● gen-server 在跑、但没设 ANTHROPIC_API_KEY,返回预制岔路</span>`
+          : `<span class="canned">● gen-server 没启动,用了客户端兜底岔路</span>`;
+        br.innerHTML = `<section style="margin-top:6px"><div class="bhead">你选的路 · 接下来发生了什么</div><h2>${esc(data.headline || "")}</h2>${beats}
+          <div class="gen-note"><b>这一段不是预先写死的</b> —— 它按你刚才的选择动态生成,选另一个会走出不同剧情。<br>带栏杆的动态:① 教法铁律(先撞墙再揭晓)写进 prompt;② 结构化输出,LLM 只填数据;③ 渲染器写死长相,画不崩。<br>当前:${modeTag}</div>
+          <button class="reselect" id="reselect">↺ 换个选择再走一遍</button></section>`;
+        $("#reselect").onclick = reset;
+      }
+
+      function reset() {
+        $("#branch").innerHTML = "";
+        $("#decide").querySelectorAll(".opt2").forEach((b) => { b.disabled = false; b.classList.remove("picked"); });
+      }
+
+      $("#decide").querySelectorAll(".opt2").forEach((btn) => btn.onclick = async () => {
+        const choice = btn.dataset.k;
+        $("#decide").querySelectorAll(".opt2").forEach((b) => { b.disabled = true; b.classList.toggle("picked", b === btn); });
+        $("#branch").innerHTML = `<div class="gen-loading"><span class="spin"></span>Keri 正按你的选择往下写…(真接 Claude 时这里会现场生成)</div>`;
+        try {
+          const r = await fetch(GEN_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ choice }) });
+          const data = await r.json();
+          if (data.error) throw new Error(data.error);
+          renderBranch(data);
+        } catch (e) {
+          renderBranch(FALLBACK[choice]);   // 服务器没起/出错 → 客户端兜底,demo 照演
+        }
+      });
+
+      /* ===== Keri ===== */
+      (function () {
+        const keri = $("#keri"), body = $("#keriBody"), chips = $("#keriChips"), input = $("#keriInput");
+        const QA = [["合作式和抢占式到底差在哪?", "差在「谁有权切走 CPU」。合作式把权力交给进程自己(它自觉 yield),抢占式把权力交给定时器(到点强夺)。简单 vs 公平,这就是这一章的真取舍。"],
+          ["为什么这章没有标准答案?", "因为它是设计取舍,不是知识点。两条路在真实历史里都被走过、各有代价。我们让你先选一条、亲历它的墙,取舍才真长进你脑子里 —— 而不是背一张对比表。"],
+          ["进程为什么 = 被保存的现场?", "因为 CPU 一次只跑一个,要让另一个上,就得先把当前这个的「现场」(寄存器、栈、下一条指令)完整存下来,以后能原样恢复。那一份存下来的现场,就是进程。"]];
+        chips.innerHTML = QA.map(([q], i) => `<button data-i="${i}">${q}</button>`).join("");
+        const push = (q, a) => { $(".intro", body)?.remove();
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "me", innerHTML: `<div>${q}</div>` }), chips);
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "ke", innerHTML: `<div class="av2">K</div><div>${a}</div>` }), chips);
+          body.scrollTop = body.scrollHeight; };
+        chips.querySelectorAll("button").forEach((b) => b.onclick = () => push(QA[+b.dataset.i][0], QA[+b.dataset.i][1]));
+        const send = () => { const v = input.value.trim(); if (!v) return; input.value = ""; push(v, "好问题。正式版我会结合你正读到的位置回答 —— 当前是结构 demo。这一章记住:合作式靠自觉、抢占式靠定时器,先撞墙再揭晓。"); };
+        $("#keriSend").onclick = send; input.addEventListener("keydown", (e) => e.key === "Enter" && send());
+        $("#keriOrb").onclick = () => keri.classList.add("open"); $("#keriX").onclick = () => keri.classList.remove("open");
+      })();
+
+      const prog = $("#prog");
+      addEventListener("scroll", () => { const h = document.documentElement, mx = h.scrollHeight - h.clientHeight; prog.style.width = (mx > 0 ? h.scrollTop / mx * 100 : 0) + "%"; }, { passive: true });
+    </script>
+  </body>
+</html>

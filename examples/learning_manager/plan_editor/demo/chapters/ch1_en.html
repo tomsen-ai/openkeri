@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kernel From Scratch · Ch 01 — The Boot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./os-design.css" />
+    <style>
+      main{max-width:1080px;padding:0 40px 150px;}
+      .top .in{max-width:1080px;}
+      .sechead{max-width:680px;margin-left:auto;margin-right:auto;}
+      .lead2{max-width:680px;margin:22px auto;font-size:17px;line-height:1.78;color:var(--body);}
+      .lead2 code,.lead2 .ko{font-family:var(--mono);font-size:.9em;}
+      figure.f{margin:54px auto;display:flex;flex-direction:column;align-items:center;}
+      figure.f figcaption{font-size:13px;color:var(--mute);text-align:center;margin-top:14px;max-width:560px;line-height:1.5;}
+      .scene,.playbox,.doblk,.quiz,.runwrap,.pager,.hr,.refs,.playhead,.dh{max-width:700px;margin-left:auto;margin-right:auto;}
+      .hero{text-align:center;padding:64px 0 8px;}
+      .hero h1{font-size:44px;max-width:840px;margin-left:auto;margin-right:auto;line-height:1.18;}
+      .hero .lead{max-width:660px;margin-left:auto;margin-right:auto;}
+      .hero .facts{justify-content:center;}
+
+      .flow{max-width:420px;margin:0 auto;display:flex;flex-direction:column;}
+      .node{border:1px solid var(--line);border-radius:11px;padding:12px 15px;background:var(--card);}
+      .node .lv{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;padding:1px 7px;border-radius:5px;display:inline-block;margin-bottom:6px;font-weight:600;}
+      .node b{display:block;font-size:14px;color:var(--ink);}
+      .node em{display:block;font-style:normal;font-size:11.5px;color:var(--soft);margin-top:3px;line-height:1.5;}
+      .node.rom .lv{background:#eceef1;color:#6b7480;}
+      .node.m{border-color:#e6cdc1;background:#fbf4f0;} .node.m .lv{background:#f1dbd0;color:#b4541f;}
+      .node.s{border-color:#cdd3f5;background:#f3f4fe;} .node.s .lv{background:#e1e5fb;color:#3a4ed6;}
+      .step{display:flex;align-items:center;gap:9px;color:var(--mute);font-family:var(--mono);font-size:11px;padding:6px 8px;}
+      .step .v{color:var(--accent);font-size:14px;line-height:1;}
+      .step .ln{flex:1;height:0;border-top:1px dashed var(--line-2);}
+
+      .ecall{max-width:500px;margin:0 auto;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--card);}
+      .ecall .lane{padding:13px 16px;}
+      .ecall .lane.s{background:#f3f4fe;} .ecall .lane.m{background:#fbf4f0;}
+      .ecall .who{font-family:var(--mono);font-size:10px;letter-spacing:.06em;font-weight:600;margin-bottom:4px;}
+      .ecall .lane.s .who{color:#3a4ed6;} .ecall .lane.m .who{color:#b4541f;}
+      .ecall .lane b{color:var(--ink);font-size:13.5px;} .ecall .lane em{font-style:normal;color:var(--soft);font-size:12px;display:block;margin-top:2px;}
+      .ecall .cross{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;background:repeating-linear-gradient(90deg,#e6e2dd 0 6px,transparent 6px 12px);border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);font-family:var(--mono);font-size:10.5px;color:var(--mute);}
+      .ecall .cross b{color:#b4541f;} .ecall .cross .ret{color:#3a4ed6;}
+
+      .cb{max-width:540px;margin:0 auto;border-radius:10px;overflow:hidden;border:1px solid #1c2230;box-shadow:0 8px 26px -16px rgba(14,17,23,.4);}
+      .cb .cbh{background:var(--code-bar);padding:8px 13px;font-family:var(--mono);font-size:11px;color:var(--mute);border-bottom:1px solid var(--code-line);display:flex;justify-content:space-between;}
+      .cb pre{margin:0;background:var(--code-bg);color:#c9d2de;font-family:var(--mono);font-size:12.5px;line-height:1.9;padding:14px 16px;overflow-x:auto;}
+      .cb .cm{color:#6b7688;} .cb .kw{color:#8aa0ff;} .cb .fn{color:#79d3c6;} .cb .st{color:#e3b27c;} .cb .nu{color:#d8a76a;} .cb .rg{color:#c8a6ff;}
+
+      .mmap{max-width:560px;margin:0 auto;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--card);font-family:var(--mono);font-size:12.5px;}
+      .mmap .row2{display:flex;align-items:stretch;border-top:1px solid var(--line-2);} .mmap .row2:first-child{border-top:0;}
+      .mmap .addr{flex:none;width:104px;padding:11px 12px;color:var(--mute);border-right:1px solid var(--line-2);background:#fbfcfd;}
+      .mmap .what{padding:11px 14px;flex:1;color:var(--body);font-family:var(--f);font-size:13px;line-height:1.4;} .mmap .what b{color:var(--ink);font-weight:600;} .mmap .what .hi{color:var(--accent);font-weight:600;}
+      .mmap .row2.k{background:#f3f4fe;} .mmap .row2.f{background:#fbf4f0;}
+
+      .jrny{max-width:540px;margin:0 auto;border:1px solid var(--line);border-radius:11px;background:var(--card);padding:6px 20px;}
+      .jr{display:flex;gap:13px;padding:10px 0;border-top:1px solid var(--line-2);font-size:14px;color:var(--body);line-height:1.45;} .jr:first-child{border-top:0;}
+      .jr .n{flex:none;width:23px;height:23px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-family:var(--mono);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;}
+
+      .doblk{margin:26px auto;padding:18px 20px;border:1px solid var(--line);border-left:3px solid var(--go);border-radius:10px;background:#fbfdfc;}
+      .doblk .dohd{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--go);font-weight:600;margin-bottom:4px;text-transform:uppercase;}
+      .doblk .dot{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:12px;}
+      .doblk p.note{font-size:14px;color:var(--soft);margin:0 0 12px;line-height:1.55;}
+
+      .refs li{font-size:14.5px;line-height:1.7;color:var(--body);margin:8px 0;} .refs a{color:var(--accent-deep);text-decoration:none;border-bottom:1px solid var(--accent-line);} .refs li .n{font-family:var(--mono);font-size:12px;color:var(--mute);}
+    </style>
+  </head>
+  <body>
+    <div class="progress"><i id="prog"></i></div>
+    <header class="top"><div class="in">
+      <div class="brand"><span class="mk"><i></i></span><b>Kernel From Scratch</b><span class="en">a tiny RISC-V OS</span></div>
+      <div class="meta"><span>Chapter 01 · The Boot</span><span class="sep"></span><span class="hl">Deep · 2 hands-on</span></div>
+    </div></header>
+
+    <main id="main"></main>
+
+    <div class="keri" id="keri">
+      <button class="orb" id="keriOrb"><span class="av">K</span><span class="t"><b>Ask Keri</b><span>Stuck? Call me anytime</span></span></button>
+      <div class="panel">
+        <div class="ph"><div style="display:flex;align-items:center;gap:10px"><span class="av">K</span><div style="line-height:1.25"><div><b>Keri</b></div><div class="st"><i></i>reading along with you</div></div></div><button class="x" id="keriX">×</button></div>
+        <div class="kbody" id="keriBody"><p class="intro">Hi, I'm Keri. Three beats this chapter: <b>who runs first</b>, <b>why no-stack-means-crash</b>, and <b>how the screen lights up</b> — pick a topic.</p>
+          <div class="chips" id="keriChips"></div>
+        </div>
+        <div class="kin"><input id="keriInput" placeholder="Ask Keri anything…" /><button class="send" id="keriSend">↑</button></div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (s, r = document) => r.querySelector(s);
+      const main = $("#main");
+      const term = (w, lab, def) => `<span class="term">${w}<span class="tip"><span class="lab">${lab}</span>${def}</span></span>`;
+
+      main.innerHTML = `
+        <section class="hero">
+          <div class="kicker">Chapter 01 · The Boot</div>
+          <h1>From power-on to the first words — what happens in between</h1>
+          <p class="lead">Most tutorials hand you some assembly to copy, a magic address to paste, and call it done once "Hello" shows up. We'd rather keep asking <i>why</i>: why does this assembly even run? why this exact address? why write assembly first instead of jumping straight into C? Take the "why"s apart and you'll find there's no magic in booting a kernel — every line answers a concrete physical constraint.</p>
+          <div class="facts"><span>~15 min</span><span>·</span><span>2 hands-on</span><span>·</span><span>RISC-V · QEMU virt</span></div>
+        </section>
+        <div class="hr"></div>
+
+        <!-- 1 -->
+        <section class="txt">
+          <div class="sechead">§ 1 · Your code isn't the first to run</div>
+          <p class="lead2">You probably assume that the instant you power on, what runs is the kernel you wrote. It isn't — long before your code wakes up, a piece of firmware called ${term("OpenSBI", "OpenSBI", "RISC-V's open-source firmware / runtime. Runs at the highest privilege level, initializes hardware, and exposes the SBI interface to the kernel above.")} has already tidied this machine up for you.</p>
+          <p class="lead2">It runs in <b>M-mode</b>, RISC-V's most ${term("privileged", "PRIVILEGE LEVELS", "RISC-V splits the CPU into three tiers: M (machine, highest, touches hardware directly), S (supervisor, where the kernel lives), U (user). The lower the level, the less it can touch.")} level, with direct access to the hardware. Every board has different timers and UART addresses; OpenSBI swallows all that messy, board-specific work and leaves you a single clean interface (the SBI).</p>
+          <p class="lead2">Once the stage is set, it's your turn: it <b>lowers itself to the less-privileged S-mode</b>, jumps to an agreed-upon address, and hands you control. The figure below is that whole relay — watch privilege drop all the way from M to S.</p>
+          <figure class="f">
+            <div class="flow">
+              <div class="node rom"><div class="lv">RESET</div><b>Power-on · ROM</b><em>loads firmware into memory, jumps in</em></div>
+              <div class="step"><span class="v">↓</span> load &amp; jump in <span class="ln"></span></div>
+              <div class="node m"><div class="lv">M-MODE · HIGHEST</div><b>OpenSBI firmware</b><em>initializes hardware · provides the SBI</em></div>
+              <div class="step"><span class="v">↓</span> done — drop privilege, hand off <span class="ln"></span></div>
+              <div class="node s"><div class="lv">S-MODE · KERNEL</div><b>your kernel's boot</b><em>starts at 0x80200000 — your first line of code</em></div>
+            </div>
+            <figcaption>Fig 1 · The boot relay: privilege drops all the way from M to S</figcaption>
+          </figure>
+        </section>
+
+        <!-- 2 -->
+        <section class="txt" style="margin-top:34px">
+          <div class="sechead">§ 2 · 0x80200000 — not a single bit can be wrong</div>
+          <p class="lead2">When the firmware hands off, it jumps to <code>0x80200000</code>. That address isn't arbitrary — the memory-layout figure (Fig 2) below makes it obvious.</p>
+          <figure class="f">
+            <div class="mmap">
+              <div class="row2"><div class="addr">high ↑</div><div class="what">stack grows downward (used in §3)</div></div>
+              <div class="row2 k"><div class="addr">0x8020_0000</div><div class="what"><span class="hi">your kernel</span> · boot first → .text/.data/.bss → reserved stack</div></div>
+              <div class="row2 f"><div class="addr">0x8000_0000</div><div class="what"><b>OpenSBI firmware</b> · first ~2MB of RAM</div></div>
+              <div class="row2"><div class="addr">0x0000_1000</div><div class="what">ROM / reset vector (power-on starts here)</div></div>
+            </div>
+            <figcaption>Fig 2 · QEMU virt physical memory layout</figcaption>
+          </figure>
+          <p class="lead2">This machine's RAM starts at <code>0x80000000</code>, and OpenSBI itself sits in the first ~2MB. Count up from there and <b>the first untouched, clean chunk of RAM lands exactly at 0x80200000</b> — so the firmware agrees to put your kernel there, and jumps there.</p>
+          <p class="lead2">Get this address wrong by even one bit (say <code>0x80100000</code>) and your kernel overlaps the firmware; the moment it jumps over, it tramples its own code and flies off. Worse, the screen and logs don't exist yet — <b>when it crashes, you won't see a single line of error</b>.</p>
+          <p class="lead2">On your side, a <b>linker script</b> pins the kernel to this address, and makes sure boot sits first in the image (the firmware jumps to the very first byte). Here are the lines that matter:</p>
+          <figure class="f"><div class="cb"><div class="cbh"><span>kernel.ld</span><span>linker script</span></div><pre>    . = <span class="nu">0x80200000</span>;        <span class="cm">// kernel starts here</span>
+    .text : {
+        *(.text.boot)        <span class="cm">// boot first = first byte of image</span>
+        *(.text .text.*)
+    }
+    ...
+    __stack_top = .;         <span class="cm">// top of reserved region = stack top (§3)</span></pre></div></figure>
+        </section>
+
+        <!-- 3 -->
+        <div class="scene" style="margin-top:36px"><div class="sb"><div class="sk">Dead End</div><div class="st">You take the baton, write the most ordinary C function imaginable — and it crashes on the spot.</div><p>The syntax is fine. The problem is this machine <b>doesn't have a stack yet</b>, and every ordinary C function reaches for one the instant it's entered.</p></div></div>
+
+        <section class="txt" style="margin-top:30px">
+          <div class="sechead">§ 3 · No stack means no C</div>
+          <p class="lead2">The trouble comes from something you'd never normally notice: the stack. Every time you call a C function, the compiler quietly slips a "prologue" in at the top — and its very first move is to grab the <code>sp</code> register, open a stack frame, and store the return address. That's the two lines in Fig 3.</p>
+          <figure class="f"><div class="cb" style="max-width:480px"><div class="cbh"><span>the compiler's auto prologue</span><span>asm</span></div><pre><span class="rg">kernel_main</span>:
+    addi <span class="rg">sp</span>,<span class="rg">sp</span>,-<span class="nu">32</span>   <span class="cm">// open a frame using sp</span>
+    sd   <span class="rg">ra</span>,<span class="nu">24</span>(<span class="rg">sp</span>)   <span class="cm">// write return addr → into unknown memory</span></pre></div><figcaption>Fig 3 · The auto prologue — its very first move touches sp</figcaption></figure>
+          <p class="lead2">Normally that's fine, because the stack was set up long ago. But <b>boot is the very first code after power-on, and right now <code>sp</code> holds nothing but leftover garbage</b>.</p>
+          <p class="lead2">So the prologue takes that garbage address and writes to memory — wherever it lands is pure luck, and it crashes on the spot. It's not your function that's wrong — C's ${term("calling convention", "CALLING CONVENTION / ABI", "C functions use sp to find the stack for locals and return addresses. RISC-V uses sp for the stack top and ra for the return address.")} simply assumes there's a ready stack underfoot, and here there isn't one yet.</p>
+          <p class="lead2">Here's a little thing to feel it for yourself: drag <span class="ko" style="color:#3a4ed6;font-weight:600">sp</span> — land in the stack region and all's well; slip outside and the screen shows you exactly the fate of that garbage sp.</p>
+          <div class="playbox" style="margin-top:14px">
+            <div class="track" id="track">
+              <div class="zone" style="height:16%;background:#f4f1f1;color:#9a8b8b">reserved / overflow</div>
+              <div class="zone lab" style="height:30%;background:#e8f4ee;color:#1f7a55">stack region ✓</div>
+              <div class="zone" style="height:22%;background:#faf6ef;color:#b4541f">unmapped gap</div>
+              <div class="zone" style="height:18%;background:#eceefc;color:#3a4ed6">heap / data</div>
+              <div class="zone" style="height:14%;background:#22262e;color:#9aa6c8;border-bottom:0">code · 0x0</div>
+              <div class="sp" id="spHandle" style="top:30%"><span class="ln"></span><span class="pill"><i>sp</i>→</span></div>
+            </div>
+            <div class="readout">
+              <div class="lbl">sp now points to</div><div class="zone-name" id="spName"></div><p class="zone-msg" id="spMsg"></p>
+              <div class="screen"><div class="sbar"><span>kernel screen</span><span>console</span></div><div id="spScreen"></div></div>
+            </div>
+          </div>
+          <p class="lead2">Since the problem is "sp doesn't point anywhere valid", boot's first job is clear: use <code>naked</code> to stop the compiler from adding that stack-using prologue, then point <code>sp</code> by hand at the reserved stack top <code>__stack_top</code>. This line is yours to write.</p>
+          <div class="doblk">
+            <div class="dohd">Hands-on ① · load-bearing</div>
+            <div class="dot">Stand up a stack for the kernel</div>
+            <p class="note">The whole boot is built; just fill the highlighted line — point sp at the stack top.</p>
+            <div id="do1"></div>
+          </div>
+        </section>
+
+        <!-- 4 -->
+        <section class="txt" style="margin-top:38px">
+          <div class="sechead">§ 4 · How the screen lights up: ecall is a "controlled overstep"</div>
+          <p class="lead2">The stack is up, your code runs, and you want to print a line — but there's no printf on bare metal. The cleanest move is to go back and ask that higher-privileged firmware, which already knows the hardware, for a favor.</p>
+          <p class="lead2">You ask with a single ${term("ecall", "ecall · environment call", "A RISC-V instruction that deliberately triggers a trap, entering a higher privilege level's preset handler (here, M-mode firmware).")} instruction. It doesn't jump you into the firmware's code — it's more like <b>knocking</b>: the instant you run ecall, the hardware stops you at the privilege boundary, redirects to an entry the firmware set up in advance, lets it handle and finish, then hands control (and privilege) back. That round trip is Fig 4.</p>
+          <figure class="f">
+            <div class="ecall">
+              <div class="lane s"><div class="who">S-MODE · YOUR KERNEL</div><b>putchar('H')</b><em>I can't light the screen myself — I can only ask the firmware</em></div>
+              <div class="cross"><span><b>↓ ecall</b> knock · hardware stops you at the boundary</span><span class="ret">↑ done, control back to you</span></div>
+              <div class="lane m"><div class="who">M-MODE · OPENSBI FIRMWARE</div><b>catch → write UART → 'H' on screen</b><em>handled at its own controlled entry</em></div>
+            </div>
+            <figcaption>Fig 4 · A controlled trap: the low-privilege side asks the high-privilege side to act</figcaption>
+          </figure>
+          <p class="lead2">Set the register details aside for now, <b>but burn this mechanism into memory: the low-privilege side knocks, the high-privilege side does the work</b> — by chapter 6 a user program asks your kernel for favors the exact same way. Same trick, different pair of characters.</p>
+
+          <section class="quiz" id="quiz" style="margin-top:22px">
+            <div class="qhead"><span class="badge">Check</span><span class="sub">answer to reveal</span></div>
+            <p class="q">On bare metal, what does putchar rely on to show a character on screen?</p>
+            <div class="opts" id="opts"></div>
+            <div class="qexp" id="qexp"><div class="l">Why</div><p>Bare metal has no framebuffer driver and no printf — the only way is a single <b>ecall</b> that traps into the firmware and asks it to write. That's the process in Fig 4.</p></div>
+          </section>
+
+          <p class="lead2" style="margin-top:26px">As for how that ecall is actually written and how arguments get stuffed into registers — that's pure plumbing, just copy it. You don't need to read every character below; just see what it does: put the character in <code>a0</code>, the function number in <code>a7</code>, and one <code>ecall</code> hands the request to the firmware.</p>
+          <figure class="f"><div class="cb" style="max-width:480px"><div class="cbh"><span>arch/sbi.c</span><span>black box · copy it</span></div><pre><span class="kw">void</span> <span class="fn">putchar</span>(<span class="kw">char</span> ch) {
+    <span class="rg">a0</span> = ch;        <span class="cm">// the character to print</span>
+    <span class="rg">a7</span> = <span class="nu">1</span>;         <span class="cm">// EID 1 = console putchar</span>
+    <span class="kw">__asm__</span>(<span class="st">"ecall"</span>); <span class="cm">// ← trap, M-mode takes over</span>
+}</pre></div></figure>
+          <p class="lead2">With that black-box <code>putchar</code> in hand, the main program is built too — all that's left is to hand the string's characters out one at a time. This last line is yours too.</p>
+          <div class="doblk">
+            <div class="dohd">Hands-on ② · load-bearing</div>
+            <div class="dot">Light up the first sentence</div>
+            <p class="note">Hand the characters in the string to putchar, one at a time.</p>
+            <div id="do2"></div>
+          </div>
+        </section>
+
+        <section class="txt" style="margin-top:34px">
+          <div class="playhead" style="color:#1f8a5b">Run · see it work</div><h2 class="dh">Compile, boot, and then — it's alive</h2>
+          <div class="runwrap" style="margin-top:14px">
+            <div class="rbar"><span>terminal — build &amp; run</span><button class="run" id="runBtn"><span style="font-size:9px">▶</span><span id="runLabel">Run</span></button></div>
+            <div class="runterm" id="runTerm"><div class="idle">$ <span style="color:#8b93a1">once both load-bearing lines are in, hit ▶ to really compile and boot your kernel…</span></div></div>
+            <div id="runResult"></div>
+          </div>
+          <div id="achWrap"></div>
+        </section>
+
+        <!-- 5 -->
+        <section class="txt" style="margin-top:42px">
+          <div class="sechead">§ 5 · The full life of one 'H'</div>
+          <p class="lead2">Stitch the four sections together and the whole journey behind that line of Hello is the six steps below — from power-on to a character on screen, each step paying back a debt the OS normally covers but no one covers now.</p>
+          <figure class="f">
+            <div class="jrny">
+              <div class="jr"><span class="n">1</span><span>Power-on → ROM loads OpenSBI into RAM and jumps in</span></div>
+              <div class="jr"><span class="n">2</span><span>OpenSBI (M) inits hardware → drops to S → jumps 0x80200000</span></div>
+              <div class="jr"><span class="n">3</span><span><b>your boot</b>: la sp sets up the stack, jumps into kernel_main</span></div>
+              <div class="jr"><span class="n">4</span><span><b>kernel_main</b>: hands "Hello…" to putchar character by character</span></div>
+              <div class="jr"><span class="n">5</span><span>putchar → ecall, hands 'H' to the firmware</span></div>
+              <div class="jr"><span class="n">6</span><span>OpenSBI writes UART → 'H' on screen → control back to you</span></div>
+            </div>
+            <figcaption>Fig 5 · One 'H', from power-on to pixels</figcaption>
+          </figure>
+          <p class="lead2">There's <b>not a single piece of magic</b> on this chain. And the two lines you filled by hand — 3's stack setup and 4's print — are exactly the two clasps that let the whole chain close.</p>
+        </section>
+
+        <!-- 6 -->
+        <section class="txt" style="margin-top:36px">
+          <div class="sechead">§ 6 · Two things to take away</div>
+          <p class="lead2"><b>First, "nothing underfoot" is literal.</b> We compile with <code>-nostdlib</code>, which tells the compiler: assume no standard library, and no OS beneath you. So the stack is yours to set up, output yours to build, even zeroing <code>.bss</code> yours to do. The grunt work of every later chapter is, at root, this one sentence.</p>
+          <p class="lead2"><b>Second, "privilege levels + controlled traps" is the hidden thread through the whole book.</b> ecall only prints a character here, but the mechanism it shows — the low side traps, the high side acts — is the bedrock of the OS security model. Catching exceptions in ch 3, user syscalls in ch 6 — you'll recognize it coming back in a new outfit.</p>
+        </section>
+
+        <div class="hr" style="margin:34px 0 0"></div>
+        <section class="txt" style="padding-top:10px">
+          <div class="sechead" style="margin-bottom:6px">Going deeper</div>
+          <ul class="refs" style="list-style:none;padding:0;max-width:680px;margin:0 auto">
+            <li><a href="https://operating-system-in-1000-lines.vercel.app/" target="_blank">Operating System in 1,000 Lines</a> <span class="n">— the backbone this chapter follows.</span></li>
+            <li><a href="https://pdos.csail.mit.edu/6.828/2023/xv6/book-riscv-rev3.pdf" target="_blank">xv6 book (RISC-V)</a> <span class="n">— authoritative on boot / privilege / trap.</span></li>
+            <li><a href="https://github.com/riscv-non-isa/riscv-sbi-doc" target="_blank">RISC-V SBI spec</a> <span class="n">— source of truth for ecall / EID.</span></li>
+            <li><a href="https://wiki.osdev.org/" target="_blank">OSDev Wiki</a> <span class="n">— bare-metal boot / linker scripts / .bss pitfalls.</span></li>
+          </ul>
+        </section>
+
+        <div class="hr" style="margin:30px 0 0"></div>
+        <div class="pager"><span>← Chapter 0 · Toolchain &amp; setup</span><span class="next">Chapter 02 · Catching the unexpected →</span></div>
+      `;
+
+      /* ============ playable: drag sp ============ */
+      (function () {
+        const track = $("#track"), handle = $("#spHandle"), name = $("#spName"), msg = $("#spMsg");
+        const zoneOf = (p) => p < 16 ? { n: "Reserved / overflow", ok: 0, m: "Past the stack top, into reserved addresses. The 'return address' you read back is garbage." }
+          : p < 46 ? { n: "Stack region ✓", ok: 1, m: "Bullseye. The return address is safe, and the function returns cleanly to its caller." }
+          : p < 68 ? { n: "Unmapped gap", ok: 0, m: "No physical memory here — touch it and you fault." }
+          : p < 86 ? { n: "Heap / data", ok: 0, m: "Treats someone's data as a return address. One ret and you jump into data." }
+          : { n: "Code · 0x0", ok: 0, m: "Points at read-only code or a null pointer. The next ret panics." };
+        function render(p) {
+          handle.style.top = p + "%"; const z = zoneOf(p); name.textContent = z.n; msg.textContent = z.m;
+          const host = $("#spScreen");
+          host.outerHTML = z.ok
+            ? `<div id="spScreen"><div class="ok">kernel_main()<br>&gt; all good<span class="cur"></span></div></div>`
+            : `<div id="spScreen"><div class="crash"><b>*** KERNEL PANIC ***</b><br>invalid return address<br>sp landed in an illegal region, machine halted.</div></div>`;
+        }
+        const at = (e) => { const r = track.getBoundingClientRect(); render(Math.max(2, Math.min(98, (e.clientY - r.top) / r.height * 100))); };
+        track.addEventListener("pointerdown", (e) => { try { track.setPointerCapture(e.pointerId); } catch (_) {} at(e); track._d = 1; });
+        track.addEventListener("pointermove", (e) => track._d && at(e));
+        track.addEventListener("pointerup", () => track._d = 0);
+        render(30);
+      })();
+
+      /* ============ check ============ */
+      (function () {
+        const opts = $("#opts"), exp = $("#qexp"), correct = 2;
+        const data = [["A", "Write bytes straight to video memory"], ["B", "Call the C standard library's printf"], ["C", "A single ecall asking the firmware"], ["D", "The compiler emits it automatically"]];
+        let done = false;
+        opts.innerHTML = data.map(([l, t], i) => `<button class="opt" data-i="${i}"><span class="lt">${l}</span><span class="ot">${t}</span><span class="bg"></span></button>`).join("");
+        opts.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+          if (done) return; done = true; const pick = +b.dataset.i;
+          opts.querySelectorAll(".opt").forEach((o) => { o.disabled = true; const i = +o.dataset.i;
+            if (i === correct) { o.classList.add("right"); o.querySelector(".bg").textContent = "✓ correct"; o.querySelector(".bg").style.color = "#1f8a5b"; }
+            else if (i === pick) { o.classList.add("wrong"); o.querySelector(".bg").textContent = "you picked"; o.querySelector(".bg").style.color = "#b4541f"; }
+            else o.classList.add("dim"); });
+          exp.style.display = "block";
+        });
+      })();
+
+      /* ============ load-bearing editors ============ */
+      const doneSteps = new Set();
+      function editor(mount, { n, file, rt, lines, writeIdx, placeholder, answerRe, refAnswer, hint }) {
+        const code = lines.map((l, i) => {
+          if (i === writeIdx) return `<div class="ln writeln"><span class="no">✍</span><span class="src" style="color:#c9d2de">    </span><input class="wallin" placeholder="${placeholder}" spellcheck="false" autocomplete="off"/><span class="src" style="color:#6b7688;margin-left:6px">${l.cmt || ""}</span></div>`;
+          return `<div class="ln"><span class="no">${l.no}</span><span class="src">${l.h}</span></div>`;
+        }).join("");
+        mount.innerHTML = `<div class="editor"><div class="ebar"><div class="dots"><i style="background:#e5484d"></i><i style="background:#e3b27c"></i><i style="background:#46c08a"></i><span class="fn">${file}</span></div><span class="rt">${rt}</span></div><div class="code">${code}</div></div>
+          <div class="ebtns"><button class="btn pri check">Check</button><button class="btn sec ref">Show answer</button><span class="note">only the ✍ line is yours to write</span></div>
+          <div class="fbslot"></div>`;
+        const inp = mount.querySelector(".wallin"), slot = mount.querySelector(".fbslot");
+        const done = () => { inp.disabled = true; doneSteps.add(n); slot.innerHTML = `<div class="fb ok"><span class="i">✓</span><span><b>Correct</b> — this line is now merged into your project. ${doneSteps.size >= 2 ? "Both done — hit Run below." : "Keep going."}</span></div>`; };
+        mount.querySelector(".check").onclick = () => { if (answerRe.test(inp.value)) done(); else slot.innerHTML = `<div class="fb bad"><span class="i">!</span><span>Not quite — ${hint}</span></div>`; };
+        mount.querySelector(".ref").onclick = () => { inp.value = refAnswer; done(); };
+      }
+      editor($("#do1"), { n: 1, file: "arch/boot.c", rt: "ASM · scaffolding ready", writeIdx: 3,
+        lines: [{ no: "01", h: `<span class="cm">// first code on boot, in .text.boot — no stack yet</span>` },
+          { no: "02", h: `<span class="kw">__attribute__</span>((naked)) <span class="kw">void</span> <span class="fn2">boot</span>(<span class="kw">void</span>) {` },
+          { no: "03", h: `    <span class="kw">__asm__</span> <span class="kw">__volatile__</span>(` },
+          { no: "04", h: ``, cmt: `// load-bearing: point sp at the stack top __stack_top` },
+          { no: "05", h: `        <span class="st">"j  kernel_main\\n"</span>  <span class="cm">// stack is up, safe to enter C</span>` },
+          { no: "06", h: `    );` }, { no: "07", h: `}` }],
+        placeholder: `← your line (point sp at __stack_top)`, answerRe: /la\s*sp\s*,\s*__stack_top/i, refAnswer: `"la sp, __stack_top\\n"`, hint: `use <span style="font-family:var(--mono);background:#f7e6d6;padding:1px 5px;border-radius:4px">la</span> to load an address into a register.` });
+      editor($("#do2"), { n: 2, file: "kernel/main.c", rt: "C · scaffolding ready", writeIdx: 3,
+        lines: [{ no: "01", h: `<span class="kw">void</span> <span class="fn2">kernel_main</span>(<span class="kw">void</span>) {` },
+          { no: "02", h: `    <span class="kw">const char</span> *s = <span class="st">"Hello from my kernel!\\n"</span>;` },
+          { no: "03", h: `    <span class="kw">for</span> (<span class="kw">int</span> i = 0; s[i]; i++)` },
+          { no: "04", h: ``, cmt: `// load-bearing: send the i-th character s[i] out` },
+          { no: "05", h: `    <span class="kw">for</span> (;;);  <span class="cm">// stop here when done</span>` }, { no: "06", h: `}` }],
+        placeholder: `← your line (hand s[i] to putchar)`, answerRe: /putchar\s*\(\s*s\s*\[\s*i\s*\]\s*\)/, refAnswer: `putchar(s[i]);`, hint: `hand the i-th character <span style="font-family:var(--mono)">s[i]</span> to <span style="font-family:var(--mono)">putchar</span>.` });
+
+      /* ============ run / achievement ============ */
+      (function () {
+        const btn = $("#runBtn"), label = $("#runLabel"), termEl = $("#runTerm"), result = $("#runResult"), achWrap = $("#achWrap");
+        let running = false;
+        btn.onclick = () => {
+          if (running) return;
+          if (doneSteps.size < 2) { termEl.innerHTML = `<div class="idle">$ <span style="color:#ff8a8a">still missing load-bearing line(s) (step ${[1, 2].filter((x) => !doneSteps.has(x)).join(", ")}) — fill them above first.</span></div>`; return; }
+          running = true; label.textContent = "running…"; termEl.innerHTML = ""; result.innerHTML = ""; achWrap.innerHTML = "";
+          const seq = ["clang -target riscv32 -ffreestanding -nostdlib -c *.c", "ld.lld -T kernel.ld -o kernel.elf", "qemu-system-riscv32 -kernel kernel.elf", "OpenSBI v1.x · drop to S-mode → jump 0x80200000", "→ boot: la sp sets up stack → j kernel_main()"];
+          seq.forEach((l, i) => setTimeout(() => termEl.insertAdjacentHTML("beforeend", `<div class="l"><span class="a">›</span> ${l}</div>`), 300 * (i + 1)));
+          setTimeout(() => {
+            running = false; label.textContent = "Run again";
+            result.innerHTML = `<div class="vga"><div class="lab">CONSOLE OUTPUT · via SBI</div><div class="out">Hello from my kernel!<span class="cur" style="height:22px;width:11px"></span></div></div>`;
+            achWrap.innerHTML = `<div class="ach"><div class="ico">🏆</div><div style="flex:1"><div class="k">Achievement unlocked</div><div class="t">First words spoken</div><div class="d">The stack + print lines you filled made bare metal speak. Chapter 01 · +1.</div></div><span class="xp">+10 XP</span></div>`;
+          }, 300 * (seq.length + 1));
+        };
+      })();
+
+      /* ============ Ask Keri ============ */
+      (function () {
+        const keri = $("#keri"), body = $("#keriBody"), chips = $("#keriChips"), input = $("#keriInput");
+        const QA = [["Why can't you use C without a stack?", "The compiler's auto prologue for every ordinary C function first grabs sp to open a frame and write the return address. boot is the first code, sp is still garbage, so one write lands in unknown memory and crashes. That's why boot must be naked and set up the stack by hand first."],
+          ["Why is ecall a 'safe overstep'?", "You don't jump into the firmware; ecall triggers a hardware trap — the CPU stops you at the boundary, redirects to the firmware's preset, controlled entry, and it hands privilege back when done. The elevation is hardware-enforced, not 'jump anywhere you like'. Chapter 6's user→kernel call is the same."],
+          ["Where does 0x80200000 come from?", "QEMU virt's RAM starts at 0x80000000; OpenSBI takes the first ~2MB up to 0x80200000. So the first clean chunk of RAM is exactly that, and the firmware agrees to jump there."]];
+        chips.innerHTML = QA.map(([q], i) => `<button data-i="${i}">${q}</button>`).join("");
+        const push = (q, a) => { $(".intro", body)?.remove();
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "me", innerHTML: `<div>${q}</div>` }), chips);
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "ke", innerHTML: `<div class="av2">K</div><div>${a}</div>` }), chips);
+          body.scrollTop = body.scrollHeight; };
+        chips.querySelectorAll("button").forEach((b) => b.onclick = () => push(QA[+b.dataset.i][0], QA[+b.dataset.i][1]));
+        const send = () => { const v = input.value.trim(); if (!v) return; input.value = ""; push(v, "Good question. The full version answers based on where you are in the chapter — this is a structure demo. Keep three things: who runs first, why no-stack-crashes, how the screen lights up."); };
+        $("#keriSend").onclick = send; input.addEventListener("keydown", (e) => e.key === "Enter" && send());
+        $("#keriOrb").onclick = () => keri.classList.add("open"); $("#keriX").onclick = () => keri.classList.remove("open");
+      })();
+
+      const prog = $("#prog");
+      addEventListener("scroll", () => { const h = document.documentElement, mx = h.scrollHeight - h.clientHeight; prog.style.width = (mx > 0 ? h.scrollTop / mx * 100 : 0) + "%"; }, { passive: true });
+    </script>
+  </body>
+</html>

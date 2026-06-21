@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>造核 · 第 01 章 内核引导</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./os-design.css" />
+    <style>
+      /* —— 仿 Distill:窄居中正文 + 居中、留足白的配图 —— */
+      main{max-width:1080px;padding:0 40px 150px;}
+      .top .in{max-width:1080px;}
+
+      /* 正文:窄列、居中、舒朗 */
+      .sechead{max-width:680px;margin-left:auto;margin-right:auto;}
+      .lead2{max-width:680px;margin:22px auto;font-size:17px;line-height:1.85;color:var(--body);}
+      .lead2 code,.lead2 .ko{font-family:var(--mono);font-size:.9em;}
+
+      /* 图:居中、给足上下留白、干净图注(像论文配图) */
+      figure.f{margin:54px auto;display:flex;flex-direction:column;align-items:center;}
+      figure.f figcaption{font-size:13px;color:var(--mute);text-align:center;margin-top:14px;max-width:560px;line-height:1.55;}
+
+      /* 互动块也收到正文列宽、居中 */
+      .scene,.playbox,.doblk,.quiz,.runwrap,.pager,.hr,.refs,.playhead,.dh{max-width:700px;margin-left:auto;margin-right:auto;}
+
+      /* 标题区居中(像 Distill 的题头) */
+      .hero{text-align:center;padding:64px 0 8px;}
+      .hero h1{font-size:46px;max-width:860px;margin-left:auto;margin-right:auto;}
+      .hero .lead{max-width:660px;margin-left:auto;margin-right:auto;}
+      .hero .facts{justify-content:center;}
+
+      /* 启动接力 */
+      .flow{max-width:420px;margin:0 auto;display:flex;flex-direction:column;}
+      .node{border:1px solid var(--line);border-radius:11px;padding:12px 15px;background:var(--card);}
+      .node .lv{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;padding:1px 7px;border-radius:5px;display:inline-block;margin-bottom:6px;font-weight:600;}
+      .node b{display:block;font-size:14px;color:var(--ink);}
+      .node em{display:block;font-style:normal;font-size:11.5px;color:var(--soft);margin-top:3px;line-height:1.5;}
+      .node.rom .lv{background:#eceef1;color:#6b7480;}
+      .node.m{border-color:#e6cdc1;background:#fbf4f0;} .node.m .lv{background:#f1dbd0;color:#b4541f;}
+      .node.s{border-color:#cdd3f5;background:#f3f4fe;} .node.s .lv{background:#e1e5fb;color:#3a4ed6;}
+      .step{display:flex;align-items:center;gap:9px;color:var(--mute);font-family:var(--mono);font-size:11px;padding:6px 8px;}
+      .step .v{color:var(--accent);font-size:14px;line-height:1;}
+      .step .ln{flex:1;height:0;border-top:1px dashed var(--line-2);}
+
+      /* ecall */
+      .ecall{max-width:500px;margin:0 auto;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--card);}
+      .ecall .lane{padding:13px 16px;}
+      .ecall .lane.s{background:#f3f4fe;} .ecall .lane.m{background:#fbf4f0;}
+      .ecall .who{font-family:var(--mono);font-size:10px;letter-spacing:.08em;font-weight:600;margin-bottom:4px;}
+      .ecall .lane.s .who{color:#3a4ed6;} .ecall .lane.m .who{color:#b4541f;}
+      .ecall .lane b{color:var(--ink);font-size:13.5px;} .ecall .lane em{font-style:normal;color:var(--soft);font-size:12px;display:block;margin-top:2px;}
+      .ecall .cross{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;background:repeating-linear-gradient(90deg,#e6e2dd 0 6px,transparent 6px 12px);border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);font-family:var(--mono);font-size:10.5px;color:var(--mute);}
+      .ecall .cross b{color:#b4541f;} .ecall .cross .ret{color:#3a4ed6;}
+
+      /* 代码块(图) */
+      .cb{max-width:540px;margin:0 auto;border-radius:10px;overflow:hidden;border:1px solid #1c2230;box-shadow:0 8px 26px -16px rgba(14,17,23,.4);}
+      .cb .cbh{background:var(--code-bar);padding:8px 13px;font-family:var(--mono);font-size:11px;color:var(--mute);border-bottom:1px solid var(--code-line);display:flex;justify-content:space-between;}
+      .cb pre{margin:0;background:var(--code-bg);color:#c9d2de;font-family:var(--mono);font-size:12.5px;line-height:1.9;padding:14px 16px;overflow-x:auto;}
+      .cb .cm{color:#6b7688;} .cb .kw{color:#8aa0ff;} .cb .fn{color:#79d3c6;} .cb .st{color:#e3b27c;} .cb .nu{color:#d8a76a;} .cb .rg{color:#c8a6ff;}
+
+      /* 内存图 */
+      .mmap{max-width:560px;margin:0 auto;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--card);font-family:var(--mono);font-size:12.5px;}
+      .mmap .row2{display:flex;align-items:stretch;border-top:1px solid var(--line-2);} .mmap .row2:first-child{border-top:0;}
+      .mmap .addr{flex:none;width:104px;padding:11px 12px;color:var(--mute);border-right:1px solid var(--line-2);background:#fbfcfd;}
+      .mmap .what{padding:11px 14px;flex:1;color:var(--body);font-family:var(--f);font-size:13.5px;line-height:1.45;} .mmap .what b{color:var(--ink);font-weight:600;} .mmap .what .hi{color:var(--accent);font-weight:600;}
+      .mmap .row2.k{background:#f3f4fe;} .mmap .row2.f{background:#fbf4f0;}
+
+      /* 旅程 */
+      .jrny{max-width:540px;margin:0 auto;border:1px solid var(--line);border-radius:11px;background:var(--card);padding:6px 20px;}
+      .jr{display:flex;gap:13px;padding:10px 0;border-top:1px solid var(--line-2);font-size:14px;color:var(--body);line-height:1.5;} .jr:first-child{border-top:0;}
+      .jr .n{flex:none;width:23px;height:23px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-family:var(--mono);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;}
+
+      /* 动手区:正文里清楚地圈出来,但不喧宾夺主 */
+      .doblk{margin:28px auto;}
+      .fb.run{background:#eef1f6;color:#586070;}
+      .doblk .dohd{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--go);font-weight:600;margin-bottom:4px;text-transform:uppercase;}
+      .doblk .dot{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:12px;}
+      .doblk p.note{font-size:14px;color:var(--soft);margin:0 0 12px;line-height:1.6;}
+
+      .refs li{font-size:14.5px;line-height:1.7;color:var(--body);margin:8px 0;} .refs a{color:var(--accent-deep);text-decoration:none;border-bottom:1px solid var(--accent-line);} .refs li .n{font-family:var(--mono);font-size:12px;color:var(--mute);}
+      /* —— 轻量 IDE:看你的真实工程 —— */
+      .projbtn{background:var(--accent-soft);color:var(--accent);border:0;border-radius:7px;font-size:12px;padding:5px 9px;cursor:pointer;font-family:inherit;margin-right:8px;}
+      .ide{position:fixed;inset:0;z-index:200;display:none;}
+      .ide.open{display:block;}
+      .ideback{position:absolute;inset:0;background:rgba(20,24,29,.5);}
+      .idewin{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(920px,92vw);height:min(620px,86vh);background:#0e1117;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);}
+      .idebar{display:flex;align-items:center;gap:7px;padding:11px 15px;background:#0b0e14;border-bottom:1px solid #1c2230;}
+      .idebar .d{width:11px;height:11px;border-radius:50%;}
+      .idebar .idetitle{font-family:var(--mono);font-size:12px;color:#8b93a1;margin-left:8px;}
+      .idebar .idex{margin-left:auto;background:none;border:0;color:#8b93a1;font-size:20px;cursor:pointer;line-height:1;}
+      .idemain{flex:1;display:flex;min-height:0;}
+      .idetree{width:220px;flex:none;background:#0d1118;border-right:1px solid #1c2230;padding:10px 0;overflow:auto;}
+      .idetree .grp{font-family:var(--mono);font-size:10.5px;color:#5a6473;padding:6px 16px;}
+      .idetree .file{display:flex;align-items:center;padding:6px 14px 6px 24px;font-family:var(--mono);font-size:12px;color:#aeb7c4;cursor:pointer;}
+      .idetree .file:hover{background:#141a24;} .idetree .file.on{background:#1b2330;color:#fff;}
+      .idetree .file .yt{margin-left:auto;font-size:9px;color:#46c08a;}
+      .idecode{flex:1;min-width:0;display:flex;flex-direction:column;}
+      .idefn{font-family:var(--mono);font-size:11.5px;color:#6b7688;padding:9px 16px;border-bottom:1px solid #1c2230;}
+      .idesrc{flex:1;overflow:auto;padding:12px 0;}
+      .idesrc .cl{white-space:pre;padding:0 16px;font-family:var(--mono);font-size:12.5px;line-height:1.95;color:#c9d2de;}
+      .idesrc .cl.yl{background:rgba(70,192,138,.13);border-left:2px solid #46c08a;padding-left:14px;}
+      .idesrc .yt{color:#46c08a;font-size:10px;} .idesrc .dim{color:#5a6473;font-style:italic;}
+      .idesrc .cm{color:#6b7688;}.idesrc .kw{color:#8aa0ff;}.idesrc .fn{color:#79d3c6;}.idesrc .st{color:#e3b27c;}.idesrc .nu{color:#d8a76a;}.idesrc .rg{color:#c8a6ff;}
+      .idefoot{font-family:var(--mono);font-size:11px;color:#6b7688;padding:9px 16px;border-top:1px solid #1c2230;}
+      .idefeed{height:118px;flex:none;background:#080a0f;border-top:1px solid #1c2230;overflow:auto;padding:9px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.8;}
+      .idefeed .fl{white-space:pre;color:#aeb7c4;}
+      .idefeed .fl.cmd{color:#6b7688;} .idefeed .fl.create{color:#79d3c6;} .idefeed .fl.write{color:#e3b27c;} .idefeed .fl.ok{color:#46c08a;} .idefeed .fl.run{color:#8aa0ff;}
+      .idetree .file.pend{color:#4a525e;cursor:default;}
+      .idetree .emptyhint{color:#5a6473;font-size:11.5px;padding:14px 16px;line-height:1.7;}
+      .idetree .dir{font-family:var(--mono);font-size:12px;color:#8b93a1;padding:6px 14px 6px 28px;}
+      .idetree .dir.root{padding-left:14px;color:#aeb7c4;}
+      .idetree .file.lvl1{padding-left:30px;} .idetree .file.lvl2{padding-left:48px;}
+      .idetree .yt.bx{color:#5a6473;}
+      .projbtn.act{box-shadow:0 0 0 2px rgba(70,192,138,.5);}
+    </style>
+  </head>
+  <body>
+    <div class="progress"><i id="prog"></i></div>
+    <header class="top"><div class="in">
+      <div class="brand"><span class="mk"><i></i></span><b>造核</b><span class="en">Kernel From Scratch</span></div>
+      <div class="meta"><span>第 01 章 · 内核引导</span><span class="sep"></span><span class="hl">深度 · 2 处动手</span></div>
+    </div></header>
+
+    <main id="main"></main>
+
+    <div class="keri" id="keri">
+      <button class="orb" id="keriOrb"><span class="av">K</span><span class="t"><b>问 Keri</b><span>卡住了?随时叫我</span></span></button>
+      <div class="panel">
+        <div class="ph"><div style="display:flex;align-items:center;gap:10px"><span class="av">K</span><div style="line-height:1.25"><div><b>Keri</b></div><div class="st"><i></i>陪你读这一章</div></div></div><button class="projbtn" id="keriProj">📁 看项目</button><button class="x" id="keriX">×</button></div>
+        <div class="kbody" id="keriBody"><p class="intro">嗨,我是 Keri。这一章三件事:<b>谁先跑</b>、<b>为什么没栈就崩</b>、<b>屏幕怎么亮</b> —— 挑个话题问我。</p>
+          <div class="chips" id="keriChips"></div>
+        </div>
+        <div class="kin"><input id="keriInput" placeholder="问 Keri 任何问题…" /><button class="send" id="keriSend">↑</button></div>
+      </div>
+    </div>
+
+    <div class="ide" id="ide">
+      <div class="ideback" id="ideBack"></div>
+      <div class="idewin">
+        <div class="idebar"><span class="d" style="background:#e5484d"></span><span class="d" style="background:#e3b27c"></span><span class="d" style="background:#46c08a"></span><span class="idetitle">你的内核工程 · kernel-ch1</span><button class="idex" id="ideX">×</button></div>
+        <div class="idemain">
+          <div class="idetree" id="ideTree"></div>
+          <div class="idecode"><div class="idefn" id="ideFn"></div><div class="idesrc" id="ideSrc"></div></div>
+        </div>
+        <div class="idefeed" id="ideFeed"></div>
+        <div class="idefoot">工程随你做承重墙<b style="color:#46c08a">按需长出来</b> · 上面是创建/写入的过程,像看 agent 写代码</div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (s, r = document) => r.querySelector(s);
+      const main = $("#main");
+      const term = (w, lab, def) => `<span class="term">${w}<span class="tip"><span class="lab">${lab}</span>${def}</span></span>`;
+
+      main.innerHTML = `
+        <section class="hero">
+          <div class="kicker">里程碑 1 / 8 · 内核引导</div>
+          <h1>让内核自己启动,打印出第一句话</h1>
+          <p class="lead">别的教程让你照抄汇编、改个地址,屏幕冒出 Hello 就完事。我们偏要追着问:这段汇编凭什么能跑?这个地址凭什么是它?为什么非得先写汇编、不能直接上 C?把这些"为什么"一个个拆开,你会发现内核引导里没有一行是魔法 —— 每一行都在回答一个具体的物理约束。</p>
+          <div class="facts"><span>~15 分钟</span><span>·</span><span>动手 2 处</span><span>·</span><span>RISC-V · QEMU virt</span></div>
+        </section>
+        <div class="hr"></div>
+
+        <!-- 1 -->
+        <section class="txt">
+          <div class="sechead">§ 1 · 你的代码,不是第一个跑的</div>
+          <p class="lead2">你大概以为,一按开机,跑的就是你写的内核。其实不是 —— 在你的代码醒来之前,有一段叫 ${term("OpenSBI", "OpenSBI", "RISC-V 的开源固件 / 运行时,跑在最高特权级,负责硬件初始化,并向上层内核提供 SBI 接口。")} 的固件,已经先把这台机器收拾利索了。</p>
+          <p class="lead2">它跑在 RISC-V 最高的 <b>M 模式</b>,权限最大、能直接碰硬件。偏偏每块板子的时钟、串口地址都不一样,这些又脏又杂的活它替你全包了,然后只留给你一个干净统一的接口(SBI)。</p>
+          <p class="lead2">等它把场子铺好,才轮到你登场:它主动把自己<b>降到权限更低的 S 模式</b>,跳到一个约定好的地址,把控制权交到你手上。这一整场接力,就像下面这张图,权限一路从 M 降到 S。</p>
+          <figure class="f">
+            <div class="flow">
+              <div class="node rom"><div class="lv">复位</div><b>上电 · ROM</b><em>把固件装入内存,跳进去</em></div>
+              <div class="step"><span class="v">↓</span> 加载并跳入 <span class="ln"></span></div>
+              <div class="node m"><div class="lv">M 模式 · 最高权</div><b>OpenSBI 固件</b><em>初始化硬件 · 提供 SBI 接口</em></div>
+              <div class="step"><span class="v">↓</span> 干完活,降权交棒 <span class="ln"></span></div>
+              <div class="node s"><div class="lv">S 模式 · 内核</div><b>你的内核 boot</b><em>从 0x80200000 起跑,你的第一行代码</em></div>
+            </div>
+            <figcaption>图 1 · 启动接力:权限一路从 M 降到 S</figcaption>
+          </figure>
+        </section>
+
+        <!-- 2 -->
+        <section class="txt" style="margin-top:34px">
+          <div class="sechead">§ 2 · 0x80200000 这个地址,一个比特都不能错</div>
+          <p class="lead2">固件交棒时,跳到的是 <code>0x80200000</code> 这个地址。它可不是随手定的,配着下面这张内存布局图(图 2)看,就清楚了。</p>
+          <figure class="f">
+            <div class="mmap">
+              <div class="row2"><div class="addr">高地址 ↑</div><div class="what">栈往下长(§3 用到)</div></div>
+              <div class="row2 k"><div class="addr">0x8020_0000</div><div class="what"><span class="hi">你的内核</span> · boot 在最前 → .text/.data/.bss → 预留栈</div></div>
+              <div class="row2 f"><div class="addr">0x8000_0000</div><div class="what"><b>OpenSBI 固件</b> · 占 RAM 最前约 2MB</div></div>
+              <div class="row2"><div class="addr">0x0000_1000</div><div class="what">ROM / 复位向量(上电从这开始)</div></div>
+            </div>
+            <figcaption>图 2 · QEMU virt 物理内存布局</figcaption>
+          </figure>
+          <p class="lead2">这台机器的 RAM 从 <code>0x80000000</code> 开始,而 OpenSBI 自己就占着最前面约 2MB。再往上数,<b>第一块没被占用的干净 RAM,正好落在 0x80200000</b> —— 所以固件约定把你的内核搁在这,也跳到这。</p>
+          <p class="lead2">这个地址要是写偏哪怕一个比特(比如 <code>0x80100000</code>),内核就和固件叠在了一起,固件一跳过来,就踩着自己跑飞。更麻烦的是,这会儿屏幕和日志都还没造出来,<b>它崩了,你连一行报错都看不到</b>。</p>
+          <p class="lead2">你这边,靠<b>链接脚本</b>把内核钉在这个地址,还得保证 boot 排在镜像最前(固件跳的就是第一个字节)。关键就是下面这几行:</p>
+          <figure class="f"><div class="cb"><div class="cbh"><span>kernel.ld</span><span>链接脚本</span></div><pre>    . = <span class="nu">0x80200000</span>;        <span class="cm">// 内核从这开始摆</span>
+    .text : {
+        *(.text.boot)        <span class="cm">// boot 段排最前 = 镜像首字节</span>
+        *(.text .text.*)
+    }
+    ...
+    __stack_top = .;         <span class="cm">// 预留段高端,当栈顶(§3 用)</span></pre></div></figure>
+        </section>
+
+        <!-- 3 -->
+        <div class="scene" style="margin-top:36px"><div class="sb"><div class="sk">撞墙 · Dead End</div><div class="st">你接过棒,写了个再普通不过的 C 函数 —— 直接崩了。</div><p>语法没错。问题是这台机器现在<b>连「栈」都还没有</b>,而每个普通 C 函数,一进门就要用栈。</p></div></div>
+
+        <section class="txt" style="margin-top:30px">
+          <div class="sechead">§ 3 · 没有栈,你就不能用 C</div>
+          <p class="lead2">毛病出在一个你平时压根不会留意的东西上:栈。每次调用 C 函数,编译器都会在函数开头偷偷塞一段"序言",它头一件事,就是拿 <code>sp</code> 这个寄存器去开一块栈、再把返回地址存进去 —— 就是下面图 3 那两行。</p>
+          <figure class="f"><div class="cb" style="max-width:480px"><div class="cbh"><span>编译器自动加的"序言"</span><span>asm</span></div><pre><span class="rg">kernel_main</span>:
+    addi <span class="rg">sp</span>,<span class="rg">sp</span>,-<span class="nu">32</span>   <span class="cm">// 拿 sp 开栈帧</span>
+    sd   <span class="rg">ra</span>,<span class="nu">24</span>(<span class="rg">sp</span>)   <span class="cm">// 往栈里写返回地址 → 写进未知内存</span></pre></div><figcaption>图 3 · 编译器自动加的序言,头一件事就动 sp</figcaption></figure>
+          <p class="lead2">平时这天经地义,因为栈早被人准备好了。可 <b>boot 是开机后的第一段代码,此刻 <code>sp</code> 里还是一串没人管过的垃圾值</b>。</p>
+          <p class="lead2">于是序言拿着这个垃圾地址就往内存里写,写到哪儿全凭运气,当场就崩。所以这不是你函数的错 —— C 的 ${term("调用约定", "CALLING CONVENTION / ABI", "C 函数靠 sp 找栈放局部变量、存返回地址。RISC-V 用 sp 指栈顶、ra 存返回地址。")} 本就假设脚下有一块现成的栈,而你这儿,还没有。</p>
+          <p class="lead2">下面这个小玩意能让你亲手感受一下:拖动 <span class="ko" style="color:#3a4ed6;font-weight:600">sp</span>,落在栈区一切正常,一滑出去,屏幕立刻给你颜色看。</p>
+          <div class="playbox" style="margin-top:14px">
+            <div class="track" id="track">
+              <div class="zone" style="height:16%;background:#f4f1f1;color:#9a8b8b">保留 / 越界</div>
+              <div class="zone lab" style="height:30%;background:#e8f4ee;color:#1f7a55">栈区 stack ✓</div>
+              <div class="zone" style="height:22%;background:#faf6ef;color:#b4541f">未映射空隙</div>
+              <div class="zone" style="height:18%;background:#eceefc;color:#3a4ed6">堆 / 数据段</div>
+              <div class="zone" style="height:14%;background:#22262e;color:#9aa6c8;border-bottom:0">代码段 · 0x0</div>
+              <div class="sp" id="spHandle" style="top:30%"><span class="ln"></span><span class="pill"><i>sp</i>→</span></div>
+            </div>
+            <div class="readout">
+              <div class="lbl">sp 现在指向</div><div class="zone-name" id="spName"></div><p class="zone-msg" id="spMsg"></p>
+              <div class="screen"><div class="sbar"><span>内核屏幕</span><span>console</span></div><div id="spScreen"></div></div>
+            </div>
+          </div>
+          <p class="lead2">既然问题是"sp 没指对地方",那 boot 的头等大事就清楚了:先用 <code>naked</code> 拦住编译器、别让它加那段用栈的序言,然后亲手把 <code>sp</code> 指到那块预留好的栈顶 <code>__stack_top</code>。这一笔,该你写。</p>
+          <div class="doblk">
+            <div class="dohd">动手 ① · 承重墙 —— 给内核支起栈</div>
+            <p class="note">整个 boot 都搭好了,只差高亮那一行。点「检查」会<b>真编译、真跑一遍 qemu</b>,用真实结果告诉你对没对。</p>
+            <div id="do1"></div>
+          </div>
+        </section>
+
+        <!-- 4 -->
+        <section class="txt" style="margin-top:38px">
+          <div class="sechead">§ 4 · 屏幕怎么亮:ecall 是一次"受控越权"</div>
+          <p class="lead2">栈支好了,代码也能跑了,你想打印一句话 —— 可裸机上连 printf 都没有。最干净的办法,还是回头去求那个权限更高、早把硬件摸熟的固件帮个忙。</p>
+          <p class="lead2">求的方式,是一条 ${term("ecall", "ecall · 环境调用", "RISC-V 指令:主动触发一次陷入(trap),从当前特权级进入更高特权级预设好的入口。")} 指令。它不是让你直接跳进固件的代码,而更像"敲门":你一执行 ecall,硬件就把你拦在特权边界外,转去固件预先设好的入口,由它接住、办完,再把控制权连同权限一起还给你 —— 就是下面图 4 这一来一回。</p>
+          <figure class="f">
+            <div class="ecall">
+              <div class="lane s"><div class="who">S 模式 · 你的内核</div><b>putchar('H')</b><em>我点不亮屏幕,只能求固件</em></div>
+              <div class="cross"><span><b>↓ ecall</b> 敲门 · 硬件挡在边界</span><span class="ret">↑ 办完,控制权还你</span></div>
+              <div class="lane m"><div class="who">M 模式 · OpenSBI 固件</div><b>接住 → 写串口 → 屏幕亮 'H'</b><em>在它自己受控的入口处理</em></div>
+            </div>
+            <figcaption>图 4 · 一次受控陷入:低权求高权代办</figcaption>
+          </figure>
+          <p class="lead2">那些寄存器细节可以先放一放,<b>但"低权限方敲门、请高权限方代办"这个机制要记牢</b> —— 到第 6 章,用户程序反过来求你的内核办事,用的就是一模一样的一招,只是换了一对主角。</p>
+
+          <section class="quiz" id="quiz" style="margin-top:22px">
+            <div class="qhead"><span class="badge">自检</span><span class="sub">选完即时揭晓</span></div>
+            <p class="q">裸机上,putchar 靠什么把字符显示到屏幕?</p>
+            <div class="opts" id="opts"></div>
+            <div class="qexp" id="qexp"><div class="l">解析</div><p>裸机没有显存驱动也没有 printf,只能用一条 <b>ecall</b> 陷入固件、请它代写 —— 就是图 4 的过程。</p></div>
+          </section>
+
+          <p class="lead2" style="margin-top:26px">至于那条 ecall 具体怎么写、参数怎么塞进寄存器,纯属"水管件",照抄就行,在这上面较劲一点收益都没有。下面这段你<b>不必读懂每个字</b>,看明白它做了什么就够:把要打印的字符放进 <code>a0</code>、功能号放进 <code>a7</code>,然后一条 <code>ecall</code> 把请求递给固件。</p>
+          <figure class="f"><div class="cb" style="max-width:480px"><div class="cbh"><span>arch/sbi.c</span><span>黑盒 · 照抄</span></div><pre><span class="kw">void</span> <span class="fn">putchar</span>(<span class="kw">char</span> ch) {
+    <span class="rg">a0</span> = ch;        <span class="cm">// 要打印的字符</span>
+    <span class="rg">a7</span> = <span class="nu">1</span>;         <span class="cm">// EID 1 = console putchar</span>
+    <span class="kw">__asm__</span>(<span class="st">"ecall"</span>); <span class="cm">// ← 陷入固件,M 模式接管</span>
+}</pre></div></figure>
+          <p class="lead2">有了这个黑盒 <code>putchar</code>,主程序也搭好了,就差把字符串里的字一个个交出去。这最后一行,也该你写。</p>
+          <div class="doblk">
+            <div class="dohd">动手 ② · 承重墙 —— 让屏幕亮出第一句话</div>
+            <p class="note">把字符串里的字一个个交给 putchar。点「检查」同样真编译真跑,看屏幕到底亮没亮。</p>
+            <div id="do2"></div>
+          </div>
+        </section>
+
+        <section class="txt" style="margin-top:34px">
+          <div class="playhead" style="color:#1f8a5b">运行 · 见证成果</div><h2 class="dh">编译、启动,然后 —— 它活了</h2>
+          <div class="runwrap" style="margin-top:14px">
+            <div class="rbar"><span>terminal — build &amp; run</span><button class="run" id="runBtn"><span style="font-size:9px">▶</span><span id="runLabel">运行</span></button></div>
+            <div class="runterm" id="runTerm"><div class="idle">$ <span style="color:#8b93a1">两处承重墙写好后,点 ▶ 真编译并启动你的内核…</span></div></div>
+            <div id="runResult"></div>
+          </div>
+          <div id="achWrap"></div>
+        </section>
+
+        <!-- 5 -->
+        <section class="txt" style="margin-top:42px">
+          <div class="sechead">§ 5 · 一个 'H' 的完整一生</div>
+          <p class="lead2">把前面四节串起来,刚才那行 Hello 背后的全过程,就是下面这六步 —— 从上电到屏幕亮字,每一步都在还一笔"平时操作系统替你扛、现在没人扛"的债。</p>
+          <figure class="f">
+            <div class="jrny">
+              <div class="jr"><span class="n">①</span><span>上电 → ROM 把 OpenSBI 装进 RAM、跳进去</span></div>
+              <div class="jr"><span class="n">②</span><span>OpenSBI(M)初始化硬件 → 降到 S → 跳 0x80200000</span></div>
+              <div class="jr"><span class="n">③</span><span><b>你的 boot</b>:la sp 支栈,跳进 kernel_main</span></div>
+              <div class="jr"><span class="n">④</span><span><b>kernel_main</b>:把 "Hello…" 逐字交给 putchar</span></div>
+              <div class="jr"><span class="n">⑤</span><span>putchar → ecall,把 'H' 托给固件</span></div>
+              <div class="jr"><span class="n">⑥</span><span>OpenSBI 写串口 → 屏幕亮 'H' → 还你控制权</span></div>
+            </div>
+            <figcaption>图 5 · 一个 'H' 从上电到亮屏的全过程</figcaption>
+          </figure>
+          <p class="lead2">你会发现这条链上<b>没有一处是魔法</b>。而你亲手补的那两行 —— ③ 的支栈和 ④ 的打印 —— 恰好就是让整条链能扣上的两个关键环。</p>
+        </section>
+
+        <!-- 6 -->
+        <section class="txt" style="margin-top:36px">
+          <div class="sechead">§ 6 · 带走两样东西</div>
+          <p class="lead2"><b>第一,"脚下什么都没有"是字面意思。</b>我们用 <code>-nostdlib</code> 编译,等于告诉编译器:别假设有标准库、也别假设底下有操作系统。于是栈得自己支、输出得自己造、连 .bss 清零都得自己动手。后面每一章的体力活,根上都是这一句话。</p>
+          <p class="lead2"><b>第二,"特权级 + 受控陷入"是贯穿全书的暗线。</b>ecall 在这章只是拿来打个字,可它演示的那套机制 —— 低权限方陷入、请高权限方代办 —— 是整个操作系统安全模型的地基。第 3 章接住异常、第 6 章用户系统调用,你都会看见它换身衣服又回来。</p>
+        </section>
+
+        <div class="hr" style="margin:34px 0 0"></div>
+        <section class="txt" style="padding-top:10px">
+          <div class="sechead" style="margin-bottom:6px">延伸 · 想再往深挖</div>
+          <ul class="refs" style="list-style:none;padding:0;max-width:680px;margin:0 auto">
+            <li><a href="https://operating-system-in-1000-lines.vercel.app/" target="_blank">Operating System in 1,000 Lines</a> <span class="n">—— 本章主线蓝本。</span></li>
+            <li><a href="https://pdos.csail.mit.edu/6.828/2023/xv6/book-riscv-rev3.pdf" target="_blank">xv6 book (RISC-V)</a> <span class="n">—— 启动 / 特权级 / trap 的权威讲法。</span></li>
+            <li><a href="https://github.com/riscv-non-isa/riscv-sbi-doc" target="_blank">RISC-V SBI 规范</a> <span class="n">—— ecall / EID 一手定义。</span></li>
+            <li><a href="https://wiki.osdev.org/" target="_blank">OSDev Wiki</a> <span class="n">—— 裸机启动 / 链接脚本 / .bss 通用坑。</span></li>
+          </ul>
+        </section>
+
+        <div class="hr" style="margin:30px 0 0"></div>
+        <div class="pager"><span>← 第 0 章 · 环境与工具链</span><span class="next">第 02 章 · 接住意外 →</span></div>
+      `;
+
+      /* ============ 可玩图:拖 sp ============ */
+      (function () {
+        const track = $("#track"), handle = $("#spHandle"), name = $("#spName"), msg = $("#spMsg");
+        const zoneOf = (p) => p < 16 ? { n: "保留 / 越界区", ok: 0, m: "越过栈顶,踩进保留地址。取出的返回地址是垃圾值。" }
+          : p < 46 ? { n: "栈区 (stack) ✓", ok: 1, m: "正中靶心。返回地址安然无恙,函数能干净地回到调用处。" }
+          : p < 68 ? { n: "未映射的空隙", ok: 0, m: "这段地址没有物理内存 —— 一访问就是 fault。" }
+          : p < 86 ? { n: "堆 / 数据段", ok: 0, m: "把别人的数据当返回地址。一 ret,程序就跳进了数据里。" }
+          : { n: "代码段 · 0x0", ok: 0, m: "指向只读代码或空指针。下一条 ret,直接 PANIC。" };
+        function render(p) {
+          handle.style.top = p + "%"; const z = zoneOf(p); name.textContent = z.n; msg.textContent = z.m;
+          const host = $("#spScreen");
+          host.outerHTML = z.ok
+            ? `<div id="spScreen"><div class="ok">kernel_main()<br>&gt; 一切正常<span class="cur"></span></div></div>`
+            : `<div id="spScreen"><div class="crash"><b>*** KERNEL PANIC ***</b><br>invalid return address<br>sp 落在非法区域,机器停摆。</div></div>`;
+        }
+        const at = (e) => { const r = track.getBoundingClientRect(); render(Math.max(2, Math.min(98, (e.clientY - r.top) / r.height * 100))); };
+        track.addEventListener("pointerdown", (e) => { try { track.setPointerCapture(e.pointerId); } catch (_) {} at(e); track._d = 1; });
+        track.addEventListener("pointermove", (e) => track._d && at(e));
+        track.addEventListener("pointerup", () => track._d = 0);
+        render(30);
+      })();
+
+      /* ============ 自检 ============ */
+      (function () {
+        const opts = $("#opts"), exp = $("#qexp"), correct = 2;
+        const data = [["A", "直接往显存地址写字节"], ["B", "调用 C 标准库 printf"], ["C", "用一条 ecall 请固件代劳"], ["D", "编译器自动输出"]];
+        let done = false;
+        opts.innerHTML = data.map(([l, t], i) => `<button class="opt" data-i="${i}"><span class="lt">${l}</span><span class="ot">${t}</span><span class="bg"></span></button>`).join("");
+        opts.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+          if (done) return; done = true; const pick = +b.dataset.i;
+          opts.querySelectorAll(".opt").forEach((o) => { o.disabled = true; const i = +o.dataset.i;
+            if (i === correct) { o.classList.add("right"); o.querySelector(".bg").textContent = "✓ 正确"; o.querySelector(".bg").style.color = "#1f8a5b"; }
+            else if (i === pick) { o.classList.add("wrong"); o.querySelector(".bg").textContent = "你选的"; o.querySelector(".bg").style.color = "#b4541f"; }
+            else o.classList.add("dim"); });
+          exp.style.display = "block";
+        });
+      })();
+
+      /* ============ 承重墙:写代码(两步)============ */
+      const doneSteps = new Set();
+      const SANDBOX_URL = "http://127.0.0.1:5177/api/run", EXPECT = "Hello from my kernel!";
+      function editor(mount, { n, slotKey, file, rt, lines, writeIdx, placeholder, answerRe, refAnswer, hint }) {
+        const code = lines.map((l, i) => {
+          if (i === writeIdx) return `<div class="ln writeln"><span class="no">✍</span><span class="src" style="color:#c9d2de">    </span><input class="wallin" placeholder="${placeholder}" spellcheck="false" autocomplete="off"/><span class="src" style="color:#6b7688;margin-left:6px">${l.cmt || ""}</span></div>`;
+          return `<div class="ln"><span class="no">${l.no}</span><span class="src">${l.h}</span></div>`;
+        }).join("");
+        mount.innerHTML = `<div class="editor"><div class="ebar"><div class="dots"><i style="background:#e5484d"></i><i style="background:#e3b27c"></i><i style="background:#46c08a"></i><span class="fn">${file}</span></div><span class="rt">${rt}</span></div><div class="code">${code}</div></div>
+          <div class="ebtns"><button class="btn pri check">检查</button><button class="btn sec ref">看参考答案</button><span class="note">只有 ✍ 那一行需要你写</span></div>
+          <div class="fbslot"></div>`;
+        const inp = mount.querySelector(".wallin"), slot = mount.querySelector(".fbslot");
+        const fb = (cls, html) => { slot.innerHTML = `<div class="fb ${cls}"><span class="i">${cls === "ok" ? "✓" : cls === "bad" ? "!" : "…"}</span><span>${html}</span></div>`; };
+        const merge = () => { inp.disabled = true; doneSteps.add(n); if (window.__kfsRecord) window.__kfsRecord(slotKey, inp.value.trim()); };
+        async function doCheck() {
+          const val = inp.value.trim();
+          if (!val) { fb("bad", "先写点东西再检查。"); return; }
+          fb("run", "真编译、真跑一遍 qemu…(约 1–2 秒)");
+          try {
+            const answers = {}; answers[slotKey] = val;
+            const r = await fetch(SANDBOX_URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chapter: 1, answers }) });
+            const data = await r.json();
+            if (data.ok && (data.console || "").includes(EXPECT)) {
+              merge(); fb("ok", `<b>对了 —— 真编译、真跑通了。</b>这一行已并入你的项目。${doneSteps.size >= 2 ? "两处都好了,去下面点「运行」看完整输出。" : "继续往下走。"}`); return;
+            }
+            if (!data.ok) {
+              const e = (data.stderr || data.error || "").split("\n").find((l) => /error/i.test(l)) || "编译没通过";
+              fb("bad", "真编译器报错 — <code style='font-family:var(--mono)'>" + e.replace(/</g, "&lt;").slice(0, 170) + "</code>"); return;
+            }
+            fb("bad", "编译过了、也跑起来了,但屏幕没出现预期结果 —— 再看看这一行。");
+          } catch (e) {
+            if (answerRe.test(val)) { merge(); fb("ok", `<b>规则校验通过。</b>(本地沙箱没启动;想看真编译真跑,先启动 run-server。)这一行已并入项目。${doneSteps.size >= 2 ? "两处都好了,去点「运行」。" : "继续往下走。"}`); }
+            else fb("bad", "还差一点 —— " + hint);
+          }
+        }
+        mount.querySelector(".check").onclick = doCheck;
+        mount.querySelector(".ref").onclick = () => { inp.value = refAnswer; doCheck(); };
+      }
+      editor($("#do1"), { n: 1, slotKey: "boot", file: "arch/boot.c", rt: "ASM · 脚手架已就绪", writeIdx: 3,
+        lines: [{ no: "01", h: `<span class="cm">// 开机第一段,放进 .text.boot,此刻还没有栈</span>` },
+          { no: "02", h: `<span class="kw">__attribute__</span>((naked)) <span class="kw">void</span> <span class="fn2">boot</span>(<span class="kw">void</span>) {` },
+          { no: "03", h: `    <span class="kw">__asm__</span> <span class="kw">__volatile__</span>(` },
+          { no: "04", h: ``, cmt: `// sp → 栈顶` },
+          { no: "05", h: `        <span class="st">"j  kernel_main\\n"</span>  <span class="cm">// 栈好了,才敢跳进 C</span>` },
+          { no: "06", h: `    );` }, { no: "07", h: `}` }],
+        placeholder: `← 把 sp 指到 __stack_top`, answerRe: /la\s*sp\s*,\s*__stack_top/i, refAnswer: `"la sp, __stack_top\\n"`, hint: `用 <span style="font-family:var(--mono);background:#f7e6d6;padding:1px 5px;border-radius:4px">la</span> 把一个地址装进寄存器。` });
+      editor($("#do2"), { n: 2, slotKey: "print", file: "kernel/main.c", rt: "C · 脚手架已就绪", writeIdx: 3,
+        lines: [{ no: "01", h: `<span class="kw">void</span> <span class="fn2">kernel_main</span>(<span class="kw">void</span>) {` },
+          { no: "02", h: `    <span class="kw">const char</span> *s = <span class="st">"Hello from my kernel!\\n"</span>;` },
+          { no: "03", h: `    <span class="kw">for</span> (<span class="kw">int</span> i = 0; s[i]; i++)` },
+          { no: "04", h: ``, cmt: `// 送出 s[i]` },
+          { no: "05", h: `    <span class="kw">for</span> (;;);  <span class="cm">// 打印完停这</span>` }, { no: "06", h: `}` }],
+        placeholder: `← 把 s[i] 交给 putchar`, answerRe: /putchar\s*\(\s*s\s*\[\s*i\s*\]\s*\)/, refAnswer: `putchar(s[i]);`, hint: `把第 i 个字符 <span style="font-family:var(--mono)">s[i]</span> 交给 <span style="font-family:var(--mono)">putchar</span>。` });
+
+      /* ============ 运行 / 成就 ============ */
+      (function () {
+        const btn = $("#runBtn"), label = $("#runLabel"), termEl = $("#runTerm"), result = $("#runResult"), achWrap = $("#achWrap");
+        let running = false;
+        btn.onclick = () => {
+          if (running) return;
+          if (doneSteps.size < 2) { termEl.innerHTML = `<div class="idle">$ <span style="color:#ff8a8a">还有承重墙没写(第 ${[1, 2].filter((x) => !doneSteps.has(x)).join("、")} 步)—— 回上面补上再运行。</span></div>`; return; }
+          running = true; label.textContent = "运行中…"; termEl.innerHTML = ""; result.innerHTML = ""; achWrap.innerHTML = "";
+          const seq = ["clang -target riscv32 -ffreestanding -nostdlib -c *.c", "ld.lld -T kernel.ld -o kernel.elf", "qemu-system-riscv32 -kernel kernel.elf", "OpenSBI v1.x · 降到 S 模式 → 跳 0x80200000", "→ boot:la sp 支栈 → j kernel_main()"];
+          seq.forEach((l, i) => setTimeout(() => termEl.insertAdjacentHTML("beforeend", `<div class="l"><span class="a">›</span> ${l}</div>`), 300 * (i + 1)));
+          setTimeout(async () => {
+            running = false; label.textContent = "重新运行";
+            let out = "Hello from my kernel!", mode = "sim";
+            try {
+              const boot = $("#do1")?.querySelector(".wallin")?.value?.trim();
+              const print = $("#do2")?.querySelector(".wallin")?.value?.trim();
+              const r = await fetch("http://127.0.0.1:5177/api/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chapter: 1, answers: { boot, print } }) });
+              const data = await r.json();
+              if (data.ok && data.console) { out = data.console; mode = "live"; }
+              else { out = (data.stderr || data.error || "build failed").slice(0, 400); mode = "err"; }
+            } catch (e) { mode = "sim"; }
+            const tag = mode === "live" ? `<span style="color:#46c08a">● 本地 qemu 真实输出</span>`
+              : mode === "err" ? `<span style="color:#e3b27c">● 编译/运行报错</span>`
+              : `<span style="color:#8b93a1">● 沙箱未启动,模拟输出(启动 run-server 看真的)</span>`;
+            const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>");
+            result.innerHTML = `<div class="vga"><div class="lab">CONSOLE OUTPUT · via SBI &nbsp;&nbsp; ${tag}</div><div class="out">${esc(out)}<span class="cur" style="height:22px;width:11px"></span></div></div>`;
+            achWrap.innerHTML = `<div class="ach"><div class="ico">🏆</div><div style="flex:1"><div class="k">成就解锁</div><div class="t">第一次说出第一句话</div><div class="d">你补的支栈 + 打印两行,让裸机开了口。第 01 章 · 进度 +1。</div></div><span class="xp">+10 XP</span></div>`;
+          }, 300 * (seq.length + 1));
+        };
+      })();
+
+      /* ============ 问 Keri ============ */
+      (function () {
+        const keri = $("#keri"), body = $("#keriBody"), chips = $("#keriChips"), input = $("#keriInput");
+        const QA = [["为什么没栈就不能用 C?", "编译器给普通 C 函数自动加的序言,第一件事就是拿 sp 开栈帧、写返回地址。boot 是第一段代码,sp 还是垃圾值,一写就写进未知内存,当场崩。所以 boot 要 naked,且第一件事手动支栈。"],
+          ["ecall 凭什么算「安全越权」?", "你不是直接跳进固件,而是用 ecall 触发硬件陷入 —— CPU 把你挡在边界,跳到固件预设好的受控入口,由它处理完再把权限还你。提权是硬件强制的,不是你想跳哪跳哪。第 6 章用户调内核同理。"],
+          ["0x80200000 哪来的?", "QEMU virt 的 RAM 从 0x80000000 起,OpenSBI 占了最前约 2MB,到 0x80200000 为止。所以留给内核的第一块干净 RAM 正好是它,固件就约定跳到这。"]];
+        chips.innerHTML = QA.map(([q], i) => `<button data-i="${i}">${q}</button>`).join("");
+        const push = (q, a) => { $(".intro", body)?.remove();
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "me", innerHTML: `<div>${q}</div>` }), chips);
+          body.insertBefore(Object.assign(document.createElement("div"), { className: "ke", innerHTML: `<div class="av2">K</div><div>${a}</div>` }), chips);
+          body.scrollTop = body.scrollHeight; };
+        chips.querySelectorAll("button").forEach((b) => b.onclick = () => push(QA[+b.dataset.i][0], QA[+b.dataset.i][1]));
+        const send = () => { const v = input.value.trim(); if (!v) return; input.value = ""; push(v, "好问题。正式版我会结合你读到的位置回答 —— 当前是结构 demo。这一章抓三件事:谁先跑、为什么没栈就崩、屏幕怎么亮。"); };
+        $("#keriSend").onclick = send; input.addEventListener("keydown", (e) => e.key === "Enter" && send());
+        $("#keriOrb").onclick = () => keri.classList.add("open"); $("#keriX").onclick = () => keri.classList.remove("open");
+      })();
+
+      /* —— 轻量 IDE:工程「按需长出来」+ CLI 风格过程 feed —— */
+      (function () {
+        const ide = $("#ide"), tree = $("#ideTree"), fnEl = $("#ideFn"), src = $("#ideSrc"), feed = $("#ideFeed"), proj = $("#keriProj");
+        const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        const slotInput = { boot: "#do1", print: "#do2" };
+        const slotVal = (slot) => { const m = $(slotInput[slot]); const w = m && m.querySelector(".wallin"); return w ? w.value.trim() : ""; };
+        const FILES = {
+          "kernel.ld": { bb: true, note: "链接脚本:把内核钉到 0x80200000、boot 排最前(黑盒,看一眼就行)", lines: [
+            `<span class="rg">ENTRY</span>(boot)`, `<span class="rg">SECTIONS</span> {`,
+            `    . = <span class="nu">0x80200000</span>;`,
+            `    .text : { *(.text.boot); *(.text .text.*); }`,
+            `    ...`, `    __stack_top = .;`, `}`,
+          ] },
+          "arch/sbi.c": { bb: true, note: "黑盒:用一条 ecall 求固件打印字符,封装成 putchar", lines: [
+            `<span class="cm">// 黑盒:ecall 陷入 OpenSBI</span>`,
+            `<span class="kw">void</span> <span class="fn">putchar</span>(<span class="kw">char</span> ch) {`,
+            `    sbi_call(ch, 0,0,0,0,0,0, <span class="nu">1</span>);`, `}`,
+          ] },
+          "arch/boot.c": { slot: "boot", note: "开机第一段 · 关键的支栈那行由你写(承重墙 ①)", lines: [
+            `<span class="cm">// 开机第一段,放进 .text.boot</span>`,
+            `<span class="kw">__attribute__</span>((section(<span class="st">".text.boot"</span>), naked))`,
+            `<span class="kw">void</span> <span class="fn">boot</span>(<span class="kw">void</span>) {`,
+            `    <span class="kw">__asm__</span> <span class="kw">__volatile__</span>(`,
+            { you: "boot", indent: "        " },
+            `        <span class="st">"j  kernel_main\\n"</span>`, `    );`, `}`,
+          ] },
+          "kernel/main.c": { slot: "print", note: "内核主函数 · 关键的打印那行由你写(承重墙 ②)", lines: [
+            `<span class="kw">void</span> <span class="fn">kernel_main</span>(<span class="kw">void</span>) {`,
+            `    <span class="kw">const char</span> *s = <span class="st">"Hello from my kernel!\\n"</span>;`,
+            `    <span class="kw">for</span> (<span class="kw">int</span> i = 0; s[i]; i++)`,
+            { you: "print", indent: "        " },
+            `    <span class="kw">for</span> (;;);`, `}`,
+          ] },
+        };
+        const DEPS = { boot: ["kernel.ld"], print: ["arch/sbi.c"] };   // 这道承重墙先就位的黑盒(只说明用途)
+        const ORDER = ["kernel.ld", "arch/sbi.c", "arch/boot.c", "kernel/main.c"];
+        const SLOT_FILE = { boot: "arch/boot.c", print: "kernel/main.c" };
+        const created = new Set(); const merged = new Set(); const log = [];
+        let cur = null;
+        const AGENT_URL = "http://127.0.0.1:5177/api/agent";
+
+        const tagFor = (f) => f.slot ? `<span class="yt">● 你写的</span>` : `<span class="yt bx">黑盒</span>`;
+        function renderFeed() { feed.innerHTML = log.map((e) => `<div class="fl ${e.k}">${e.t}</div>`).join(""); feed.scrollTop = feed.scrollHeight; }
+        function renderTree() {
+          if (!created.size) { tree.innerHTML = `<div class="emptyhint">工程还是空的 —— 跟着正文做承重墙,文件会一个个长出来:不重要的我一句话说明用途,关键的那行你来写。</div>`; return; }
+          const shown = ORDER.filter((p) => created.has(p));
+          const dirs = {}, roots = [];
+          shown.forEach((p) => { const i = p.indexOf("/"); if (i < 0) roots.push(p); else (dirs[p.slice(0, i)] = dirs[p.slice(0, i)] || []).push(p); });
+          let html = `<div class="dir root">▾ kernel-ch1/</div>`;
+          Object.keys(dirs).forEach((d) => {
+            html += `<div class="dir">▾ ${d}/</div>`;
+            dirs[d].forEach((p) => { const f = FILES[p]; html += `<div class="file lvl2 ${p === cur ? "on" : ""}" data-p="${p}">${p.slice(p.indexOf("/") + 1)}${tagFor(f)}</div>`; });
+          });
+          roots.forEach((p) => { const f = FILES[p]; html += `<div class="file lvl1 ${p === cur ? "on" : ""}" data-p="${p}">${p}${tagFor(f)}</div>`; });
+          tree.innerHTML = html;
+          tree.querySelectorAll(".file[data-p]").forEach((el) => el.onclick = () => { cur = el.dataset.p; renderAll(); });
+        }
+        function renderCode() {
+          if (!cur || !created.has(cur)) { fnEl.textContent = "—"; src.innerHTML = `<div class="cl dim">// 还没有文件。跟着正文往下做,文件会被创建出来。</div>`; return; }
+          const f = FILES[cur]; fnEl.textContent = cur + "   ·   " + f.note;
+          src.innerHTML = f.lines.map((l) => {
+            if (typeof l === "string") return `<div class="cl">${l}</div>`;
+            const v = slotVal(l.you);
+            const inner = v ? `${l.indent}${esc(v)}<span class="yt"> ← 你写的</span>`
+              : `${l.indent}<span class="dim">// 待你在正文里填这一行</span>`;
+            return `<div class="cl yl">${inner}</div>`;
+          }).join("");
+        }
+        function renderAll() { renderTree(); renderCode(); renderFeed(); }
+        function push(k, t) { log.push({ k, t }); if (ide.classList.contains("open")) renderFeed(); }
+
+        window.__kfsRecord = async function (slot, value) {
+          if (!SLOT_FILE[slot] || merged.has(slot)) return;
+          merged.add(slot); proj.classList.add("act");
+          // 1) 这道承重墙依赖的黑盒文件,先创建并一句话说明用途(不用你写)
+          (DEPS[slot] || []).forEach((dep) => {
+            if (created.has(dep)) return;
+            created.add(dep);
+            push("create", "create  " + dep + "  —— " + FILES[dep].note);
+          });
+          // 2) 关键文件:你写的那行,交给 kimi 真写进去
+          const file = SLOT_FILE[slot];
+          created.add(file); cur = file;
+          push("cmd", "$ 交给 kimi:把你写的关键行写进 " + file);
+          const idx = log.length;
+          log.push({ k: "run", t: "· agent 正在把这行写进文件…" });
+          if (ide.classList.contains("open")) renderAll();
+          await new Promise((res) => setTimeout(res, 800));   // mock:先把观感做顺,真 agent 以后再接
+          log[idx] = { k: "ok", t: "✓ 写好 " + file + "   " + esc(value) };
+          if (ide.classList.contains("open")) renderAll(); else renderFeed();
+        };
+        proj.onclick = () => { proj.classList.remove("act"); renderAll(); ide.classList.add("open"); };
+        $("#ideX").onclick = () => ide.classList.remove("open");
+        $("#ideBack").onclick = () => ide.classList.remove("open");
+      })();
+
+      const prog = $("#prog");
+      addEventListener("scroll", () => { const h = document.documentElement, mx = h.scrollHeight - h.clientHeight; prog.style.width = (mx > 0 ? h.scrollTop / mx * 100 : 0) + "%"; }, { passive: true });
+    </script>
+  </body>
+</html>
