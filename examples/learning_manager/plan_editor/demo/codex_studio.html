@@ -3,118 +3,107 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>造核 · 做一个你自己的 mini-codex</title>
+    <title>openkeri · 做一个你自己的 mini-codex</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
       :root{
-        --bg:#090c13; --panel:#141a28; --panel-2:#10151f;
-        --line:#212a3d; --line-2:#2e3a54;
-        --ink:#f1f4fb; --soft:#a7b1c8; --mute:#62708c;
-        --accent:#8e9dff; --accent-deep:#6b7cf0; --accent-2:#4fd1a0; --warn:#f0bd7e;
+        --bg:#0a0b10; --bg-soft:#11131b; --ink:#f4f5fa; --soft:#a3abc0; --mute:#5c6582;
+        --hair:rgba(255,255,255,.09); --hair-2:rgba(255,255,255,.16);
+        --violet:#8e9dff; --violet-d:#6b7cf0;
+        --p0:#8e9dff; --p1:#5b9bef; --p2:#46c08a; --p3:#e0a35a; --p4:#e0705a; --p5:#8893ab;
         --f:'IBM Plex Sans','Noto Sans SC',system-ui,sans-serif; --mono:'IBM Plex Mono',monospace;
-        --r-lg:22px; --r-md:16px; --r-sm:12px;
-        --shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 30px 70px -34px rgba(0,0,0,.85);
       }
       *{box-sizing:border-box;} html,body{margin:0;height:100%;}
-      body{
-        color:var(--ink); font-family:var(--f); overflow:hidden; -webkit-font-smoothing:antialiased;
-        background:
-          radial-gradient(135% 100% at 50% -18%, #1a2440 0%, transparent 52%),
-          radial-gradient(70% 55% at 88% 112%, rgba(79,209,160,.07), transparent 60%),
-          radial-gradient(60% 50% at 8% 108%, rgba(142,157,255,.07), transparent 60%),
-          var(--bg);
-      }
-      body::before{ content:""; position:fixed; inset:0; pointer-events:none;
-        background-image:radial-gradient(rgba(255,255,255,.022) 1px, transparent 1px); background-size:24px 24px; }
-      .wrap{position:relative; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:64px 26px 26px;}
-      .appbar{position:fixed; top:0; left:0; right:0; height:58px; display:flex; align-items:center; padding:0 28px; z-index:20;}
-      .appbar .brand{display:inline-flex; align-items:center; gap:10px; text-decoration:none;}
-      .appbar .brand svg{color:var(--accent);}
-      .appbar .bname{font-size:16.5px; font-weight:700; letter-spacing:-.3px; color:var(--ink);}
+      body{color:var(--ink); font-family:var(--f); overflow:hidden; -webkit-font-smoothing:antialiased; letter-spacing:.1px;
+        background:radial-gradient(120% 80% at 50% -12%, rgba(94,108,200,.16) 0%, transparent 55%), radial-gradient(80% 60% at 88% 116%, rgba(70,192,138,.05), transparent 60%), var(--bg);}
+      body::before{content:""; position:fixed; inset:0; pointer-events:none; opacity:.5; background-image:radial-gradient(rgba(255,255,255,.018) 1px, transparent 1px); background-size:26px 26px;}
 
-      /* —— 入口 —— */
-      .intro{max-width:580px; text-align:center; animation:rise .5s ease;}
-      @keyframes rise{from{opacity:0; transform:translateY(12px);}}
-      .intro .kick{font-family:var(--mono); font-size:11px; letter-spacing:.26em; color:var(--accent); text-transform:uppercase;}
-      .intro h1{font-size:38px; line-height:1.16; margin:18px 0 12px; letter-spacing:-.8px; font-weight:700;}
-      .intro p{color:var(--soft); font-size:15px; line-height:1.75; margin:0 0 28px;}
-      .field{display:flex; gap:10px; align-items:center; padding:8px 8px 8px 18px;
-        background:linear-gradient(180deg,#161d2c,#111622); border:1px solid var(--line-2); border-radius:var(--r-md); box-shadow:var(--shadow);}
+      .appbar{position:fixed; top:0; left:0; right:0; height:60px; display:flex; align-items:center; padding:0 30px; z-index:20;}
+      .appbar .brand{display:inline-flex; align-items:center; gap:11px; text-decoration:none;}
+      .appbar .brand svg{color:var(--violet);} .appbar .bname{font-size:16.5px; font-weight:700; letter-spacing:-.3px; color:var(--ink);}
+
+      .wrap{position:relative; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:66px 26px 28px;}
+
+      .intro{max-width:560px; text-align:center; animation:rise .55s cubic-bezier(.2,.8,.3,1);}
+      @keyframes rise{from{opacity:0; transform:translateY(14px);}}
+      .intro h1{font-size:42px; line-height:1.14; margin:0 0 15px; letter-spacing:-1px; font-weight:700;}
+      .intro p{color:var(--soft); font-size:15px; line-height:1.75; margin:0 0 30px;}
+      .field{display:flex; gap:9px; align-items:center; padding:7px 7px 7px 18px; border-radius:15px; background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)); border:1px solid var(--hair); box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 24px 60px -30px #000;}
       .field input{flex:1; background:none; border:0; outline:none; color:var(--ink); font-family:inherit; font-size:15px;}
       .field input::placeholder{color:var(--mute);}
-      .field button{flex:none; border:0; border-radius:12px; cursor:pointer; font-family:inherit; font-weight:700; font-size:14px; padding:12px 22px;
-        color:#0b0e15; background:linear-gradient(180deg,#9aa7ff,var(--accent-deep)); box-shadow:0 10px 24px -10px rgba(142,157,255,.6); transition:transform .14s, filter .14s;}
-      .field button:hover{transform:translateY(-1px); filter:brightness(1.06);}
-      .ex{margin-top:15px; font-family:var(--mono); font-size:12px; color:var(--mute);}
+      .field button{flex:none; border:0; border-radius:11px; cursor:pointer; font-family:inherit; font-weight:700; font-size:14px; padding:12px 20px; color:#0b0e15; background:linear-gradient(180deg,#9aa7ff,var(--violet-d)); box-shadow:0 10px 24px -10px rgba(142,157,255,.7); transition:transform .14s,filter .14s;}
+      .field button:hover{transform:translateY(-1px); filter:brightness(1.07);}
+      .ex{margin-top:16px; font-family:var(--mono); font-size:12px; color:var(--mute);}
 
-      /* —— 生成中(mock 流式)—— */
-      .gen{display:none; max-width:580px; width:100%; font-family:var(--mono); font-size:13.5px; line-height:2.05; color:var(--soft);}
+      .gen{display:none; max-width:560px; width:100%; font-family:var(--mono); font-size:13.5px; line-height:2.1; color:var(--soft);}
       .gen .l{opacity:0; transform:translateY(5px); transition:.34s cubic-bezier(.2,.8,.3,1);} .gen .l.in{opacity:1; transform:none;}
-      .gen .l .a{color:var(--accent);} .gen .l b{color:var(--ink); font-weight:600;}
+      .gen .l .a{color:var(--violet);} .gen .l b{color:var(--ink); font-weight:600;}
 
-      /* —— 工作台 —— */
-      .studio{display:none; width:100%; max-width:1120px; height:100%; flex-direction:column; animation:rise .45s ease;}
-      .topbar{display:flex; align-items:center; gap:12px; padding:8px 6px 16px;}
-      .topbar .t{font-family:var(--mono); font-size:12px; color:var(--soft); line-height:1.5;}
-      .topbar .t b{color:var(--ink);}
-      .topbar .redo{margin-left:auto; flex:none; background:rgba(255,255,255,.03); border:1px solid var(--line-2); color:var(--soft);
-        font-family:var(--mono); font-size:12px; border-radius:10px; padding:7px 14px; cursor:pointer; transition:.14s;}
-      .topbar .redo:hover{color:var(--ink); border-color:var(--accent);}
-      .board{flex:1; display:flex; gap:20px; min-height:0;}
+      .studio{display:none; width:100%; max-width:1180px; height:100%; flex-direction:column;}
+      .shead{flex:0 0 auto; display:flex; align-items:center; gap:16px; padding:8px 2px 10px;}
+      .shead .h{font-size:18px; font-weight:700; letter-spacing:-.3px;}
+      .shead .sub{font-family:var(--mono); font-size:11px; color:var(--mute); margin-top:5px;}
+      .redo{margin-left:auto; background:rgba(255,255,255,.03); border:1px solid var(--hair); color:var(--soft); font-family:var(--mono); font-size:12px; border-radius:9px; padding:7px 13px; cursor:pointer; transition:.15s;}
+      .redo:hover{color:var(--ink); border-color:var(--hair-2);}
+      .view{flex:1; min-height:0; overflow:auto; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.14) transparent;}
+      .view::-webkit-scrollbar{width:9px;height:9px;} .view::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12); border-radius:9px;}
 
-      .stage{position:relative; flex:1; border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden;
-        background:radial-gradient(120% 95% at 50% 0%, #141b2c 0%, #0c1019 70%); box-shadow:var(--shadow);}
-      .stage svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
-      .stage svg .wire{stroke:#31406b; stroke-width:1.6; stroke-dasharray:3 8; stroke-linecap:round; animation:flow 22s linear infinite;}
-      @keyframes flow{to{stroke-dashoffset:-220;}}
+      /* 建造顺序(= 学习路线) */
+      .seq{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; padding:6px 0 14px;}
+      .seq .lbl{font-size:13px; color:var(--soft); margin-right:16px; letter-spacing:.04em;}
+      .seq .pill{cursor:pointer; font-family:var(--mono); font-size:13px; font-weight:600; color:#fff; background:var(--pc); border-radius:10px; padding:7px 17px; box-shadow:0 8px 20px -10px var(--pc), 0 1px 0 rgba(255,255,255,.25) inset; opacity:0; transform:translateY(6px); transition:.35s cubic-bezier(.2,.8,.3,1), box-shadow .15s, outline .15s;}
+      .seq .pill.in{opacity:1; transform:none;}
+      .seq .pill:hover{filter:brightness(1.08);}
+      .seq .pill.on{outline:2px solid rgba(255,255,255,.55); outline-offset:2px; transform:translateY(-2px) scale(1.04);}
+      .seq .ar{margin:0 9px; color:var(--mute); display:flex; opacity:0; transition:.35s;} .seq .ar.in{opacity:1;}
+      .seq .ar svg{width:22px; height:14px;}
+      .seq .opt{margin-left:14px; font-family:var(--mono); font-size:11.5px; color:var(--mute); opacity:0; transition:.35s;} .seq .opt.in{opacity:1;}
 
-      .node{position:absolute; width:128px; text-align:center; cursor:pointer;
-        transform:translate(-50%,-50%) scale(.7); opacity:0; transition:opacity .45s, transform .45s cubic-bezier(.2,.8,.3,1);}
-      .node.show{opacity:1; transform:translate(-50%,-50%) scale(1);}
-      .node .ico{position:relative; width:74px; height:74px; margin:0 auto; border-radius:21px; display:grid; place-items:center; color:#c6cfe4;
-        background:linear-gradient(155deg,#2b3346 0%,#1b2233 55%,#161c2b 100%); border:1px solid #34405c;
-        box-shadow:0 1.5px 0 rgba(255,255,255,.1) inset, 0 -3px 6px rgba(0,0,0,.35) inset,
-          0 7px 0 #0b0e16, 0 8px 2px rgba(0,0,0,.5), 0 26px 34px -12px rgba(0,0,0,.75);
-        transition:transform .17s cubic-bezier(.2,.8,.3,1), box-shadow .17s, border-color .17s, color .17s;}
-      .node .ico svg{width:32px; height:32px; filter:drop-shadow(0 1px 1px rgba(0,0,0,.45));}
-      .node:hover .ico{transform:translateY(-6px); border-color:var(--accent); color:#e9ecff;
-        box-shadow:0 1.5px 0 rgba(255,255,255,.14) inset, 0 -3px 6px rgba(0,0,0,.35) inset,
-          0 13px 0 #0b0e16, 0 14px 3px rgba(0,0,0,.5), 0 40px 48px -12px rgba(0,0,0,.85), 0 0 0 5px rgba(142,157,255,.09);}
-      .node.sel .ico{border-color:var(--accent); color:#e9ecff;
-        box-shadow:0 1.5px 0 rgba(255,255,255,.14) inset, 0 0 0 3px rgba(142,157,255,.32), 0 9px 0 #0b0e16, 0 26px 34px -12px #000;}
-      .node.core .ico{width:94px; height:94px; border-radius:28px; color:#e2e6ff;
-        background:linear-gradient(155deg,#3c4a8c 0%,#232c56 55%,#181f3a 100%); border-color:#4d5c9e;
-        box-shadow:0 1.5px 0 rgba(255,255,255,.18) inset, 0 -3px 8px rgba(0,0,0,.35) inset,
-          0 9px 0 #11152a, 0 10px 3px rgba(0,0,0,.5), 0 0 50px -6px rgba(142,157,255,.5), 0 32px 42px -14px #000;
-        animation:coreglow 3.6s ease-in-out infinite;}
-      .node.core .ico svg{width:42px; height:42px;}
-      @keyframes coreglow{0%,100%{filter:none;} 50%{filter:brightness(1.13);}}
-      .node .nm{margin-top:11px; font-size:13.5px; font-weight:600; letter-spacing:.2px;}
-      .node .sb{font-family:var(--mono); font-size:10.5px; color:var(--mute); margin-top:2px;}
-      .node .dchip{display:inline-block; margin-top:7px; font-family:var(--mono); font-size:9.5px; color:var(--warn);
-        background:rgba(240,189,126,.1); border:1px solid rgba(240,189,126,.24); border-radius:6px; padding:2px 7px;}
+      .board{display:flex; gap:22px; align-items:flex-start; padding:0 2px 18px;}
 
-      /* —— 详情面板 —— */
-      .panel{flex:none; width:340px; border:1px solid var(--line); border-radius:var(--r-lg); padding:24px; display:flex; flex-direction:column;
-        background:linear-gradient(180deg,#161c2b,#111623); box-shadow:var(--shadow);}
-      .panel .ph{font-family:var(--mono); font-size:11px; color:var(--mute); letter-spacing:.04em;}
-      .panel .big{margin:10px 0 6px; line-height:1;}
-      .panel .big svg{width:40px; height:40px; color:var(--accent);}
-      .panel h2{font-size:19px; margin:0 0 3px; letter-spacing:-.2px;}
-      .panel .role{font-family:var(--mono); font-size:11.5px; color:var(--accent);}
-      .panel .what{color:var(--soft); font-size:14px; line-height:1.75; margin:18px 0;}
-      .panel .deci{border-top:1px solid var(--line); padding-top:16px;}
-      .panel .deci .k{font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--warn); text-transform:uppercase;}
-      .panel .deci p{color:var(--ink); font-size:13.5px; line-height:1.65; margin:7px 0 0;}
-      .panel .deci .ref{color:var(--mute); font-size:12px; margin-top:10px; font-family:var(--mono); line-height:1.6;}
-      .panel .enter{margin-top:auto; border:0; border-radius:13px; cursor:pointer; font-family:inherit; font-weight:700; font-size:14.5px; padding:14px;
-        color:#0b0e15; background:linear-gradient(180deg,#9aa7ff,var(--accent-deep)); box-shadow:0 12px 26px -12px rgba(142,157,255,.55); transition:transform .14s, filter .14s;}
-      .panel .enter:hover{transform:translateY(-1px); filter:brightness(1.06);}
-      .panel .enter.soon{background:rgba(255,255,255,.05); color:var(--mute); box-shadow:none; cursor:default;}
-      .panel .empty{color:var(--mute); font-size:14px; line-height:1.8; margin-top:34px;}
-      @media(max-width:860px){ .panel{display:none;} }
+      /* 架构图 */
+      .arch{position:relative; flex:none; width:760px; height:628px;}
+      .arch .halo{position:absolute; left:380px; top:214px; width:380px; height:380px; transform:translate(-50%,-50%); border-radius:50%; pointer-events:none; background:radial-gradient(circle, rgba(142,157,255,.15) 0%, rgba(142,157,255,.05) 38%, transparent 66%);}
+      .arch svg{position:absolute; inset:0; width:760px; height:628px; overflow:visible; pointer-events:none;}
+      .arch svg .wire{stroke:rgba(255,255,255,.18); stroke-width:1.6;}
+      .abox{position:absolute; cursor:pointer; transform:translate(-50%,-50%) scale(.93); opacity:0; border:1px solid var(--hair); border-radius:13px; padding:11px 14px; text-align:center; background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.014)); box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 16px 36px -24px #000; transition:opacity .42s, transform .42s cubic-bezier(.2,.8,.3,1), box-shadow .16s, border-color .16s, filter .16s; display:flex; flex-direction:column; justify-content:center;}
+      .abox.in{opacity:1; transform:translate(-50%,-50%) scale(1);}
+      .abox:hover{border-color:var(--hair-2);}
+      .abox .pb{position:absolute; left:11px; top:-11px; font-family:var(--mono); font-size:10.5px; font-weight:600; color:#fff; background:var(--pc); border-radius:6px; padding:2px 8px; box-shadow:0 4px 10px -3px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.25) inset;}
+      .abox .an{font-family:var(--mono); font-size:13.5px; font-weight:600; color:#fff; letter-spacing:.3px;}
+      .abox .as{font-size:11px; color:var(--soft); margin-top:3px; line-height:1.3;}
+      .abox.crux .an{color:#dfe3ff; font-size:15px;}
+      .abox.crux{border-color:rgba(142,157,255,.4); background:linear-gradient(180deg, rgba(142,157,255,.13), rgba(142,157,255,.035)); box-shadow:0 0 0 1px rgba(142,157,255,.22), 0 0 50px -14px rgba(142,157,255,.5);}
+      .abox.dim{opacity:.26; filter:saturate(.45);}
+      .abox.lit{border-color:var(--lc); box-shadow:0 0 0 1px var(--lc), 0 0 34px -8px var(--lc);}
+      .abox.sel{border-color:#fff !important; box-shadow:0 0 0 2px rgba(255,255,255,.85), 0 0 40px -8px var(--lc) !important;}
+
+      /* 详情面板 */
+      .panel{flex:1; min-width:280px; align-self:stretch; border:1px solid var(--hair); border-radius:16px; padding:22px 22px 20px; background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012)); box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 24px 50px -30px #000; position:sticky; top:0;}
+      .panel .ph{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--mute);}
+      .panel .home h3{font-size:17px; margin:14px 0 12px; letter-spacing:-.2px;}
+      .panel .home p{color:var(--soft); font-size:13.5px; line-height:1.85; margin:0;}
+      .panel .home b{color:var(--ink);} .panel .home .v{color:var(--violet); font-weight:600;}
+      .panel .home ol{margin:14px 0 0; padding-left:18px; color:var(--soft); font-size:13px; line-height:1.9;}
+      .pbadge{display:inline-flex; align-items:center; gap:8px; margin-top:12px;}
+      .pbadge .b{font-family:var(--mono); font-size:12px; font-weight:600; color:#fff; background:var(--pc); border-radius:7px; padding:3px 11px;}
+      .pbadge .t{font-size:17px; font-weight:700; letter-spacing:-.2px;}
+      .panel .role{font-family:var(--mono); font-size:11.5px; color:var(--soft); margin-top:10px;}
+      .panel .desc{color:var(--soft); font-size:13.5px; line-height:1.8; margin:14px 0 0;}
+      .acc{display:flex; gap:9px; align-items:flex-start; margin-top:16px; padding:12px 13px; border-radius:11px; background:rgba(0,0,0,.28); border-left:2px solid var(--pc);}
+      .acc .ic{flex:none; width:17px; height:17px; margin-top:1px; color:var(--pc);}
+      .acc .tx{font-size:12.5px; color:var(--soft); line-height:1.55;} .acc .tx .lb{display:block; font-family:var(--mono); font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--mute); margin-bottom:3px;}
+      .builds{margin-top:16px;} .builds .lb{font-family:var(--mono); font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--mute); margin-bottom:9px;}
+      .builds .chips{display:flex; flex-wrap:wrap; gap:7px;}
+      .chip2{cursor:pointer; font-family:var(--mono); font-size:11.5px; color:var(--soft); background:rgba(255,255,255,.04); border:1px solid var(--hair); border-radius:8px; padding:5px 10px; transition:.14s;}
+      .chip2:hover{color:#fff; border-color:var(--hair-2);}
+      .enter{margin-top:18px; width:100%; border:0; border-radius:12px; cursor:pointer; font-family:inherit; font-weight:700; font-size:14px; padding:13px; color:#0b0e15; background:linear-gradient(180deg,#9aa7ff,var(--violet-d)); box-shadow:0 12px 26px -12px rgba(142,157,255,.6); transition:transform .14s,filter .14s;}
+      .enter:hover{transform:translateY(-1px); filter:brightness(1.06);} .enter.soon{background:rgba(255,255,255,.05); color:var(--mute); box-shadow:none; cursor:default;}
+
+      .archcap{text-align:center; font-family:var(--mono); font-size:12px; color:var(--violet); margin:-4px auto 0;}
+      @media(max-width:1120px){ .view{overflow-x:auto;} .board{min-width:1100px;} }
     </style>
   </head>
   <body>
@@ -129,112 +118,156 @@
         <span class="bname">openkeri</span>
       </a>
     </header>
+
     <div class="wrap">
-      <!-- 1 入口 -->
       <section class="intro" id="intro">
-        <h1>想懂?<span style="color:var(--accent)">造一个。</span></h1>
+        <h1>想懂?<span style="color:var(--violet)">造一个。</span></h1>
         <p>说想学什么,AI 陪你把它真造出来 —— 真编译,真跑。</p>
-        <div class="field">
-          <input id="goal" value="做一个我自己的 mini-codex" />
-          <button id="genBtn">生成 →</button>
-        </div>
+        <div class="field"><input id="goal" value="做一个我自己的 mini-codex" /><button id="genBtn">生成 →</button></div>
         <div class="ex">也能说:写个解释器 · 手搓一个 React · 造一个数据库</div>
       </section>
 
-      <!-- 2 生成中 -->
       <section class="gen" id="gen"></section>
 
-      <!-- 3 架构图 -->
       <section class="studio" id="studio">
-        <div class="topbar">
-          <span class="t">你的学习地图 · <b>mini-codex</b> —— 点任一块,进那一章</span>
+        <div class="shead">
+          <div>
+            <div class="h">mini-codex · 学习地图</div>
+            <div class="sub">学习跟着上面 P0→P4 走;点阶段看它做什么、造哪些块,点节点看这块是什么</div>
+          </div>
           <button class="redo" id="redoBtn">↺ 重来</button>
         </div>
-        <div class="board">
-          <div class="stage" id="stage"><svg id="wires"></svg></div>
-          <aside class="panel" id="panel">
-            <div class="empty">← 点地图上任一块,看它是什么、关键的设计决策,以及这一章你会造什么。</div>
-          </aside>
-        </div>
+        <div class="view" id="view"></div>
       </section>
     </div>
 
     <script>
       const $ = (s) => document.querySelector(s);
-      const ICN = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-      const ICONS = {
-        task:   ICN(`<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 5.5 8.5-5.5"/>`),
-        brain:  ICN(`<rect x="6" y="6" width="12" height="12" rx="2.5"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 3v2.5M15 3v2.5M9 18.5V21M15 18.5V21M3 9h2.5M3 15h2.5M18.5 9H21M18.5 15H21"/>`),
-        loop:   ICN(`<path d="M20 11a8 8 0 0 0-14-4.6L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14 4.6L20 16"/><path d="M20 20v-4h-4"/>`),
-        tools:  ICN(`<path d="M14.6 6.3a1 1 0 0 0 0 1.4l1.7 1.7a1 1 0 0 0 1.4 0l3.5-3.5a6 6 0 0 1-7.9 7.9l-6.7 6.7a2.1 2.1 0 1 1-3-3l6.7-6.7a6 6 0 0 1 7.9-7.9l-3.5 3.5Z"/>`),
-        memory: ICN(`<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7M9 11h6"/>`),
-        done:   ICN(`<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-4.5"/>`),
+      const PC = { P0:"--p0", P1:"--p1", P2:"--p2", P3:"--p3", P4:"--p4", P5:"--p5" };
+      const ARROW = `<span class="ar"><svg viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h18M14 2l5 5-5 5"/></svg></span>`;
+      const CHECK = `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+
+      // 阶段(= 学习路线的每一步)
+      const STAGES = {
+        P0: { t:"能对话", goal:"先把“骨架”立起来:终端能跟模型多轮对话 —— 但还没有任何工具。", acc:"在终端连续聊几轮,模型记得上文。", boxes:["cli","model","loop","history","llmapi"] },
+        P1: { t:"闭环第一个工具(shell)", crux:true, goal:"让模型不只会“说”,还会“做”:它发出 tool_call,你执行 shell,把结果喂回去,它再接着答。这一步通了,agent 的本质就拿到手了。", acc:"模型发 tool_call → 执行 → 结果回灌 → 作答,整条闭环。", boxes:["dispatch","shell"], ch:1 },
+        P2: { t:"真能改代码", goal:"给它读写文件的手:能看文件、能用 patch 改文件。", acc:"让它改一个文件,patch 应用后文件真的变了。", boxes:["patch","readf"] },
+        P3: { t:"加安全闸", goal:"危险动作(跑命令 / 改文件)之前先问你一句 —— MVP 阶段用确认替代真沙箱。", acc:"执行前弹确认,你拒绝它就跳过、不硬来。", boxes:["gate"] },
+        P4: { t:"好用起来", goal:"补上“能干活”的最后一块:检索代码、跨多文件的小任务、上下文不爆。", acc:"跨多文件的小任务能完成,且上下文不溢出。", boxes:["search"] },
       };
-      const NODES = {
-        task:   { emoji: "✉️", nm: "任务", sb: "你给它的活", x: 8,  y: 50, what: "你一句话告诉它要干嘛 —— 比如「把这个函数的 bug 修了」。这就是 agent 的起点。" },
-        brain:  { emoji: "🧠", nm: "大脑 · LLM", sb: "负责想", x: 37, y: 17, role: "the thinker", what: "根据任务和当前现状,决定下一步做什么。它本身不动手,只「说」该调用哪个工具、传什么参数。", deci: "让它一次只想一步,还是先整体规划再逐步执行?", ref: "对照真 Codex / Claude Code:它们怎么 prompt、怎么逼模型只吐工具调用。" },
-        loop:   { emoji: "🔁", nm: "Agent Loop", sb: "核心 · 心脏", x: 50, y: 50, core: 1, role: "the heartbeat", what: "想 → 动手 → 看结果 → 再想,一圈圈转,直到任务完成。整个 agent 的心脏,也是你第一章亲手写的那几行。", deci: "什么时候判定「做完了」该停下?判错就死循环或半途而废。", ref: "对照真实现:它们用什么信号收尾(模型说完成 / 没有更多工具调用 / 步数上限)。" },
-        tools:  { emoji: "🖐️", nm: "工具 · Tools", sb: "它的手", x: 64, y: 82, role: "the hands", what: "读文件、改文件、跑命令 —— 大脑想好了,靠这些「手」真正动到现实世界。", deci: "工具怎么描述给模型,它才用得准、不乱传参?", ref: "对照真实现:它们的工具 schema 长什么样、怎么防模型瞎调。" },
-        memory: { emoji: "📓", nm: "记忆 · 上下文", sb: "它记到哪了", x: 73, y: 50, role: "the notebook", what: "把任务、做过的事、工具返回都记下来,每轮喂给大脑,它才有「连续性」、不会失忆。", deci: "上下文塞满了怎么办?丢哪些、压缩哪些、留哪些?", ref: "对照真实现:它们的上下文管理 / 压缩 / 截断策略。" },
-        done:   { emoji: "✅", nm: "完成", sb: "任务交付", x: 92, y: 50, what: "循环判定做完 → 把结果交给你。一个能跑的 agent 就此闭环,你会亲眼看它把任务做完。" },
+      // 组件(点节点出的卡片)
+      const ABOX = {
+        cli:     {cx:380,cy:82, w:188,h:56,m:"P0",  nm:"CLI / REPL",     sb:"单一前端", role:"你的入口", desc:"你在终端里提需求、看它干活、拿结果。agent 的入口和出口,先有它才能聊起来。"},
+        model:   {cx:148,cy:218,w:186,h:60,m:"P0",  nm:"model client",  sb:"调一个 LLM", role:"嘴和耳朵", desc:"把对话发给模型 API,拿回回复 —— 回复里可能夹着一个 tool_call(模型想用工具)。"},
+        loop:    {cx:380,cy:218,w:214,h:68,m:"P0", crux:true, nm:"agent loop", sb:"orchestrator · 驱动 turn", role:"agent 的本质", desc:"整个 agent 就是这个循环:想 → 要工具就调 → 看结果 → 再想,直到完成。P0 先搭空转的骨架,P1 给它接上工具闭环。"},
+        history: {cx:612,cy:218,w:186,h:60,m:"P0",  nm:"history",        sb:"消息 · 上下文", role:"记忆", desc:"把对话和工具结果攒起来,每轮喂给模型,它才不失忆。后期 P4 还要管它别撑爆。"},
+        llmapi:  {cx:148,cy:334,w:186,h:56,m:"P0",  nm:"LLM API",        sb:"外部服务", role:"外部大脑", desc:"真正的模型服务(OpenAI / 本地 ollama 等)。model client 调它,不在你这边跑。"},
+        dispatch:{cx:380,cy:342,w:206,h:60,m:"P1",  nm:"tool dispatcher",sb:"解析 tool_call", role:"翻译官", desc:"模型说“我要跑 ls”,它负责解析这个 tool_call、找到对应工具去执行,再把结果整理好回灌。P1 的核心。"},
+        gate:    {cx:380,cy:452,w:492,h:60,m:"P3",  nm:"approval gate",  sb:"执行前确认", role:"安全闸", desc:"工具动手前的一道关:要不要你点头。MVP 阶段用它替代真沙箱,简单但够用。"},
+        shell:   {cx:116,cy:570,w:142,h:58,m:"P1",  nm:"shell",          sb:"跑命令", role:"第一个工具", desc:"最简单也最强的工具:执行一条命令、拿回输出。P1 就靠它把闭环跑通。"},
+        patch:   {cx:288,cy:570,w:156,h:58,m:"P2",  nm:"apply_patch",    sb:"改文件", role:"写代码的手", desc:"用 diff 改文件 —— 这是 coding agent 真正“动代码”的方式。格式和容错很讲究。"},
+        readf:   {cx:466,cy:570,w:156,h:58,m:"P2",  nm:"read_file",      sb:"读文件", role:"看代码的眼", desc:"读出文件内容喂给模型,它才知道现在的代码长啥样、该怎么改。"},
+        search:  {cx:636,cy:570,w:142,h:58,m:"P4",  nm:"search",         sb:"grep / 查找", role:"找东西", desc:"在项目里找符号 / 文本,大项目里模型靠它定位,而不是把整个仓库塞进上下文。"},
       };
-      const EDGES = [["task","loop"],["brain","loop"],["loop","tools"],["loop","memory"],["memory","done"]];
-      const ORDER = ["task","brain","loop","tools","memory","done"];
+      const AEDGE = [["cli","loop",2],["model","loop",2],["loop","history",2],["model","llmapi",1],["loop","dispatch",1],["dispatch","gate",1],["gate","shell",1],["gate","patch",1],["gate","readf",1],["gate","search",1]];
+      const AORDER = ["cli","model","loop","history","llmapi","dispatch","gate","shell","patch","readf","search"];
+      const SEQ = ["P0","P1","P2","P3","P4"];
+      function aconn(a, b) {
+        const dx = b.cx - a.cx, dy = b.cy - a.cy;
+        if (Math.abs(dy) >= Math.abs(dx)) {
+          const s = dy >= 0 ? 1 : -1;
+          const ax = Math.max(a.cx - a.w/2 + 16, Math.min(a.cx + a.w/2 - 16, b.cx));
+          const bx = Math.max(b.cx - b.w/2 + 16, Math.min(b.cx + b.w/2 - 16, a.cx));
+          return [ax, a.cy + s*a.h/2, bx, b.cy - s*b.h/2];
+        }
+        const s = dx >= 0 ? 1 : -1;
+        const ay = Math.max(a.cy - a.h/2 + 12, Math.min(a.cy + a.h/2 - 12, b.cy));
+        const by = Math.max(b.cy - b.h/2 + 12, Math.min(b.cy + b.h/2 - 12, a.cy));
+        return [a.cx + s*a.w/2, ay, b.cx - s*b.w/2, by];
+      }
+
+      const cv = (k) => `var(${k})`;
+      function homePanel() {
+        return `<div class="home"><div class="ph">怎么学</div>
+          <h3>跟着上面 P0 → P4 一步步造</h3>
+          <p><b>那条彩色序列就是学习路线。</b>点一个<span class="v">阶段</span>:看它<b>做什么 / 做到才算过</b>,它要造的块在图上<b>亮起来</b>。点一个<span class="v">节点</span>:看这块<b>是什么、归哪一步造</b>。<br><br>架构图只是<b>地图</b> —— 告诉你每一步落在整体的哪。重心在 <span class="v">P1</span>:把 tool_call 闭环跑通。</p>
+          <ol><li>P0 能对话(立骨架)</li><li>P1 闭环第一个工具 ★</li><li>P2 真能改代码</li><li>P3 加安全闸</li><li>P4 好用起来</li></ol></div>`;
+      }
+      function clearHi() {
+        document.querySelectorAll(".abox").forEach((e) => e.classList.remove("dim","lit","sel"));
+        document.querySelectorAll(".seq .pill").forEach((e) => e.classList.remove("on"));
+      }
+      function selStage(p) {
+        clearHi();
+        const st = STAGES[p], set = new Set(st.boxes);
+        document.querySelector(`.pill[data-p="${p}"]`).classList.add("on");
+        document.querySelectorAll(".abox").forEach((e) => { const id = e.dataset.id; if (set.has(id)) { e.classList.add("lit"); e.style.setProperty("--lc", cv(PC[p])); } else e.classList.add("dim"); });
+        const chips = st.boxes.map((id) => `<span class="chip2" data-id="${id}">${ABOX[id].nm}</span>`).join("");
+        $("#panel").style.setProperty("--pc", cv(PC[p]));
+        $("#panel").innerHTML = `<div class="ph">学习路线 · 这一步</div>
+          <div class="pbadge"><span class="b">${p}</span><span class="t">${st.t}${st.crux ? " ★" : ""}</span></div>
+          <p class="desc">${st.goal}</p>
+          <div class="acc">${CHECK}<div class="tx"><span class="lb">做到才算过</span>${st.acc}</div></div>
+          <div class="builds"><div class="lb">这一步要造</div><div class="chips">${chips}</div></div>
+          <button class="enter ${st.ch ? "" : "soon"}">${st.ch ? "进入 " + p + " 章节 →" : "本章制作中"}</button>`;
+        wirePanel();
+      }
+      function selNode(id) {
+        clearHi();
+        const b = ABOX[id], p = b.m;
+        const el = document.querySelector(`.abox[data-id="${id}"]`);
+        el.classList.add("sel"); el.style.setProperty("--lc", cv(PC[p]));
+        document.querySelector(`.pill[data-p="${p}"]`)?.classList.add("on");
+        $("#panel").style.setProperty("--pc", cv(PC[p]));
+        $("#panel").innerHTML = `<div class="ph">组件 · 这块是什么</div>
+          <div class="pbadge"><span class="b">${p}</span><span class="t">${b.nm}</span></div>
+          <div class="role">${b.role}${b.crux ? " · agent 的本质" : ""}</div>
+          <p class="desc">${b.desc}</p>
+          <div class="acc">${CHECK}<div class="tx"><span class="lb">归哪一步造</span>第 ${p} 步「${STAGES[p].t}」时把它做出来。</div></div>
+          <button class="enter soon" data-p="${p}">看 ${p} 这一步 →</button>`;
+        const btn = $("#panel").querySelector(".enter"); btn.classList.remove("soon"); btn.onclick = () => selStage(p);
+      }
+      function wirePanel() {
+        $("#panel").querySelectorAll(".chip2").forEach((c) => c.onclick = () => selNode(c.dataset.id));
+        const en = $("#panel").querySelector(".enter:not(.soon)");
+        if (en && en.textContent.includes("章节")) en.onclick = () => alert("进入 P1 章节 · 让模型的 tool_call 真正闭环(本课重心)");
+      }
+
+      function buildMap() {
+        let seq = `<div class="seq"><span class="lbl">建造顺序 = 学习路线</span>`;
+        SEQ.forEach((p, i) => { if (i) seq += ARROW; seq += `<span class="pill" data-p="${p}" style="--pc:var(${PC[p]})">${p}</span>`; });
+        seq += `<span class="opt">P5 · 长大(可选)</span></div>`;
+        const lines = AEDGE.map(([a, b, bi]) => { const [x1,y1,x2,y2] = aconn(ABOX[a], ABOX[b]); return `<line class="wire" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-end="url(#ah)" ${bi === 2 ? 'marker-start="url(#ah)"' : ""}/>`; }).join("");
+        const boxes = AORDER.map((id) => { const b = ABOX[id]; return `<div class="abox ${b.crux ? "crux" : ""}" data-id="${id}" style="left:${b.cx}px;top:${b.cy}px;width:${b.w}px;min-height:${b.h}px;--lc:var(${PC[b.m]})"><span class="pb" style="--pc:var(${PC[b.m]})">${b.m}</span><div class="an">${b.nm}</div><div class="as">${b.sb}</div></div>`; }).join("");
+        $("#view").innerHTML = seq + `<div class="board">
+          <div class="arch"><div class="halo"></div><svg viewBox="0 0 760 628"><defs><marker id="ah" viewBox="0 0 8 8" refX="6.5" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0.5,1 L6,4 L0.5,7" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>${lines}</svg>${boxes}
+            <div class="archcap" style="position:absolute;left:0;right:0;bottom:-2px">↻ 工具结果回灌 history → 下一轮再想</div>
+          </div>
+          <aside class="panel" id="panel" style="--pc:var(--p1)">${homePanel()}</aside>
+        </div>`;
+        document.querySelectorAll(".seq .pill").forEach((el) => el.onclick = () => selStage(el.dataset.p));
+        document.querySelectorAll(".abox").forEach((el) => el.onclick = () => selNode(el.dataset.id));
+        const seqEls = $("#view").querySelectorAll(".seq .pill, .seq .ar, .seq .opt");
+        seqEls.forEach((el, i) => setTimeout(() => el.classList.add("in"), 60 * i));
+        const base = 60 * seqEls.length + 100;
+        $("#view").querySelectorAll(".abox").forEach((el, i) => setTimeout(() => el.classList.add("in"), base + 50 * i));
+      }
 
       const GEN_LINES = [
         "<span class='a'>›</span> 读你的目标:<b>做一个自己的 mini-codex</b>",
-        "<span class='a'>›</span> 拆解核心 …… 其实就 <b>一个循环 + 几个工具</b>",
-        "<span class='a'>›</span> 识别关键部件:大脑(LLM)· 工具 · 记忆 · 循环",
-        "<span class='a'>›</span> 标出每块的<b>设计决策</b>(真 codex 里最值得琢磨的地方)",
-        "<span class='a'>✓</span> 学习地图已生成 —— 点任一块开始。",
+        "<span class='a'>›</span> 排出学习路线:P0 能对话 → P1 闭环工具 → … → P4 好用",
+        "<span class='a'>›</span> 画出最终架构,每块标上归哪一步造",
+        "<span class='a'>›</span> 重心在 <b>P1:让 tool_call 闭环</b> —— 这就是 agent 的本质",
+        "<span class='a'>✓</span> 学习地图已生成。",
       ];
-
       $("#genBtn").onclick = startGen;
       $("#goal").addEventListener("keydown", (e) => { if (e.key === "Enter") startGen(); });
       $("#redoBtn").onclick = () => { $("#studio").style.display = "none"; $("#intro").style.display = ""; };
-
       function startGen() {
         $("#intro").style.display = "none";
         const gen = $("#gen"); gen.style.display = "block"; gen.innerHTML = "";
-        GEN_LINES.forEach((t, i) => {
-          const d = document.createElement("div"); d.className = "l"; d.innerHTML = t; gen.appendChild(d);
-          setTimeout(() => d.classList.add("in"), 400 * i + 120);
-        });
-        setTimeout(() => { gen.style.display = "none"; showMap(); }, 400 * GEN_LINES.length + 650);
-      }
-
-      function showMap() {
-        $("#studio").style.display = "flex";
-        const stage = $("#stage");
-        stage.querySelectorAll(".node").forEach((n) => n.remove());
-        ORDER.forEach((id) => {
-          const n = NODES[id];
-          const el = document.createElement("div");
-          el.className = "node" + (n.core ? " core" : ""); el.dataset.id = id;
-          el.style.left = n.x + "%"; el.style.top = n.y + "%";
-          el.innerHTML = `<div class="ico">${ICONS[id]}</div><div class="nm">${n.nm}</div><div class="sb">${n.sb}</div>${n.deci ? `<div class="dchip">含设计决策</div>` : ""}`;
-          el.onclick = () => select(id);
-          stage.appendChild(el);
-        });
-        requestAnimationFrame(() => {
-          const svg = $("#wires"); const r = stage.getBoundingClientRect();
-          const ctr = (id) => { const e = stage.querySelector(`.node[data-id="${id}"] .ico`).getBoundingClientRect(); return { x: e.left - r.left + e.width / 2, y: e.top - r.top + e.height / 2 }; };
-          svg.innerHTML = EDGES.map(([a, b]) => { const p = ctr(a), q = ctr(b); return `<line class="wire" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/>`; }).join("");
-        });
-        ORDER.forEach((id, i) => setTimeout(() => stage.querySelector(`.node[data-id="${id}"]`).classList.add("show"), 120 * i));
-      }
-
-      function select(id) {
-        document.querySelectorAll(".node").forEach((n) => n.classList.toggle("sel", n.dataset.id === id));
-        const n = NODES[id], p = $("#panel");
-        p.innerHTML = `
-          <div class="ph">学习地图 · 部件</div>
-          <div class="big">${ICONS[id]}</div>
-          <h2>${n.nm}</h2>
-          ${n.role ? `<div class="role">${n.role}</div>` : ""}
-          <p class="what">${n.what}</p>
-          ${n.deci ? `<div class="deci"><div class="k">关键设计决策</div><p>${n.deci}</p>${n.ref ? `<div class="ref">${n.ref}</div>` : ""}</div>` : ""}
-          <button class="enter ${id === "loop" ? "" : "soon"}">${id === "loop" ? "进入第一章 · 写出这个循环 →" : "本章制作中"}</button>`;
+        GEN_LINES.forEach((t, i) => { const d = document.createElement("div"); d.className = "l"; d.innerHTML = t; gen.appendChild(d); setTimeout(() => d.classList.add("in"), 400 * i + 120); });
+        setTimeout(() => { gen.style.display = "none"; $("#studio").style.display = "flex"; buildMap(); }, 400 * GEN_LINES.length + 650);
       }
     </script>
   </body>
