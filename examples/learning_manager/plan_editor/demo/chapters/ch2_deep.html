@@ -386,6 +386,7 @@
             const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>");
             result.innerHTML = `<div class="vga"><div class="lab">CONSOLE OUTPUT · via SBI &nbsp;&nbsp; ${tag}</div><div class="out">${esc(out)}<span class="cur" style="height:22px;width:11px"></span></div></div>`;
             achWrap.innerHTML = `<div class="ach"><div class="ico">🛠️</div><div style="flex:1"><div class="k">成就解锁</div><div class="t">三件趁手工具,到手</div><div class="d">printf + 分配器 + panic,后面每一章都用得上。第 02 章 · 进度 +1。</div></div><span class="xp">+15 XP</span></div>`;
+            try { localStorage.setItem("openkeri.progress.内存分配与 printf", "done"); if (window.parent !== window) window.parent.postMessage("openkeri:chapter-done", "*"); } catch (e) {}
           }, 300 * (seq.length + 1));
         };
       })();

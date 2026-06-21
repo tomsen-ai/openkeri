@@ -445,6 +445,7 @@
             const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>");
             result.innerHTML = `<div class="vga"><div class="lab">CONSOLE OUTPUT · via SBI &nbsp;&nbsp; ${tag}</div><div class="out">${esc(out)}<span class="cur" style="height:22px;width:11px"></span></div></div>`;
             achWrap.innerHTML = `<div class="ach"><div class="ico">🏆</div><div style="flex:1"><div class="k">成就解锁</div><div class="t">第一次说出第一句话</div><div class="d">你补的支栈 + 打印两行,让裸机开了口。第 01 章 · 进度 +1。</div></div><span class="xp">+10 XP</span></div>`;
+            try { localStorage.setItem("openkeri.progress.内核引导", "done"); if (window.parent !== window) window.parent.postMessage("openkeri:chapter-done", "*"); } catch (e) {}
           }, 300 * (seq.length + 1));
         };
       })();

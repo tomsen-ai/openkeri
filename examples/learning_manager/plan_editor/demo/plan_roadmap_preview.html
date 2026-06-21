@@ -376,7 +376,7 @@
       }
 
       // 哪些章已接入学习区;完成进度存在 localStorage
-      const CHAPTER_URL = { "内核引导": "chapters/ch1.html", "内存分配与 printf": "chapters/ch2.html" };
+      const CHAPTER_URL = { "内核引导": "chapters/ch1_deep.html", "内存分配与 printf": "chapters/ch2_deep.html" };
       const isDone = (title) => { try { return localStorage.getItem("openkeri.progress." + title) === "done"; } catch (e) { return false; } };
       function goFull() {
         const lz = document.getElementById("learnzone");
