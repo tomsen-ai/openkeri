@@ -45,7 +45,11 @@
       .shead{flex:0 0 auto; display:flex; align-items:center; gap:16px; padding:8px 2px 10px;}
       .shead .h{font-size:18px; font-weight:700; letter-spacing:-.3px;}
       .shead .sub{font-family:var(--mono); font-size:11px; color:var(--mute); margin-top:5px;}
-      .redo{margin-left:auto; background:rgba(255,255,255,.03); border:1px solid var(--hair); color:var(--soft); font-family:var(--mono); font-size:12px; border-radius:9px; padding:7px 13px; cursor:pointer; transition:.15s;}
+      .vtog{margin-left:auto; display:inline-flex; gap:2px; padding:3px; border:1px solid var(--hair); border-radius:11px; background:rgba(255,255,255,.03);}
+      .vtog button{border:0; background:none; cursor:pointer; font-family:var(--f); font-size:12.5px; font-weight:600; color:var(--soft); padding:6px 15px; border-radius:8px; transition:.15s;}
+      .vtog button:hover:not(.on){color:var(--ink);}
+      .vtog button.on{color:var(--ink); background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04)); box-shadow:0 1px 0 rgba(255,255,255,.08) inset;}
+      .redo{margin-left:10px; background:rgba(255,255,255,.03); border:1px solid var(--hair); color:var(--soft); font-family:var(--mono); font-size:12px; border-radius:9px; padding:7px 13px; cursor:pointer; transition:.15s;}
       .redo:hover{color:var(--ink); border-color:var(--hair-2);}
       .view{flex:1; min-height:0; overflow:auto; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.14) transparent;}
       .view::-webkit-scrollbar{width:9px;height:9px;} .view::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12); border-radius:9px;}
@@ -103,6 +107,30 @@
       .enter:hover{transform:translateY(-1px); filter:brightness(1.06);} .enter.soon{background:rgba(255,255,255,.05); color:var(--mute); box-shadow:none; cursor:default;}
 
       .archcap{text-align:center; font-family:var(--mono); font-size:12px; color:var(--violet); margin:-4px auto 0;}
+
+      /* 路线图(执行态)= 同一批节点框,按建造顺序排成横向泳道 */
+      .lanes{flex:none; width:760px; display:flex; flex-direction:column; gap:12px; padding:4px 0 8px;}
+      .lane{position:relative; opacity:0; transform:translateY(8px); border:1px solid var(--hair); border-radius:13px; padding:11px 14px 13px 17px;
+        background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01)); box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 16px 36px -30px #000; transition:opacity .42s cubic-bezier(.2,.8,.3,1), transform .42s cubic-bezier(.2,.8,.3,1), box-shadow .2s;}
+      .lane.in{opacity:1; transform:none;}
+      .lane::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--pc); border-radius:13px 0 0 13px;}
+      .lane.crux{border-color:rgba(142,157,255,.4); box-shadow:0 0 0 1px rgba(142,157,255,.22), 0 0 54px -20px rgba(142,157,255,.5);}
+      .lhead{display:flex; align-items:center; gap:9px; cursor:pointer; margin-bottom:11px;}
+      .lhead .pb{flex:none; font-family:var(--mono); font-size:11.5px; font-weight:600; color:#fff; background:var(--pc); border-radius:7px; padding:3px 10px;}
+      .lhead .lt{font-size:14px; font-weight:700; letter-spacing:-.2px;}
+      .lhead .star{font-family:var(--mono); font-size:10.5px; font-weight:600; color:var(--pc);}
+      .lhead .more{margin-left:auto; font-family:var(--mono); font-size:10.5px; color:var(--mute); opacity:0; transition:.15s;}
+      .lhead:hover .more{opacity:1;} .lhead:hover .lt{color:#fff;}
+      .lnodes{display:flex; align-items:center; flex-wrap:wrap; gap:8px;}
+      .rnode{cursor:pointer; display:flex; flex-direction:column; align-items:center; border:1px solid var(--hair); border-radius:11px; padding:8px 13px; text-align:center;
+        background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.014)); box-shadow:0 1px 0 rgba(255,255,255,.05) inset; transition:.15s;}
+      .rnode .rn{font-family:var(--mono); font-size:12.5px; font-weight:600; color:#fff; letter-spacing:.3px;}
+      .rnode .rs{font-size:10px; color:var(--soft); margin-top:2px; line-height:1.2;}
+      .rnode:hover{border-color:var(--pc); box-shadow:0 0 0 1px var(--pc);}
+      .rnode.crux{border-color:rgba(142,157,255,.4); background:linear-gradient(180deg, rgba(142,157,255,.13), rgba(142,157,255,.035)); box-shadow:0 0 0 1px rgba(142,157,255,.22), 0 0 30px -12px rgba(142,157,255,.5);}
+      .rnode.crux .rn{color:#dfe3ff;}
+      .lnodes .mini{flex:none; width:17px; height:11px; color:var(--mute);}
+
       @media(max-width:1120px){ .view{overflow-x:auto;} .board{min-width:1100px;} }
     </style>
   </head>
@@ -133,7 +161,11 @@
         <div class="shead">
           <div>
             <div class="h">mini-codex · 学习地图</div>
-            <div class="sub">学习跟着上面 P0→P4 走;点阶段看它做什么、造哪些块,点节点看这块是什么</div>
+            <div class="sub" id="ssub">点阶段看它做什么、造哪些块,点节点看这块是什么</div>
+          </div>
+          <div class="vtog" id="vtog">
+            <button data-m="arch" class="on">架构图</button>
+            <button data-m="road">路线图</button>
           </div>
           <button class="redo" id="redoBtn">↺ 重来</button>
         </div>
@@ -149,11 +181,11 @@
 
       // 阶段(= 学习路线的每一步)
       const STAGES = {
-        P0: { t:"能对话", goal:"先把“骨架”立起来:终端能跟模型多轮对话 —— 但还没有任何工具。", acc:"在终端连续聊几轮,模型记得上文。", boxes:["cli","model","loop","history","llmapi"] },
-        P1: { t:"闭环第一个工具(shell)", crux:true, goal:"让模型不只会“说”,还会“做”:它发出 tool_call,你执行 shell,把结果喂回去,它再接着答。这一步通了,agent 的本质就拿到手了。", acc:"模型发 tool_call → 执行 → 结果回灌 → 作答,整条闭环。", boxes:["dispatch","shell"], ch:1 },
-        P2: { t:"真能改代码", goal:"给它读写文件的手:能看文件、能用 patch 改文件。", acc:"让它改一个文件,patch 应用后文件真的变了。", boxes:["patch","readf"] },
-        P3: { t:"加安全闸", goal:"危险动作(跑命令 / 改文件)之前先问你一句 —— MVP 阶段用确认替代真沙箱。", acc:"执行前弹确认,你拒绝它就跳过、不硬来。", boxes:["gate"] },
-        P4: { t:"好用起来", goal:"补上“能干活”的最后一块:检索代码、跨多文件的小任务、上下文不爆。", acc:"跨多文件的小任务能完成,且上下文不溢出。", boxes:["search"] },
+        P0: { t:"对话骨架", goal:"先把“骨架”立起来:终端能跟模型多轮对话 —— 但还没有任何工具。", acc:"在终端连续聊几轮,模型记得上文。", boxes:["cli","model","loop","history","llmapi"] },
+        P1: { t:"工具闭环", crux:true, goal:"让模型不只会“说”,还会“做”:它发出 tool_call,你执行 shell,把结果喂回去,它再接着答。这一步通了,agent 的本质就拿到手了。", acc:"模型发 tool_call → 执行 → 结果回灌 → 作答,整条闭环。", boxes:["dispatch","shell"], ch:1 },
+        P2: { t:"代码读写", goal:"给它读写文件的手:能看文件、能用 patch 改文件。", acc:"让它改一个文件,patch 应用后文件真的变了。", boxes:["patch","readf"] },
+        P3: { t:"执行审批", goal:"危险动作(跑命令 / 改文件)之前先问你一句 —— MVP 阶段用确认替代真沙箱。", acc:"执行前弹确认,你拒绝它就跳过、不硬来。", boxes:["gate"] },
+        P4: { t:"检索与上下文", goal:"补上“能干活”的最后一块:检索代码、跨多文件的小任务、上下文不爆。", acc:"跨多文件的小任务能完成,且上下文不溢出。", boxes:["search"] },
       };
       // 组件(点节点出的卡片)
       const ABOX = {
@@ -191,7 +223,7 @@
         return `<div class="home"><div class="ph">怎么学</div>
           <h3>跟着上面 P0 → P4 一步步造</h3>
           <p><b>那条彩色序列就是学习路线。</b>点一个<span class="v">阶段</span>:看它<b>做什么 / 做到才算过</b>,它要造的块在图上<b>亮起来</b>。点一个<span class="v">节点</span>:看这块<b>是什么、归哪一步造</b>。<br><br>架构图只是<b>地图</b> —— 告诉你每一步落在整体的哪。重心在 <span class="v">P1</span>:把 tool_call 闭环跑通。</p>
-          <ol><li>P0 能对话(立骨架)</li><li>P1 闭环第一个工具 ★</li><li>P2 真能改代码</li><li>P3 加安全闸</li><li>P4 好用起来</li></ol></div>`;
+          <ol><li>P0 对话骨架</li><li>P1 工具闭环 ★</li><li>P2 代码读写</li><li>P3 执行审批</li><li>P4 检索与上下文</li></ol></div>`;
       }
       function clearHi() {
         document.querySelectorAll(".abox").forEach((e) => e.classList.remove("dim","lit","sel"));
@@ -216,7 +248,7 @@
         clearHi();
         const b = ABOX[id], p = b.m;
         const el = document.querySelector(`.abox[data-id="${id}"]`);
-        el.classList.add("sel"); el.style.setProperty("--lc", cv(PC[p]));
+        if (el) { el.classList.add("sel"); el.style.setProperty("--lc", cv(PC[p])); }
         document.querySelector(`.pill[data-p="${p}"]`)?.classList.add("on");
         $("#panel").style.setProperty("--pc", cv(PC[p]));
         $("#panel").innerHTML = `<div class="ph">组件 · 这块是什么</div>
@@ -233,29 +265,67 @@
         if (en && en.textContent.includes("章节")) en.onclick = () => alert("进入 P1 章节 · 让模型的 tool_call 真正闭环(本课重心)");
       }
 
-      function buildMap() {
+      let mode = "arch";
+      const MINIAR = `<svg class="mini" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h18M14 2l5 5-5 5"/></svg>`;
+      function seqHTML() {
         let seq = `<div class="seq"><span class="lbl">建造顺序 = 学习路线</span>`;
         SEQ.forEach((p, i) => { if (i) seq += ARROW; seq += `<span class="pill" data-p="${p}" style="--pc:var(${PC[p]})">${p}</span>`; });
-        seq += `<span class="opt">P5 · 长大(可选)</span></div>`;
+        return seq + `<span class="opt">P5 · 长大(可选)</span></div>`;
+      }
+      function archHTML() {
         const lines = AEDGE.map(([a, b, bi]) => { const [x1,y1,x2,y2] = aconn(ABOX[a], ABOX[b]); return `<line class="wire" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-end="url(#ah)" ${bi === 2 ? 'marker-start="url(#ah)"' : ""}/>`; }).join("");
         const boxes = AORDER.map((id) => { const b = ABOX[id]; return `<div class="abox ${b.crux ? "crux" : ""}" data-id="${id}" style="left:${b.cx}px;top:${b.cy}px;width:${b.w}px;min-height:${b.h}px;--lc:var(${PC[b.m]})"><span class="pb" style="--pc:var(${PC[b.m]})">${b.m}</span><div class="an">${b.nm}</div><div class="as">${b.sb}</div></div>`; }).join("");
-        $("#view").innerHTML = seq + `<div class="board">
+        return `<div class="board">
           <div class="arch"><div class="halo"></div><svg viewBox="0 0 760 628"><defs><marker id="ah" viewBox="0 0 8 8" refX="6.5" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0.5,1 L6,4 L0.5,7" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>${lines}</svg>${boxes}
             <div class="archcap" style="position:absolute;left:0;right:0;bottom:-2px">↻ 工具结果回灌 history → 下一轮再想</div>
           </div>
           <aside class="panel" id="panel" style="--pc:var(--p1)">${homePanel()}</aside>
         </div>`;
-        document.querySelectorAll(".seq .pill").forEach((el) => el.onclick = () => selStage(el.dataset.p));
-        document.querySelectorAll(".abox").forEach((el) => el.onclick = () => selNode(el.dataset.id));
+      }
+      function roadHTML() {
+        const lanes = SEQ.map((p) => {
+          const st = STAGES[p];
+          const nodes = st.boxes.map((id, i) => { const b = ABOX[id]; return (i ? MINIAR : "") + `<div class="rnode ${b.crux ? "crux" : ""}" data-id="${id}"><div class="rn">${b.nm}</div><div class="rs">${b.sb}</div></div>`; }).join("");
+          return `<div class="lane ${st.crux ? "crux" : ""}" data-p="${p}" style="--pc:var(${PC[p]})">
+            <div class="lhead" data-p="${p}"><span class="pb">${p}</span><span class="lt">${st.t}</span>${st.crux ? '<span class="star">★ 重心</span>' : ""}<span class="more">看这一步 →</span></div>
+            <div class="lnodes">${nodes}</div>
+          </div>`;
+        }).join("");
+        return `<div class="board">
+          <div class="lanes">${lanes}</div>
+          <aside class="panel" id="panel" style="--pc:var(--p1)">${homePanel()}</aside>
+        </div>`;
+      }
+      function render() {
+        $("#view").innerHTML = seqHTML() + (mode === "arch" ? archHTML() : roadHTML());
+        if (mode === "arch") {
+          document.querySelectorAll(".seq .pill").forEach((el) => el.onclick = () => selStage(el.dataset.p));
+          document.querySelectorAll(".abox").forEach((el) => el.onclick = () => selNode(el.dataset.id));
+        } else {
+          document.querySelectorAll(".seq .pill").forEach((el) => el.onclick = () => { scrollBand(el.dataset.p); selStage(el.dataset.p); });
+          document.querySelectorAll(".lhead").forEach((el) => el.onclick = () => selStage(el.dataset.p));
+          document.querySelectorAll(".rnode").forEach((el) => el.onclick = () => selNode(el.dataset.id));
+        }
         const seqEls = $("#view").querySelectorAll(".seq .pill, .seq .ar, .seq .opt");
         seqEls.forEach((el, i) => setTimeout(() => el.classList.add("in"), 60 * i));
         const base = 60 * seqEls.length + 100;
-        $("#view").querySelectorAll(".abox").forEach((el, i) => setTimeout(() => el.classList.add("in"), base + 50 * i));
+        const items = $("#view").querySelectorAll(mode === "arch" ? ".abox" : ".lane");
+        items.forEach((el, i) => setTimeout(() => el.classList.add("in"), base + 50 * i));
+      }
+      function setMode(m) {
+        mode = m;
+        document.querySelectorAll("#vtog button").forEach((b) => b.classList.toggle("on", b.dataset.m === m));
+        $("#ssub").textContent = m === "arch" ? "点阶段看它做什么、造哪些块,点节点看这块是什么" : "从上往下就是建造顺序;点某个块可跳回架构图看它在整体里的位置";
+        render();
+      }
+      function scrollBand(p) {
+        const el = $("#view").querySelector(`.lane[data-p="${p}"]`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
 
       const GEN_LINES = [
         "<span class='a'>›</span> 读你的目标:<b>做一个自己的 mini-codex</b>",
-        "<span class='a'>›</span> 排出学习路线:P0 能对话 → P1 闭环工具 → … → P4 好用",
+        "<span class='a'>›</span> 排出学习路线:P0 对话骨架 → P1 工具闭环 → … → P4 检索与上下文",
         "<span class='a'>›</span> 画出最终架构,每块标上归哪一步造",
         "<span class='a'>›</span> 重心在 <b>P1:让 tool_call 闭环</b> —— 这就是 agent 的本质",
         "<span class='a'>✓</span> 学习地图已生成。",
@@ -263,11 +333,12 @@
       $("#genBtn").onclick = startGen;
       $("#goal").addEventListener("keydown", (e) => { if (e.key === "Enter") startGen(); });
       $("#redoBtn").onclick = () => { $("#studio").style.display = "none"; $("#intro").style.display = ""; };
+      document.querySelectorAll("#vtog button").forEach((b) => b.onclick = () => setMode(b.dataset.m));
       function startGen() {
         $("#intro").style.display = "none";
         const gen = $("#gen"); gen.style.display = "block"; gen.innerHTML = "";
         GEN_LINES.forEach((t, i) => { const d = document.createElement("div"); d.className = "l"; d.innerHTML = t; gen.appendChild(d); setTimeout(() => d.classList.add("in"), 400 * i + 120); });
-        setTimeout(() => { gen.style.display = "none"; $("#studio").style.display = "flex"; buildMap(); }, 400 * GEN_LINES.length + 650);
+        setTimeout(() => { gen.style.display = "none"; $("#studio").style.display = "flex"; render(); }, 400 * GEN_LINES.length + 650);
       }
     </script>
   </body>
